@@ -2,7 +2,7 @@
 
 Tarayıcıda oynanan, kısa süreli, Tetris benzeri bir bulmaca oyunu (advergame). Oyun alanı bir sinüs boşluğunu, düşen bloklar biriken tıkanıklığı temsil eder; satır temizlemek drenaj anlamına gelir.
 
-Oyun içi metinler, ipuçları ve bağlantılar `index.html` ve `src/main.ts` içindedir. Sağlıkla ilgili içerik yalnızca oradan yönetilir; bu README sağlık bilgisi içermez.
+Oyun içi metinler `index.html`, `src/content/` ve `src/ui/` içinde; CTA bağlantısı `src/config/gameConfig.ts` ve `src/analytics/cta.ts` içindedir. Sağlıkla ilgili içerik yalnızca oradan yönetilir; bu README sağlık bilgisi içermez.
 
 ## Teknoloji yığını
 
@@ -48,8 +48,20 @@ Development ortamında hata ayıklama için `window.__fn = { game, view, app }` 
 .
 ├── index.html            # Vite giriş belgesi (DOM, ekranlar, inline SVG ikonlar)
 ├── src/
-│   ├── main.ts           # Oyunun tamamı (Game, Sound, View, layout, HUD, input, ekranlar)
-│   └── styles.css        # Tüm stiller
+│   ├── main.ts           # Giriş: CSS + bootstrap()
+│   ├── styles.css        # Tüm stiller
+│   ├── app/              # bootstrap, lifecycle (durum geçişleri), oyun olayı bağlantıları
+│   ├── game/             # Saf oyun motoru (Game) ve parça/SRS verileri
+│   ├── rendering/        # PixiJS görünümü, dokular, layout hesabı
+│   ├── input/            # Klavye, dokunmatik jestler, HUD butonları
+│   ├── audio/            # Web Audio ses ve müzik
+│   ├── haptics/          # Titreşim desenleri
+│   ├── storage/          # localStorage (fn_settings, fn_meta)
+│   ├── analytics/        # Analitik olayları ve CTA/UTM
+│   ├── ui/               # DOM: HUD, ekranlar, bildirimler, rozetler, ayarlar paneli
+│   ├── content/          # İpuçları ve rozet metinleri
+│   ├── config/           # Tahta boyutları ve oyun ayarları
+│   └── types/            # Paylaşılan TypeScript tipleri
 ├── public/
 │   └── favicon.svg       # Olduğu gibi dist/ köküne kopyalanır
 ├── legacy/
@@ -78,3 +90,4 @@ Bu dosya production build'e dahil edilmez. PixiJS'i CDN'den yüklediği için te
 - `docs/NS4-01-*`: Kaynak envanteri, davranış referansı, Vite risk analizi
 - `docs/NS4-02-VITE-MIGRATION.md`: Geçişte alınan kararlar
 - `docs/NS4-02-VERIFICATION.md`: Doğrulama sonuçları
+- `docs/NS4-03-MODULAR-ARCHITECTURE.md`: Modül yapısı, sınırlar ve bağımlılık yönü
