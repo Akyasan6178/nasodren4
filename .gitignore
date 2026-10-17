@@ -1,0 +1,28 @@
+# Bağımlılıklar
+node_modules/
+
+# Build çıktısı
+dist/
+dist-ssr/
+
+# Vite geçici dosyaları
+.vite/
+*.local
+vite.config.*.timestamp-*
+
+# Loglar
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Yerel ortam dosyaları (.env.example gibi örnek dosyalar takip edilebilir)
+.env
+.env.*
+!.env.example
+
+# İşletim sistemi ve editör
+.DS_Store
+Thumbs.db
+desktop.ini

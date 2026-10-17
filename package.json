@@ -1,0 +1,23 @@
+{
+  "name": "ferah-nefes",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Ferah Nefes · Sinüs Bulmacası: tarayıcı tabanlı bulmaca oyunu (Vite + TypeScript + PixiJS)",
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pixi.js": "7.4.2"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.3.4"
+  }
+}
