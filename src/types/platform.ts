@@ -7,7 +7,12 @@ declare global {
   interface Window {
     /** Yalnızca development build'de atanır (bkz. app/bootstrap.ts). */
     __fn?: { game: Game; view: View; app: PIXI.Application<HTMLCanvasElement> };
+    /**
+     * Etiket yöneticisi (ör. GTM) kuyruğu. Sayfaya dışarıdan eklenir; öğeleri bu kodun kontrolünde
+     * olmadığı için `unknown[]` olarak modellenir. track() yalnızca Array.isArray sonrası push eder.
+     */
     dataLayer?: unknown[];
+    /** Eski Safari için önekli AudioContext. */
     webkitAudioContext?: typeof AudioContext;
   }
 }

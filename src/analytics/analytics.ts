@@ -1,11 +1,12 @@
 /* =====================================================================
    ANALYTICS (stub: dataLayer varsa oraya, yoksa console.debug)
-   NS4-03: main.ts'ten taşındı. Olay adları 'fn_' önekiyle gönderilir.
+   Olay adları 'fn_' önekiyle gönderilir. console.debug fallback'i bilinçlidir
+   (gerçek servis/consent bu aşamada yoktur).
    ===================================================================== */
-import type { AnalyticsEvent } from '../types/analytics';
+import type { AnalyticsEvent, AnalyticsPayloads, AnalyticsRecord } from '../types/analytics';
 
-export function track(name: AnalyticsEvent, data?: Record<string, unknown>) {
-  const ev = Object.assign({ event: 'fn_' + name, t: Date.now() }, data || {});
+export function track<K extends AnalyticsEvent>(name: K, data: AnalyticsPayloads[K]): void {
+  const ev: AnalyticsRecord<K> = Object.assign({ event: `fn_${name}` as const, t: Date.now() }, data);
   if (Array.isArray(window.dataLayer)) window.dataLayer.push(ev);
   else if (window.console && console.debug) console.debug('[track]', ev);
 }

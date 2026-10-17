@@ -23,7 +23,7 @@ import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
 
-export function bootstrap() {
+export function bootstrap(): void {
   const stageEl = $('stage');
   const game = new Game();
   const sound = new Sound(settings);
@@ -31,10 +31,13 @@ export function bootstrap() {
   const buzz = createBuzz(() => settings.haptics);
 
   const app = new PIXI.Application<HTMLCanvasElement>({
-    backgroundAlpha: 0, antialias: false, autoDensity: true,
+    backgroundAlpha: 0,
+    antialias: false,
+    autoDensity: true,
     resolution: Math.min(window.devicePixelRatio || 1, 2),
     powerPreference: 'high-performance',
-    width: stageEl.clientWidth, height: stageEl.clientHeight
+    width: stageEl.clientWidth,
+    height: stageEl.clientHeight,
   });
   stageEl.appendChild(app.view);
   // Not: ticker.maxFPS bilerek ayarlanmıyor; Pixi'nin kare atlama mantığı 60Hz ekranda
@@ -43,7 +46,8 @@ export function bootstrap() {
   let L: Layout | null = null;
 
   function doLayout() {
-    const W = stageEl.clientWidth, H = stageEl.clientHeight;
+    const W = stageEl.clientWidth,
+      H = stageEl.clientHeight;
     if (!W || !H) return;
     app.renderer.resize(W, H);
     L = computeLayout(W, H);
@@ -52,7 +56,14 @@ export function bootstrap() {
     app.render();
   }
   let layoutQueued = false;
-  function queueLayout() { if (layoutQueued) return; layoutQueued = true; requestAnimationFrame(() => { layoutQueued = false; doLayout(); }); }
+  function queueLayout() {
+    if (layoutQueued) return;
+    layoutQueued = true;
+    requestAnimationFrame(() => {
+      layoutQueued = false;
+      doLayout();
+    });
+  }
   window.addEventListener('resize', queueLayout);
   if (window.ResizeObserver) new ResizeObserver(queueLayout).observe(stageEl);
 
@@ -61,11 +72,14 @@ export function bootstrap() {
   wireGameEvents({ game, view, sound, buzz, lifecycle });
 
   const input = new InputController({
-    game, canvas: app.view, settings,
+    game,
+    canvas: app.view,
+    settings,
     getState: lifecycle.getState,
-    getCell: () => L!.cell,   // pointer olayları yalnızca oynarken, ilk layout'tan sonra gelir
-    pause: lifecycle.pause, resume: lifecycle.resume,
-    unlockAudio: () => sound.unlock()
+    getCell: () => L!.cell, // pointer olayları yalnızca oynarken, ilk layout'tan sonra gelir
+    pause: lifecycle.pause,
+    resume: lifecycle.resume,
+    unlockAudio: () => sound.unlock(),
   });
 
   // ekranlar
@@ -79,8 +93,8 @@ export function bootstrap() {
   $('b-how').addEventListener('click', () => openSub('scr-how'));
   $('b-set1').addEventListener('click', () => openSub('scr-set'));
   $('b-set2').addEventListener('click', () => openSub('scr-set'));
-  $<HTMLAnchorElement>('cta-over').href = ctaUrl('game_over');
-  $<HTMLAnchorElement>('cta-pause').href = ctaUrl('pause_menu');
+  $('cta-over', HTMLAnchorElement).href = ctaUrl('game_over');
+  $('cta-pause', HTMLAnchorElement).href = ctaUrl('pause_menu');
   $('cta-over').addEventListener('click', () => track('cta_click', { placement: 'game_over', score: game.score }));
   $('cta-pause').addEventListener('click', () => track('cta_click', { placement: 'pause_menu' }));
 
@@ -88,27 +102,41 @@ export function bootstrap() {
   bindSettingsPanel({ settings, save: saveSettings, onAudioChange: () => sound.applySettings(), canVibrate });
 
   /* ---- ana döngü ---- */
-  let fpsAcc = 0, fpsFrames = 0, fpsWorst = 0;
+  let fpsAcc = 0,
+    fpsFrames = 0,
+    fpsWorst = 0;
   app.ticker.add(() => {
     const raw = app.ticker.deltaMS;
-    const dt = Math.min(raw, 100);       // sekme dönüşü gibi uzun boşluklarda patlama yok
-    if (lifecycle.getState() === 'playing') { input.update(dt); game.update(dt); }
+    const dt = Math.min(raw, 100); // sekme dönüşü gibi uzun boşluklarda patlama yok
+    if (lifecycle.getState() === 'playing') {
+      input.update(dt);
+      game.update(dt);
+    }
     view.update(dt);
-    const appState = lifecycle.getState();   // game.update içinde 'over' olmuş olabilir; orijinaldeki gibi burada okunur
+    const appState = lifecycle.getState(); // game.update içinde 'over' olmuş olabilir; orijinaldeki gibi burada okunur
     if (appState === 'playing' || appState === 'over') updateHud(game, appState === 'playing');
     if (settings.fps) {
-      fpsAcc += raw; fpsFrames++; if (raw > fpsWorst) fpsWorst = raw;
+      fpsAcc += raw;
+      fpsFrames++;
+      if (raw > fpsWorst) fpsWorst = raw;
       if (fpsAcc >= 500) {
-        $('fps').textContent = `${Math.round(fpsFrames * 1000 / fpsAcc)} fps · en kötü ${fpsWorst.toFixed(1)} ms`;
-        fpsAcc = 0; fpsFrames = 0; fpsWorst = 0;
+        $('fps').textContent = `${Math.round((fpsFrames * 1000) / fpsAcc)} fps · en kötü ${fpsWorst.toFixed(1)} ms`;
+        fpsAcc = 0;
+        fpsFrames = 0;
+        fpsWorst = 0;
       }
     }
   });
 
   setTip('tip-start');
-  const fontsReady = document.fonts && document.fonts.ready ? Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 1200))]) : Promise.resolve();
+  // document.fonts eski tarayıcılarda yoktur (DOM tipleri her zaman var sayar). FontFaceSet varsa ready her zaman tanımlıdır.
+  const fontSet: FontFaceSet | undefined = document.fonts;
+  const fontsReady: Promise<unknown> = fontSet
+    ? Promise.race([fontSet.ready, new Promise((r) => setTimeout(r, 1200))])
+    : Promise.resolve();
   doLayout();
-  fontsReady.then(queueLayout);
+  // Sonuç beklenmez (orijinal davranış); hazır olunca layout yeniden hesaplanır. Bu promise reddedilmez.
+  void fontsReady.then(queueLayout);
   // hata ayıklama (yalnızca development; production build'de global debug erişimi yok)
   if (import.meta.env.DEV) {
     window.__fn = { game, view, app };

@@ -1,16 +1,44 @@
-// Game olay adları ve payload tipleri (NS4-02'de tanımlandı, NS4-03'te paylaşılan tip dosyasına taşındı).
-// Olay adları ve payload alanları çalışma davranışının parçasıdır; değiştirilmemelidir.
+// Game olay adları ve payload tipleri. Olay adları ve payload alanları çalışma davranışının
+// parçasıdır; değiştirilmemelidir. Payload'ı olmayan olaylar `void` ile işaretlenir.
+import type { GameOverReason, PendingClearKind, TSpinKind } from './game';
 
-/** Temizleme/drenaj işlemi: 'lines' (satır), 'cyc' (sıklamen), 'syn' (sentetik açıcı). */
-export type Pending = { kind: string; rows: number[] };
+/** Temizleme/drenaj işlemi (satırlar küçükten büyüğe sıralı tahta satır indeksleri). */
+export interface PendingClear {
+  readonly kind: PendingClearKind;
+  readonly rows: readonly number[];
+}
 
-export type ScoredEvent = { n: number; tspin: number; b2b: boolean; combo: number; pts: number };
-export type PowerDoneEvent = { kind: string; n: number; rebound?: boolean };
+export interface ScoredEvent {
+  readonly n: number;
+  readonly tspin: TSpinKind;
+  readonly b2b: boolean;
+  readonly combo: number;
+  readonly pts: number;
+}
 
-export type GameEvents = {
-  spawn: undefined; move: undefined; rotate: undefined; hold: undefined; garbage: undefined;
-  lock: number[]; harddrop: number; levelup: number; gameover: string;
-  clearstart: Pending; clearend: Pending;
+export type PowerDoneEvent =
+  | { readonly kind: 'cyc'; readonly n: number }
+  | { readonly kind: 'syn'; readonly n: number; readonly rebound: boolean };
+
+export interface GameEvents {
+  spawn: void;
+  move: void;
+  rotate: void;
+  hold: void;
+  garbage: void;
+  /** Kilitlenen 4 hücrenin tahta indeksleri. */
+  lock: readonly number[];
+  /** Hard drop mesafesi (satır). */
+  harddrop: number;
+  levelup: number;
+  gameover: GameOverReason;
+  clearstart: PendingClear;
+  clearend: PendingClear;
   scored: ScoredEvent;
   powerdone: PowerDoneEvent;
-};
+}
+
+export type GameEventName = keyof GameEvents;
+/** Payload'ı olmayan olaylar argümansız emit edilir ve dinlenir. */
+export type GameEventArgs<K extends GameEventName> = [GameEvents[K]] extends [void] ? [] : [payload: GameEvents[K]];
+export type GameEventListener<K extends GameEventName> = (...args: GameEventArgs<K>) => void;

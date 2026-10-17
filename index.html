@@ -1,154 +1,242 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b3a42">
-<title>Ferah Nefes · Sinüs Bulmacası</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-</head>
-<body>
-<div id="app">
-  <div id="stage">
-    <div id="under">
-      <div id="board-bg" class="abs"></div>
-      <div id="meter" class="abs"><div id="meter-cover"></div></div>
-      <div id="meter-lbl" class="abs lbl">Tıkanıklık</div>
-      <div id="hold-bg" class="abs panel"></div>
-      <div id="next-bg" class="abs panel"></div>
-      <div id="lbl-hold" class="abs lbl">Beklet</div>
-      <div id="lbl-next" class="abs lbl">Sıradaki</div>
-      <div id="stats" class="abs">
-        <div class="score" id="hud-score">0</div>
-        <div class="row"><span>Nefes sv. <b id="hud-level">1</b></span><span>Drenaj <b id="hud-lines">0</b></span></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b3a42" />
+    <title>Ferah Nefes · Sinüs Bulmacası</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="stage">
+        <div id="under">
+          <div id="board-bg" class="abs"></div>
+          <div id="meter" class="abs"><div id="meter-cover"></div></div>
+          <div id="meter-lbl" class="abs lbl">Tıkanıklık</div>
+          <div id="hold-bg" class="abs panel"></div>
+          <div id="next-bg" class="abs panel"></div>
+          <div id="lbl-hold" class="abs lbl">Beklet</div>
+          <div id="lbl-next" class="abs lbl">Sıradaki</div>
+          <div id="stats" class="abs">
+            <div class="score" id="hud-score">0</div>
+            <div class="row">
+              <span>Nefes sv. <b id="hud-level">1</b></span
+              ><span>Drenaj <b id="hud-lines">0</b></span>
+            </div>
+          </div>
+        </div>
+        <div id="over-hud">
+          <div id="badge-rebound" class="badge">Rebound</div>
+          <div id="badge-mult" class="badge">Ferah nefes ×2</div>
+          <div id="popups" class="abs"></div>
+          <div id="toast"></div>
+          <button id="btn-hold" class="gbtn" aria-label="Parçayı beklet">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="4" y="4" width="16" height="16" rx="4" />
+              <path d="M9 9v6M15 9v6" />
+            </svg>
+            <span class="t">Beklet<small>C / Shift</small></span>
+          </button>
+          <button id="btn-cyc" class="gbtn" disabled aria-label="Sıklamen özütü kullan">
+            <svg viewBox="0 0 24 24">
+              <g fill="#d6337f">
+                <path d="M12 3c2 2.2 2.4 4.6 1 6.8-1.4-1-2.4-1-3.5.1C8.6 7.4 9.4 5 12 3z" />
+                <path d="M5.2 6.6c2.9.2 4.8 1.8 5.1 4.3-1.7.2-2.4.9-2.6 2.5-2.3-1.3-3.1-3.8-2.5-6.8z" opacity=".85" />
+                <path d="M18.8 6.6c.6 3-.2 5.5-2.5 6.8-.2-1.6-.9-2.3-2.6-2.5.3-2.5 2.2-4.1 5.1-4.3z" opacity=".85" />
+              </g>
+              <path
+                d="M12 12.5c0 3-.6 5.6-2.3 8"
+                stroke="#1d9a6c"
+                stroke-width="2"
+                fill="none"
+                stroke-linecap="round"
+              />
+              <ellipse cx="14.4" cy="18.6" rx="3" ry="1.6" fill="#1d9a6c" transform="rotate(-25 14.4 18.6)" />
+            </svg>
+            <span class="t">Sıklamen özütü<small id="cyc-sub">Oyunda 1 kez</small></span>
+          </button>
+          <button id="btn-syn" class="gbtn" disabled aria-label="Sentetik açıcı kullan">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#d93a48"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="7" y="9" width="8" height="12" rx="2.5" />
+              <path d="M9 9V6h4v3M13 6h3l1.5-1.5M18 3.5l1.5-.8M18.4 6.2h1.8M17.8 8.4l1.4.9" />
+            </svg>
+            <span class="t">Sentetik açıcı<small id="syn-sub">Hızlı ama geri tepebilir</small></span>
+          </button>
+          <button id="btn-pause" class="gbtn" aria-label="Duraklat">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="5" width="4" height="14" rx="1.5" />
+              <rect x="14" y="5" width="4" height="14" rx="1.5" />
+            </svg>
+          </button>
+        </div>
       </div>
-    </div>
-    <div id="over-hud">
-      <div id="badge-rebound" class="badge">Rebound</div>
-      <div id="badge-mult" class="badge">Ferah nefes ×2</div>
-      <div id="popups" class="abs"></div>
-      <div id="toast"></div>
-      <button id="btn-hold" class="gbtn" aria-label="Parçayı beklet">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 9v6M15 9v6"/></svg>
-        <span class="t">Beklet<small>C / Shift</small></span>
-      </button>
-      <button id="btn-cyc" class="gbtn" disabled aria-label="Sıklamen özütü kullan">
-        <svg viewBox="0 0 24 24"><g fill="#d6337f"><path d="M12 3c2 2.2 2.4 4.6 1 6.8-1.4-1-2.4-1-3.5.1C8.6 7.4 9.4 5 12 3z"/><path d="M5.2 6.6c2.9.2 4.8 1.8 5.1 4.3-1.7.2-2.4.9-2.6 2.5-2.3-1.3-3.1-3.8-2.5-6.8z" opacity=".85"/><path d="M18.8 6.6c.6 3-.2 5.5-2.5 6.8-.2-1.6-.9-2.3-2.6-2.5.3-2.5 2.2-4.1 5.1-4.3z" opacity=".85"/></g><path d="M12 12.5c0 3-.6 5.6-2.3 8" stroke="#1d9a6c" stroke-width="2" fill="none" stroke-linecap="round"/><ellipse cx="14.4" cy="18.6" rx="3" ry="1.6" fill="#1d9a6c" transform="rotate(-25 14.4 18.6)"/></svg>
-        <span class="t">Sıklamen özütü<small id="cyc-sub">Oyunda 1 kez</small></span>
-      </button>
-      <button id="btn-syn" class="gbtn" disabled aria-label="Sentetik açıcı kullan">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#d93a48" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="9" width="8" height="12" rx="2.5"/><path d="M9 9V6h4v3M13 6h3l1.5-1.5M18 3.5l1.5-.8M18.4 6.2h1.8M17.8 8.4l1.4.9"/></svg>
-        <span class="t">Sentetik açıcı<small id="syn-sub">Hızlı ama geri tepebilir</small></span>
-      </button>
-      <button id="btn-pause" class="gbtn" aria-label="Duraklat">
-        <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/></svg>
-      </button>
-    </div>
-  </div>
-  <div id="danger"></div>
-  <div id="fps">-- fps</div>
+      <div id="danger"></div>
+      <div id="fps">-- fps</div>
 
-  <!-- Start -->
-  <section id="scr-start" class="screen on" aria-label="Başlangıç">
-    <div class="sheet">
-      <svg class="flower" viewBox="0 0 64 64" aria-hidden="true"><g fill="#d6337f"><path d="M32 6c6 6.5 7 13.5 3 20-4-3-7-3-10.5.3C21.6 19 24 12 32 6z"/><path d="M11 17c8.6.6 14.4 5.3 15.2 12.8-5 .6-7.1 2.7-7.8 7.5C11.6 33.4 9.3 26 11 17z" opacity=".82"/><path d="M53 17c1.7 9-.6 16.4-7.4 20.3-.7-4.8-2.8-6.9-7.8-7.5C38.6 22.3 44.4 17.6 53 17z" opacity=".82"/></g><path d="M32 33c0 9-1.8 16.8-7 24" stroke="#1d9a6c" stroke-width="4.5" fill="none" stroke-linecap="round"/><ellipse cx="40" cy="52" rx="9" ry="4.6" fill="#1d9a6c" transform="rotate(-25 40 52)"/></svg>
-      <h1>Ferah<br>Nefes</h1>
-      <p class="lead">Sinüslerini tıkayan mukus bloklarını yerleştir, satırları boşalt, nefesini aç.</p>
-      <button class="btn primary" id="b-play">Oyna</button>
-      <div class="row2">
-        <button class="btn ghost" id="b-how">Nasıl oynanır</button>
-        <button class="btn ghost" id="b-set1">Ayarlar</button>
-      </div>
-      <div class="tip" id="tip-start"></div>
-      <p class="fine">Bu oyun bilgilendirme ve eğlence amaçlıdır; tıbbi tavsiye yerine geçmez. Şikâyetleriniz için hekiminize veya eczacınıza danışın.</p>
-    </div>
-  </section>
+      <!-- Start -->
+      <section id="scr-start" class="screen on" aria-label="Başlangıç">
+        <div class="sheet">
+          <svg class="flower" viewBox="0 0 64 64" aria-hidden="true">
+            <g fill="#d6337f">
+              <path d="M32 6c6 6.5 7 13.5 3 20-4-3-7-3-10.5.3C21.6 19 24 12 32 6z" />
+              <path d="M11 17c8.6.6 14.4 5.3 15.2 12.8-5 .6-7.1 2.7-7.8 7.5C11.6 33.4 9.3 26 11 17z" opacity=".82" />
+              <path d="M53 17c1.7 9-.6 16.4-7.4 20.3-.7-4.8-2.8-6.9-7.8-7.5C38.6 22.3 44.4 17.6 53 17z" opacity=".82" />
+            </g>
+            <path d="M32 33c0 9-1.8 16.8-7 24" stroke="#1d9a6c" stroke-width="4.5" fill="none" stroke-linecap="round" />
+            <ellipse cx="40" cy="52" rx="9" ry="4.6" fill="#1d9a6c" transform="rotate(-25 40 52)" />
+          </svg>
+          <h1>Ferah<br />Nefes</h1>
+          <p class="lead">Sinüslerini tıkayan mukus bloklarını yerleştir, satırları boşalt, nefesini aç.</p>
+          <button class="btn primary" id="b-play">Oyna</button>
+          <div class="row2">
+            <button class="btn ghost" id="b-how">Nasıl oynanır</button>
+            <button class="btn ghost" id="b-set1">Ayarlar</button>
+          </div>
+          <div class="tip" id="tip-start"></div>
+          <p class="fine">
+            Bu oyun bilgilendirme ve eğlence amaçlıdır; tıbbi tavsiye yerine geçmez. Şikâyetleriniz için hekiminize veya
+            eczacınıza danışın.
+          </p>
+        </div>
+      </section>
 
-  <!-- How to -->
-  <section id="scr-how" class="screen" aria-label="Nasıl oynanır">
-    <div class="sheet">
-      <h2>Nasıl oynanır</h2>
-      <h3>Dokunmatik</h3>
-      <dl class="ctl">
-        <dt>Sağa-sola sürükle</dt><dd>Bloğu kaydır</dd>
-        <dt>Dokun</dt><dd>Döndür (ekranın sol üçte biri: ters yön)</dd>
-        <dt>Aşağı sürükle</dt><dd>Yavaşça indir</dd>
-        <dt>Aşağı fırlat</dt><dd>Anında bırak</dd>
-        <dt>Yukarı fırlat</dt><dd>Beklet</dd>
-      </dl>
-      <h3>Klavye</h3>
-      <dl class="ctl">
-        <dt>← →</dt><dd>Kaydır</dd>
-        <dt>↑ / X · Z</dt><dd>Döndür · ters döndür</dd>
-        <dt>↓ · Boşluk</dt><dd>Yavaş indir · anında bırak</dd>
-        <dt>C / Shift</dt><dd>Beklet</dd>
-        <dt>1 · 2</dt><dd>Sıklamen özütü · sentetik açıcı</dd>
-        <dt>Esc / P</dt><dd>Duraklat</dd>
-      </dl>
-      <h3>Oyun alanı bir sinüs boşluğu</h3>
-      <ul class="map">
-        <li>Düşen bloklar biriken mukus; alan dolarsa sinüs tamamen tıkanır.</li>
-        <li>Tam satır = drenaj. Dört satır birden: ozmotik etki. T-spin: nörorefleks etki.</li>
-        <li>Tıkanıklık yükselince iki destek açılır. <b>Sıklamen özütü</b> oyunda bir kez kullanılır, alt yarıyı yavaşça boşaltır ve 30 sn puanları ikiye katlar.</li>
-        <li><b>Sentetik açıcı</b> anında 3 satır açar. Tekrarlarsan tıkanıklık geri teper: bloklar hızlanır, alttan yeni tıkanıklık yükselir.</li>
-      </ul>
-      <button class="btn primary" data-back>Tamam</button>
-    </div>
-  </section>
+      <!-- How to -->
+      <section id="scr-how" class="screen" aria-label="Nasıl oynanır">
+        <div class="sheet">
+          <h2>Nasıl oynanır</h2>
+          <h3>Dokunmatik</h3>
+          <dl class="ctl">
+            <dt>Sağa-sola sürükle</dt>
+            <dd>Bloğu kaydır</dd>
+            <dt>Dokun</dt>
+            <dd>Döndür (ekranın sol üçte biri: ters yön)</dd>
+            <dt>Aşağı sürükle</dt>
+            <dd>Yavaşça indir</dd>
+            <dt>Aşağı fırlat</dt>
+            <dd>Anında bırak</dd>
+            <dt>Yukarı fırlat</dt>
+            <dd>Beklet</dd>
+          </dl>
+          <h3>Klavye</h3>
+          <dl class="ctl">
+            <dt>← →</dt>
+            <dd>Kaydır</dd>
+            <dt>↑ / X · Z</dt>
+            <dd>Döndür · ters döndür</dd>
+            <dt>↓ · Boşluk</dt>
+            <dd>Yavaş indir · anında bırak</dd>
+            <dt>C / Shift</dt>
+            <dd>Beklet</dd>
+            <dt>1 · 2</dt>
+            <dd>Sıklamen özütü · sentetik açıcı</dd>
+            <dt>Esc / P</dt>
+            <dd>Duraklat</dd>
+          </dl>
+          <h3>Oyun alanı bir sinüs boşluğu</h3>
+          <ul class="map">
+            <li>Düşen bloklar biriken mukus; alan dolarsa sinüs tamamen tıkanır.</li>
+            <li>Tam satır = drenaj. Dört satır birden: ozmotik etki. T-spin: nörorefleks etki.</li>
+            <li>
+              Tıkanıklık yükselince iki destek açılır. <b>Sıklamen özütü</b> oyunda bir kez kullanılır, alt yarıyı
+              yavaşça boşaltır ve 30 sn puanları ikiye katlar.
+            </li>
+            <li>
+              <b>Sentetik açıcı</b> anında 3 satır açar. Tekrarlarsan tıkanıklık geri teper: bloklar hızlanır, alttan
+              yeni tıkanıklık yükselir.
+            </li>
+          </ul>
+          <button class="btn primary" data-back>Tamam</button>
+        </div>
+      </section>
 
-  <!-- Pause -->
-  <section id="scr-pause" class="screen" aria-label="Duraklatıldı">
-    <div class="sheet">
-      <h2>Mola</h2>
-      <div class="tip" id="tip-pause"></div>
-      <button class="btn primary" id="b-resume">Devam et</button>
-      <div class="row2">
-        <button class="btn ghost" id="b-set2">Ayarlar</button>
-        <button class="btn ghost" id="b-quit">Ana menü</button>
-      </div>
-      <a class="btn ghost" id="cta-pause" target="_blank" rel="noopener">Sinüs sağlığı rehberi</a>
-    </div>
-  </section>
+      <!-- Pause -->
+      <section id="scr-pause" class="screen" aria-label="Duraklatıldı">
+        <div class="sheet">
+          <h2>Mola</h2>
+          <div class="tip" id="tip-pause"></div>
+          <button class="btn primary" id="b-resume">Devam et</button>
+          <div class="row2">
+            <button class="btn ghost" id="b-set2">Ayarlar</button>
+            <button class="btn ghost" id="b-quit">Ana menü</button>
+          </div>
+          <a class="btn ghost" id="cta-pause" target="_blank" rel="noopener">Sinüs sağlığı rehberi</a>
+        </div>
+      </section>
 
-  <!-- Game over -->
-  <section id="scr-over" class="screen" aria-label="Oyun bitti">
-    <div class="sheet" tabindex="-1" data-focus style="outline:none">
-      <div class="newbest" id="newbest">Yeni rekor</div>
-      <h2>Sinüslerin tamamen tıkandı</h2>
-      <div class="stat-grid">
-        <div><b id="o-score">0</b><span>Puan</span></div>
-        <div><b id="o-lines">0</b><span>Drenaj</span></div>
-        <div><b id="o-best">0</b><span>Rekor</span></div>
-      </div>
-      <div class="badges" id="o-badges"></div>
-      <p style="margin-top:14px">Gerçek hayatta tıkanıklıkla yaşamak zorunda değilsin. Sinüzit ve rahat nefes hakkında güvenilir bilgiler sağlık portalında.</p>
-      <a class="btn cta" id="cta-over" target="_blank" rel="noopener">Rahat nefes rehberini aç</a>
-      <div class="row2">
-        <button class="btn primary" id="b-again">Tekrar oyna</button>
-        <button class="btn ghost" id="b-menu">Ana menü</button>
-      </div>
-      <div class="tip" id="tip-over"></div>
-    </div>
-  </section>
+      <!-- Game over -->
+      <section id="scr-over" class="screen" aria-label="Oyun bitti">
+        <div class="sheet" tabindex="-1" data-focus style="outline: none">
+          <div class="newbest" id="newbest">Yeni rekor</div>
+          <h2>Sinüslerin tamamen tıkandı</h2>
+          <div class="stat-grid">
+            <div><b id="o-score">0</b><span>Puan</span></div>
+            <div><b id="o-lines">0</b><span>Drenaj</span></div>
+            <div><b id="o-best">0</b><span>Rekor</span></div>
+          </div>
+          <div class="badges" id="o-badges"></div>
+          <p style="margin-top: 14px">
+            Gerçek hayatta tıkanıklıkla yaşamak zorunda değilsin. Sinüzit ve rahat nefes hakkında güvenilir bilgiler
+            sağlık portalında.
+          </p>
+          <a class="btn cta" id="cta-over" target="_blank" rel="noopener">Rahat nefes rehberini aç</a>
+          <div class="row2">
+            <button class="btn primary" id="b-again">Tekrar oyna</button>
+            <button class="btn ghost" id="b-menu">Ana menü</button>
+          </div>
+          <div class="tip" id="tip-over"></div>
+        </div>
+      </section>
 
-  <!-- Settings -->
-  <section id="scr-set" class="screen" aria-label="Ayarlar">
-    <div class="sheet">
-      <h2>Ayarlar</h2>
-      <label class="set">Ses efektleri<input type="checkbox" data-k="sound"></label>
-      <label class="set">Ortam müziği<input type="checkbox" data-k="music"></label>
-      <label class="set"><span>Titreşim<small id="hap-note">Destekleyen Android cihazlarda</small></span><input type="checkbox" data-k="haptics"></label>
-      <label class="set">Hayalet parça<input type="checkbox" data-k="ghost"></label>
-      <label class="set"><span>DAS <small>Basılı tutunca kayma gecikmesi: <b id="v-das"></b> ms</small></span><input type="range" min="50" max="300" step="1" data-k="das"></label>
-      <label class="set"><span>ARR <small>Kayma tekrar hızı: <b id="v-arr"></b> ms</small></span><input type="range" min="0" max="100" step="1" data-k="arr"></label>
-      <label class="set"><span>FPS göstergesi<small>Performans testi için</small></span><input type="checkbox" data-k="fps"></label>
-      <button class="btn primary" data-back>Kaydet</button>
+      <!-- Settings -->
+      <section id="scr-set" class="screen" aria-label="Ayarlar">
+        <div class="sheet">
+          <h2>Ayarlar</h2>
+          <label class="set">Ses efektleri<input type="checkbox" data-k="sound" /></label>
+          <label class="set">Ortam müziği<input type="checkbox" data-k="music" /></label>
+          <label class="set"
+            ><span>Titreşim<small id="hap-note">Destekleyen Android cihazlarda</small></span
+            ><input type="checkbox" data-k="haptics"
+          /></label>
+          <label class="set">Hayalet parça<input type="checkbox" data-k="ghost" /></label>
+          <label class="set"
+            ><span
+              >DAS <small>Basılı tutunca kayma gecikmesi: <b id="v-das"></b> ms</small></span
+            ><input type="range" min="50" max="300" step="1" data-k="das"
+          /></label>
+          <label class="set"
+            ><span
+              >ARR <small>Kayma tekrar hızı: <b id="v-arr"></b> ms</small></span
+            ><input type="range" min="0" max="100" step="1" data-k="arr"
+          /></label>
+          <label class="set"
+            ><span>FPS göstergesi<small>Performans testi için</small></span
+            ><input type="checkbox" data-k="fps"
+          /></label>
+          <button class="btn primary" data-back>Kaydet</button>
+        </div>
+      </section>
     </div>
-  </section>
-</div>
-<script type="module" src="/src/main.ts"></script>
-</body>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

@@ -1,0 +1,14 @@
+# Üretilen ve bağımlılık klasörleri
+dist/
+node_modules/
+tools/eslint/node_modules/
+package-lock.json
+tools/eslint/package-lock.json
+
+# Orijinal prototip: içerik değiştirilmez
+legacy/
+
+# Önceki görev raporları: geçmiş kayıt olarak olduğu gibi korunur
+docs/NS4-01-*.md
+docs/NS4-02-*.md
+docs/NS4-03-*.md

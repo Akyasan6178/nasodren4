@@ -5,101 +5,221 @@
    olaylarıyla konuşur. Kurallar, süreler ve skor tabloları değişmedi.
    ===================================================================== */
 import { COLS, ROWS, HIDDEN, VIS, CFG } from '../config/gameConfig';
-import { PIECE, SHAPES, KICK_JLSTZ, KICK_I } from './pieces';
-import type { Pending, GameEvents } from '../types/events';
+import { PIECE, SHAPES, KICK_JLSTZ, KICK_I, kickKey, nextRotation } from './pieces';
+import type { GameEventArgs, GameEventListener, GameEventName, PendingClear } from '../types/events';
+import type {
+  GameOverReason,
+  GameState,
+  PieceSlot,
+  RotationDirection,
+  RotationState,
+  Step,
+  TSpinKind,
+  TetrominoType,
+} from '../types/game';
 
 export class Game {
-  handlers: { [K in keyof GameEvents]?: Array<(a: never) => void> };   // NS4-02: on() çağrısı payload tipini K ile denetler
-  board: Uint8Array;
+  private readonly handlers: { [K in GameEventName]?: GameEventListener<K>[] };
+  /** Hücre değerleri: CellValue (0 boş, 1-7 tetromino, 8 çöp). */
+  readonly board: Uint8Array;
   // reset() içinde atanan alanlar (reset() constructor'dan çağrılır)
-  state!: string; type!: number; rot!: number; x!: number; y!: number;
-  bag!: number[]; queue!: number[]; hold!: number; canHold!: boolean;
-  score!: number; lines!: number; level!: number;
-  combo!: number; b2b!: boolean | number; maxCombo!: number; tetrises!: number; tspins!: number;
-  stateT!: number; pending!: Pending | null;
-  gAcc!: number; lockT!: number; lockResets!: number; lowestY!: number; softDrop!: boolean;
-  lastRot!: boolean; lastKick!: number; cycUsed!: boolean; synUses!: number;
-  multT!: number; reboundT!: number; garbageT!: number; elapsed!: number;
-  pieceVer!: number; boardVer!: number; queueVer!: number;
-  _cv?: number; _c!: number;
-  constructor() { this.handlers = {}; this.board = new Uint8Array(COLS * ROWS); this.reset(); this.state = 'idle'; this.type = 0; }
-  on<K extends keyof GameEvents>(ev: K, fn: (a: GameEvents[K]) => void) { (this.handlers[ev] = this.handlers[ev] || [] as Array<(a: never) => void>).push(fn); }
-  emit<K extends keyof GameEvents>(ev: K, a?: GameEvents[K]) { const h = this.handlers[ev]; if (h) for (let i = 0; i < h.length; i++) h[i](a as never); }
+  state!: GameState;
+  type!: PieceSlot;
+  rot!: RotationState;
+  x!: number;
+  y!: number;
+  bag!: TetrominoType[];
+  queue!: TetrominoType[];
+  hold!: PieceSlot;
+  canHold!: boolean;
+  score!: number;
+  lines!: number;
+  level!: number;
+  combo!: number;
+  b2b!: boolean | 0;
+  maxCombo!: number;
+  tetrises!: number;
+  tspins!: number;
+  stateT!: number;
+  pending!: PendingClear | null;
+  gAcc!: number;
+  lockT!: number;
+  lockResets!: number;
+  lowestY!: number;
+  softDrop!: boolean;
+  lastRot!: boolean;
+  lastKick!: number;
+  cycUsed!: boolean;
+  synUses!: number;
+  multT!: number;
+  reboundT!: number;
+  garbageT!: number;
+  elapsed!: number;
+  pieceVer!: number;
+  boardVer!: number;
+  queueVer!: number;
+  private _cv?: number;
+  private _c!: number;
+  constructor() {
+    this.handlers = {};
+    this.board = new Uint8Array(COLS * ROWS);
+    this.reset();
+    this.state = 'idle';
+    this.type = 0;
+  }
+  /** Dinleyici ekler (kayıt sırası çağrı sırasıdır). Dönen fonksiyon dinleyiciyi kaldırır. */
+  on<K extends GameEventName>(ev: K, fn: GameEventListener<K>): () => void {
+    let list = this.handlers[ev];
+    if (!list) {
+      list = [];
+      this.handlers[ev] = list;
+    }
+    list.push(fn);
+    return () => {
+      const i = list.indexOf(fn);
+      if (i >= 0) list.splice(i, 1);
+    };
+  }
+  emit<K extends GameEventName>(ev: K, ...args: GameEventArgs<K>) {
+    const h = this.handlers[ev];
+    if (h) for (let i = 0; i < h.length; i++) h[i](...args);
+  }
+
+  /** Aktif parça. Yalnızca aktif parçanın olduğu yollarda çağrılır (orijinalde type=0 iken SHAPES[0] okunmuyordu). */
+  private get piece(): TetrominoType {
+    const t = this.type;
+    if (t === 0) throw new Error('Game: aktif parça yok');
+    return t;
+  }
 
   reset() {
     this.board.fill(0);
-    this.bag = []; this.queue = [];
+    this.bag = [];
+    this.queue = [];
     this.fillQueue();
-    this.hold = 0; this.canHold = true;
-    this.score = 0; this.lines = 0; this.level = 1;
-    this.combo = -1; this.b2b = false; this.maxCombo = 0;
-    this.tetrises = 0; this.tspins = 0;
-    this.state = 'play';           // play | clearing | draining | over
-    this.stateT = 0; this.pending = null;
-    this.gAcc = 0; this.lockT = 0; this.lockResets = 0; this.lowestY = 0;
+    this.hold = 0;
+    this.canHold = true;
+    this.score = 0;
+    this.lines = 0;
+    this.level = 1;
+    this.combo = -1;
+    this.b2b = false;
+    this.maxCombo = 0;
+    this.tetrises = 0;
+    this.tspins = 0;
+    this.state = 'play'; // play | clearing | draining | over
+    this.stateT = 0;
+    this.pending = null;
+    this.gAcc = 0;
+    this.lockT = 0;
+    this.lockResets = 0;
+    this.lowestY = 0;
     this.softDrop = false;
-    this.lastRot = false; this.lastKick = 0;
-    this.cycUsed = false; this.synUses = 0;
-    this.multT = 0; this.reboundT = 0; this.garbageT = 0;
+    this.lastRot = false;
+    this.lastKick = 0;
+    this.cycUsed = false;
+    this.synUses = 0;
+    this.multT = 0;
+    this.reboundT = 0;
+    this.garbageT = 0;
     this.elapsed = 0;
-    this.pieceVer = 0; this.boardVer = 0; this.queueVer = 0;
+    this.pieceVer = 0;
+    this.boardVer = 0;
+    this.queueVer = 0;
     this.spawn();
   }
 
   fillQueue() {
     while (this.queue.length < 8) {
-      if (this.bag.length === 0) {                       // 7-bag randomizer
-        const b = [1, 2, 3, 4, 5, 6, 7];
-        for (let i = 6; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; const t = b[i]; b[i] = b[j]; b[j] = t; }
+      if (this.bag.length === 0) {
+        // 7-bag randomizer
+        const b: TetrominoType[] = [1, 2, 3, 4, 5, 6, 7];
+        for (let i = 6; i > 0; i--) {
+          const j = (Math.random() * (i + 1)) | 0;
+          const t = b[i];
+          b[i] = b[j];
+          b[j] = t;
+        }
         this.bag = b;
       }
-      this.queue.push(this.bag.pop()!);   // NS4-02: bag boşsa üstte yeniden dolduruluyor
+      this.queue.push(this.bag.pop()!); // NS4-02: bag boşsa üstte yeniden dolduruluyor
     }
   }
 
-  cell(x: number, y: number) { return (x < 0 || x >= COLS || y >= ROWS) ? 9 : (y < 0 ? 0 : this.board[y * COLS + x]); }
+  cell(x: number, y: number) {
+    return x < 0 || x >= COLS || y >= ROWS ? 9 : y < 0 ? 0 : this.board[y * COLS + x];
+  }
 
-  fits(type: number, rot: number, px: number, py: number) {
+  fits(type: TetrominoType, rot: RotationState, px: number, py: number) {
     const s = SHAPES[type][rot];
     for (let i = 0; i < 4; i++) if (this.cell(px + s[i][0], py + s[i][1])) return false;
     return true;
   }
 
-  spawn(type?: number) {
-    if (!type) { type = this.queue.shift()!; this.fillQueue(); this.queueVer++; }   // NS4-02: kuyruk her zaman 8 elemanlı
-    this.type = type; this.rot = 0; this.x = 3; this.y = 0;
-    this.lastRot = false; this.lockT = 0; this.lockResets = 0; this.gAcc = 0;
+  spawn(type?: TetrominoType) {
+    if (!type) {
+      type = this.queue.shift()!;
+      this.fillQueue();
+      this.queueVer++;
+    } // NS4-02: kuyruk her zaman 8 elemanlı
+    this.type = type;
+    this.rot = 0;
+    this.x = 3;
+    this.y = 0;
+    this.lastRot = false;
+    this.lockT = 0;
+    this.lockResets = 0;
+    this.gAcc = 0;
     if (!this.fits(type, 0, this.x, this.y)) return this.gameOver('blockout');
-    if (this.fits(type, 0, this.x, this.y + 1)) this.y++;      // guideline: doğduğu anda bir sıra in
+    if (this.fits(type, 0, this.x, this.y + 1)) this.y++; // guideline: doğduğu anda bir sıra in
     this.lowestY = this.y;
     this.pieceVer++;
     this.emit('spawn');
   }
 
-  grounded() { return !this.fits(this.type, this.rot, this.x, this.y + 1); }
+  grounded() {
+    return !this.fits(this.piece, this.rot, this.x, this.y + 1);
+  }
 
   onMoved() {
-    if (this.y > this.lowestY) { this.lowestY = this.y; this.lockResets = 0; }
-    if (this.grounded() && this.lockResets < CFG.maxLockResets) { this.lockT = 0; this.lockResets++; }
+    if (this.y > this.lowestY) {
+      this.lowestY = this.y;
+      this.lockResets = 0;
+    }
+    if (this.grounded() && this.lockResets < CFG.maxLockResets) {
+      this.lockT = 0;
+      this.lockResets++;
+    }
     this.pieceVer++;
   }
 
-  move(dx: number) {
+  move(dx: Step) {
     if (this.state !== 'play') return false;
-    if (!this.fits(this.type, this.rot, this.x + dx, this.y)) return false;
-    this.x += dx; this.lastRot = false; this.onMoved(); this.emit('move'); return true;
+    if (!this.fits(this.piece, this.rot, this.x + dx, this.y)) return false;
+    this.x += dx;
+    this.lastRot = false;
+    this.onMoved();
+    this.emit('move');
+    return true;
   }
 
-  rotate(dir: number) {
+  rotate(dir: RotationDirection) {
     if (this.state !== 'play' || this.type === PIECE.O) return false;
-    const from = this.rot, to = (this.rot + dir + 4) & 3;
-    const kicks = (this.type === PIECE.I ? KICK_I : KICK_JLSTZ)['' + from + to];
+    const from = this.rot,
+      to = nextRotation(this.rot, dir);
+    const kicks = (this.type === PIECE.I ? KICK_I : KICK_JLSTZ)[kickKey(from, to)];
     for (let i = 0; i < kicks.length; i++) {
-      const nx = this.x + kicks[i][0], ny = this.y - kicks[i][1];
-      if (this.fits(this.type, to, nx, ny)) {
-        this.x = nx; this.y = ny; this.rot = to;
-        this.lastRot = true; this.lastKick = i;
-        this.onMoved(); this.emit('rotate'); return true;
+      const nx = this.x + kicks[i][0],
+        ny = this.y - kicks[i][1];
+      if (this.fits(this.piece, to, nx, ny)) {
+        this.x = nx;
+        this.y = ny;
+        this.rot = to;
+        this.lastRot = true;
+        this.lastKick = i;
+        this.onMoved();
+        this.emit('rotate');
+        return true;
       }
     }
     return false;
@@ -107,17 +227,28 @@ export class Game {
 
   softStep() {
     if (this.state !== 'play') return false;
-    if (!this.fits(this.type, this.rot, this.x, this.y + 1)) return false;
-    this.y++; this.score += 1; this.lastRot = false; this.onMoved(); return true;
+    if (!this.fits(this.piece, this.rot, this.x, this.y + 1)) return false;
+    this.y++;
+    this.score += 1;
+    this.lastRot = false;
+    this.onMoved();
+    return true;
   }
 
-  ghostY() { let y = this.y; while (this.fits(this.type, this.rot, this.x, y + 1)) y++; return y; }
+  ghostY() {
+    let y = this.y;
+    while (this.fits(this.piece, this.rot, this.x, y + 1)) y++;
+    return y;
+  }
 
   hardDrop() {
     if (this.state !== 'play') return;
-    const gy = this.ghostY(), d = gy - this.y;
+    const gy = this.ghostY(),
+      d = gy - this.y;
     if (d > 0) this.lastRot = false;
-    this.y = gy; this.score += d * 2; this.pieceVer++;
+    this.y = gy;
+    this.score += d * 2;
+    this.pieceVer++;
     this.emit('harddrop', d);
     this.lock();
   }
@@ -126,8 +257,14 @@ export class Game {
     if (this.state !== 'play' || !this.canHold) return false;
     const cur = this.type;
     this.canHold = false;
-    if (this.hold) { const h = this.hold; this.hold = cur; this.spawn(h); }
-    else { this.hold = cur; this.spawn(); }
+    if (this.hold) {
+      const h = this.hold;
+      this.hold = cur;
+      this.spawn(h);
+    } else {
+      this.hold = cur;
+      this.spawn();
+    }
     this.queueVer++;
     this.emit('hold');
     return true;
@@ -140,22 +277,34 @@ export class Game {
     return ms;
   }
 
-  tspinKind() {
+  tspinKind(): TSpinKind {
     if (this.type !== PIECE.T || !this.lastRot) return 0;
-    const x = this.x, y = this.y;
-    const c = [this.cell(x, y) ? 1 : 0, this.cell(x + 2, y) ? 1 : 0, this.cell(x + 2, y + 2) ? 1 : 0, this.cell(x, y + 2) ? 1 : 0]; // TL TR BR BL
+    const x = this.x,
+      y = this.y;
+    const c = [
+      this.cell(x, y) ? 1 : 0,
+      this.cell(x + 2, y) ? 1 : 0,
+      this.cell(x + 2, y + 2) ? 1 : 0,
+      this.cell(x, y + 2) ? 1 : 0,
+    ]; // TL TR BR BL
     if (c[0] + c[1] + c[2] + c[3] < 3) return 0;
-    const front = [[0, 1], [1, 2], [2, 3], [3, 0]][this.rot];
-    return (c[front[0]] && c[front[1]]) || this.lastKick === 4 ? 2 : 1;   // 2 tam, 1 mini
+    const front = [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 0],
+    ][this.rot];
+    return (c[front[0]] && c[front[1]]) || this.lastKick === 4 ? 2 : 1; // 2 tam, 1 mini
   }
 
   lock() {
-    const s = SHAPES[this.type][this.rot];
+    const s = SHAPES[this.piece][this.rot];
     const tspin = this.tspinKind();
     let allHidden = true;
     const cells: number[] = [];
     for (let i = 0; i < 4; i++) {
-      const cx = this.x + s[i][0], cy = this.y + s[i][1];
+      const cx = this.x + s[i][0],
+        cy = this.y + s[i][1];
       this.board[cy * COLS + cx] = this.type;
       cells.push(cy * COLS + cx);
       if (cy >= HIDDEN) allHidden = false;
@@ -168,27 +317,37 @@ export class Game {
     const full: number[] = [];
     for (let y = 0; y < ROWS; y++) {
       let f = true;
-      for (let x = 0; x < COLS; x++) if (!this.board[y * COLS + x]) { f = false; break; }
+      for (let x = 0; x < COLS; x++)
+        if (!this.board[y * COLS + x]) {
+          f = false;
+          break;
+        }
       if (f) full.push(y);
     }
     this.scoreClear(full.length, tspin);
     if (full.length) {
-      this.state = 'clearing'; this.stateT = CFG.lineClearMs;
+      this.state = 'clearing';
+      this.stateT = CFG.lineClearMs;
       this.pending = { kind: 'lines', rows: full };
-      this.type = 0; this.pieceVer++;
+      this.type = 0;
+      this.pieceVer++;
       this.emit('clearstart', { rows: full, kind: 'lines' });
     } else {
       this.spawn();
     }
   }
 
-  scoreClear(n: number, tspin: number) {
-    const base = tspin === 2 ? [400, 800, 1200, 1600][n] : tspin === 1 ? [100, 200, 400, 400][n] : [0, 100, 300, 500, 800][n];
+  scoreClear(n: number, tspin: TSpinKind) {
+    const base =
+      tspin === 2 ? [400, 800, 1200, 1600][n] : tspin === 1 ? [100, 200, 400, 400][n] : [0, 100, 300, 500, 800][n];
     const difficult = n === 4 || (tspin && n > 0);
     let pts = base * this.level;
     let b2b = false;
     if (n > 0) {
-      if (difficult && this.b2b) { pts = Math.floor(pts * 1.5); b2b = true; }
+      if (difficult && this.b2b) {
+        pts = Math.floor(pts * 1.5);
+        b2b = true;
+      }
       this.b2b = difficult;
       this.combo++;
       if (this.combo > 0) pts += 50 * this.combo * this.level;
@@ -202,11 +361,14 @@ export class Game {
     if (n > 0) {
       this.lines += n;
       const lv = Math.min(CFG.maxLevel, 1 + Math.floor(this.lines / CFG.linesPerLevel));
-      if (lv > this.level) { this.level = lv; this.emit('levelup', lv); }
+      if (lv > this.level) {
+        this.level = lv;
+        this.emit('levelup', lv);
+      }
     }
   }
 
-  removeRows(rows: number[]) {
+  removeRows(rows: readonly number[]) {
     // rows sıralı (küçükten büyüğe); alttan yukarı sıkıştır
     const rm = new Uint8Array(ROWS);
     for (let i = 0; i < rows.length; i++) rm[rows[i]] = 1;
@@ -226,28 +388,43 @@ export class Game {
     }
     return 0;
   }
-  congestion() { if (this._cv !== this.boardVer) { this._cv = this.boardVer; this._c = Math.min(1, this.stackHeight() / VIS); } return this._c; }
+  congestion() {
+    if (this._cv !== this.boardVer) {
+      this._cv = this.boardVer;
+      this._c = Math.min(1, this.stackHeight() / VIS);
+    }
+    return this._c;
+  }
 
   nonEmptyBottomRows(maxCount: number, fromRow: number) {
     const out: number[] = [];
     for (let y = ROWS - 1; y >= fromRow && out.length < maxCount; y--) {
       let any = false;
-      for (let x = 0; x < COLS; x++) if (this.board[y * COLS + x]) { any = true; break; }
+      for (let x = 0; x < COLS; x++)
+        if (this.board[y * COLS + x]) {
+          any = true;
+          break;
+        }
       if (any) out.push(y);
     }
     return out.sort((a, b) => a - b);
   }
 
-  canCyc() { return this.state === 'play' && !this.cycUsed && this.congestion() >= CFG.powerThreshold; }
-  canSyn() { return this.state === 'play' && this.congestion() >= CFG.powerThreshold; }
+  canCyc() {
+    return this.state === 'play' && !this.cycUsed && this.congestion() >= CFG.powerThreshold;
+  }
+  canSyn() {
+    return this.state === 'play' && this.congestion() >= CFG.powerThreshold;
+  }
 
   useCyc() {
     if (!this.canCyc()) return false;
     this.cycUsed = true;
     const rows = this.nonEmptyBottomRows(10, ROWS - 10);
-    this.state = 'draining'; this.stateT = CFG.drainMs;
+    this.state = 'draining';
+    this.stateT = CFG.drainMs;
     this.pending = { kind: 'cyc', rows };
-    this.emit('clearstart', { rows, kind: 'cyc' });   // NS4-03: powerup_use analitiği app/events.ts içinde bu olaydan gönderilir
+    this.emit('clearstart', { rows, kind: 'cyc' }); // NS4-03: powerup_use analitiği app/events.ts içinde bu olaydan gönderilir
     return true;
   }
 
@@ -255,14 +432,16 @@ export class Game {
     if (!this.canSyn()) return false;
     this.synUses++;
     const rows = this.nonEmptyBottomRows(3, HIDDEN);
-    this.state = 'clearing'; this.stateT = CFG.synClearMs;
+    this.state = 'clearing';
+    this.stateT = CFG.synClearMs;
     this.pending = { kind: 'syn', rows };
-    this.emit('clearstart', { rows, kind: 'syn' });   // NS4-03: powerup_use analitiği app/events.ts içinde bu olaydan gönderilir
+    this.emit('clearstart', { rows, kind: 'syn' }); // NS4-03: powerup_use analitiği app/events.ts içinde bu olaydan gönderilir
     return true;
   }
 
   finishPending() {
-    const p = this.pending!; this.pending = null;   // NS4-02: yalnızca clearing/draining sırasında çağrılır, pending doludur
+    const p = this.pending!;
+    this.pending = null; // NS4-02: yalnızca clearing/draining sırasında çağrılır, pending doludur
     this.state = 'play';
     this.removeRows(p.rows);
     if (p.kind === 'cyc') {
@@ -271,7 +450,8 @@ export class Game {
       this.emit('powerdone', { kind: 'cyc', n: p.rows.length });
     } else if (p.kind === 'syn') {
       this.score += 50 * p.rows.length * this.level;
-      if (this.synUses >= 2) {                              // tekrarlanan kullanım -> rebound
+      if (this.synUses >= 2) {
+        // tekrarlanan kullanım -> rebound
         this.reboundT = CFG.reboundMs * (this.synUses - 1);
         this.garbageT = CFG.reboundGarbageEvery * 0.5;
       }
@@ -300,9 +480,18 @@ export class Game {
     this.fixActiveOverlap();
   }
 
-  gameOver(reason: string) {
+  /**
+   * Durumu yeniden okur. update() içinde addGarbage() durumu 'over' yapabilir; TypeScript yöntem çağrısından
+   * sonra daraltmayı sıfırlamadığı için doğrudan karşılaştırma "imkansız" görünür (NS4-04).
+   */
+  private isOver(): boolean {
+    return this.state === 'over';
+  }
+
+  gameOver(reason: GameOverReason) {
     if (this.state === 'over') return;
-    this.state = 'over'; this.pieceVer++;
+    this.state = 'over';
+    this.pieceVer++;
     this.emit('gameover', reason);
   }
 
@@ -318,7 +507,11 @@ export class Game {
     if (this.reboundT > 0) {
       this.reboundT = Math.max(0, this.reboundT - dt);
       this.garbageT -= dt;
-      if (this.garbageT <= 0) { this.garbageT += CFG.reboundGarbageEvery; this.addGarbage(); if (this.state === 'over') return; }
+      if (this.garbageT <= 0) {
+        this.garbageT += CFG.reboundGarbageEvery;
+        this.addGarbage();
+        if (this.isOver()) return;
+      }
     }
     // yerçekimi
     const interval = this.gravityMs();
@@ -326,18 +519,26 @@ export class Game {
     let guard = 0;
     while (this.gAcc >= interval && guard++ < ROWS) {
       this.gAcc -= interval;
-      if (this.fits(this.type, this.rot, this.x, this.y + 1)) {
-        this.y++; if (this.softDrop) this.score += 1;
+      if (this.fits(this.piece, this.rot, this.x, this.y + 1)) {
+        this.y++;
+        if (this.softDrop) this.score += 1;
         this.lastRot = false;
-        if (this.y > this.lowestY) { this.lowestY = this.y; this.lockResets = 0; }
+        if (this.y > this.lowestY) {
+          this.lowestY = this.y;
+          this.lockResets = 0;
+        }
         this.pieceVer++;
-      } else { this.gAcc = 0; break; }
+      } else {
+        this.gAcc = 0;
+        break;
+      }
     }
     if (guard >= ROWS) this.gAcc = 0;
     // kilit gecikmesi
     if (this.grounded()) {
       this.lockT += dt;
-      if (this.lockT >= CFG.lockDelay || this.lockResets >= CFG.maxLockResets && this.lockT >= CFG.lockDelay * 0.2) this.lock();
+      if (this.lockT >= CFG.lockDelay || (this.lockResets >= CFG.maxLockResets && this.lockT >= CFG.lockDelay * 0.2))
+        this.lock();
     } else this.lockT = 0;
   }
 }

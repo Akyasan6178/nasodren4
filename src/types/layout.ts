@@ -1,10 +1,45 @@
-// computeLayout() sonucunun tipi: Pixi görünümü ve DOM HUD yerleşimi bu veriyi paylaşır.
-export type Rect = { x: number; y: number; w: number; h: number };
-export type Pt = { x: number; y: number };
-
-export interface Layout {
-  W: number; H: number; portrait: boolean; cell: number; mini: number; miniBig: number;
-  board: Rect; meter: Rect; hold: Rect; next: Rect; stats: Rect;
-  btnHold: Rect; btnCyc: Rect; btnSyn: Rect; btnPause: Rect;
-  holdSlot: Pt; nextSlots: Pt[]; compactBtns: boolean; compactStats: boolean;
+// computeLayout() sonucunun tipi: Pixi görünümü ve DOM HUD yerleşimi bu veriyi paylaşır (değerler CSS pikselidir).
+export interface Rect {
+  readonly x: number;
+  readonly y: number;
+  readonly w: number;
+  readonly h: number;
 }
+export interface Pt {
+  readonly x: number;
+  readonly y: number;
+}
+
+interface LayoutBase {
+  /** Sahne genişliği / yüksekliği. */
+  readonly W: number;
+  readonly H: number;
+  /** Tahta hücre boyutu. */
+  readonly cell: number;
+  /** Önizleme hücre boyutu; miniBig ilk "Sıradaki" parçası içindir. */
+  readonly mini: number;
+  readonly miniBig: number;
+  readonly board: Rect;
+  readonly meter: Rect;
+  readonly hold: Rect;
+  readonly next: Rect;
+  readonly stats: Rect;
+  readonly btnHold: Rect;
+  readonly btnCyc: Rect;
+  readonly btnSyn: Rect;
+  readonly btnPause: Rect;
+  readonly holdSlot: Pt;
+  /** Portrede 2, yatayda 5 slot; okuyan kod indeks dışını `undefined` olarak ele almalıdır. */
+  readonly nextSlots: readonly Pt[];
+  readonly compactBtns: boolean;
+  readonly compactStats: boolean;
+}
+
+export interface PortraitLayout extends LayoutBase {
+  readonly portrait: true;
+  readonly compactStats: true;
+}
+export interface LandscapeLayout extends LayoutBase {
+  readonly portrait: false;
+}
+export type Layout = PortraitLayout | LandscapeLayout;

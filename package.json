@@ -8,15 +8,22 @@
     "node": "^20.19.0 || >=22.12.0"
   },
   "scripts": {
+    "postinstall": "npm ci --prefix tools/eslint --no-audit --no-fund",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "node tools/eslint/node_modules/eslint/bin/eslint.js .",
+    "lint:fix": "node tools/eslint/node_modules/eslint/bin/eslint.js . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm run build"
   },
   "dependencies": {
     "pixi.js": "7.4.2"
   },
   "devDependencies": {
+    "prettier": "3.9.9",
     "typescript": "7.0.2",
     "vite": "8.3.4"
   }

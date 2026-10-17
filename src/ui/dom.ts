@@ -1,20 +1,48 @@
 // Küçük DOM yardımcıları (UI framework değildir).
 import type { Rect } from '../types/layout';
 
-/** Typed getElementById; eleman yoksa açık hata verir (bütün id'ler index.html'de mevcut). */
-export const $ = <T extends HTMLElement = HTMLElement>(id: string): T => {
+type ElementType<T extends HTMLElement> = { new (): T; prototype: T };
+
+/**
+ * getElementById + tür doğrulaması. Eleman yoksa veya beklenen türde değilse açık hata verir
+ * (bütün id'ler index.html'de mevcuttur). Tür verilmezse HTMLElement beklenir.
+ */
+export function $(id: string): HTMLElement;
+export function $<T extends HTMLElement>(id: string, type: ElementType<T>): T;
+export function $(id: string, type: ElementType<HTMLElement> = HTMLElement): HTMLElement {
   const el = document.getElementById(id);
   if (!el) throw new Error(`#${id} bulunamadı`);
-  return el as T;
-};
+  if (!(el instanceof type)) throw new Error(`#${id} beklenen türde değil (${type.name})`);
+  return el;
+}
 
 /** Mutlak konumlu bir DOM elemanını layout dikdörtgenine yerleştirir. */
-export function place(el: HTMLElement, r: Rect) { el.style.left = r.x + 'px'; el.style.top = r.y + 'px'; el.style.width = r.w + 'px'; el.style.height = r.h + 'px'; }
+export function place(el: HTMLElement, r: Rect): void {
+  el.style.left = r.x + 'px';
+  el.style.top = r.y + 'px';
+  el.style.width = r.w + 'px';
+  el.style.height = r.h + 'px';
+}
 
 export type Off = () => void;
 
-/** addEventListener + aynı dinleyiciyi kaldıran fonksiyon (dispose için). */
-export function listen<E extends Event>(target: EventTarget, type: string, fn: (e: E) => void): Off {
-  target.addEventListener(type, fn as EventListener);
-  return () => target.removeEventListener(type, fn as EventListener);
+/** addEventListener + aynı dinleyiciyi kaldıran fonksiyon (dispose için). Olay tipi hedefe göre çıkarılır. */
+export function listen<K extends keyof WindowEventMap>(
+  target: Window,
+  type: K,
+  fn: (e: WindowEventMap[K]) => void,
+): Off;
+export function listen<K extends keyof DocumentEventMap>(
+  target: Document,
+  type: K,
+  fn: (e: DocumentEventMap[K]) => void,
+): Off;
+export function listen<K extends keyof HTMLElementEventMap>(
+  target: HTMLElement,
+  type: K,
+  fn: (e: HTMLElementEventMap[K]) => void,
+): Off;
+export function listen(target: EventTarget, type: string, fn: (e: Event) => void): Off {
+  target.addEventListener(type, fn);
+  return () => target.removeEventListener(type, fn);
 }

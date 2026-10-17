@@ -3,12 +3,16 @@
    NS4-03: main.ts'ten birebir taşındı. Kimlikler fn_meta.badges içinde
    saklandığı için değiştirilmemelidir; sıra oyun sonu listesinin sırasıdır.
    ===================================================================== */
-export interface BadgeDef { name: string; desc: string }
+import type { BadgeDefinition, BadgeId } from '../types/content';
 
-export const BADGES: Record<string, BadgeDef> = {
-  ozmotik: { name: 'Ozmotik usta', desc: 'İlk 4 satırlık drenaj' },
-  noro: { name: 'Nörorefleks uzmanı', desc: 'İlk T-spin temizliği' },
-  akis: { name: 'Akış hali', desc: '5\u2019li kombo' },
-  dogal: { name: 'Doğal yol', desc: 'Sentetik açıcısız 5. seviye' },
-  derin: { name: 'Derin nefes', desc: 'Toplam 100 satır drenaj' }
+/** Oyun sonu listesinin sırası (BADGES anahtarlarıyla aynı sıra). */
+export const BADGE_IDS = ['ozmotik', 'noro', 'akis', 'dogal', 'derin'] as const satisfies readonly BadgeId[];
+
+// Record<BadgeId, …>: her kimlik tam bir kez tanımlı olmalı (derleme zamanında denetlenir).
+export const BADGES: Readonly<Record<BadgeId, BadgeDefinition>> = {
+  ozmotik: { id: 'ozmotik', name: 'Ozmotik usta', desc: 'İlk 4 satırlık drenaj' },
+  noro: { id: 'noro', name: 'Nörorefleks uzmanı', desc: 'İlk T-spin temizliği' },
+  akis: { id: 'akis', name: 'Akış hali', desc: '5\u2019li kombo' },
+  dogal: { id: 'dogal', name: 'Doğal yol', desc: 'Sentetik açıcısız 5. seviye' },
+  derin: { id: 'derin', name: 'Derin nefes', desc: 'Toplam 100 satır drenaj' },
 };

@@ -6,15 +6,15 @@ Oyun içi metinler `index.html`, `src/content/` ve `src/ui/` içinde; CTA bağla
 
 ## Teknoloji yığını
 
-| Katman | Kullanılan |
-|---|---|
-| Build / dev server | [Vite](https://vite.dev/) 8.3.4 |
-| Dil | TypeScript 7.0.2 (`strict`) |
-| Render | [PixiJS](https://pixijs.com/) **7.4.2** (npm paketi, sürüm bilerek sabit) |
-| UI | Framework'süz HTML + CSS (DOM overlay'leri) |
-| Ses | Web Audio API (sentezlenmiş; ses dosyası yok) |
-| Kalıcılık | `localStorage` (`fn_settings`, `fn_meta`) |
-| Fontlar | Google Fonts (Fredoka, Nunito) |
+| Katman             | Kullanılan                                                                |
+| ------------------ | ------------------------------------------------------------------------- |
+| Build / dev server | [Vite](https://vite.dev/) 8.3.4                                           |
+| Dil                | TypeScript 7.0.2 (`strict`)                                               |
+| Render             | [PixiJS](https://pixijs.com/) **7.4.2** (npm paketi, sürüm bilerek sabit) |
+| UI                 | Framework'süz HTML + CSS (DOM overlay'leri)                               |
+| Ses                | Web Audio API (sentezlenmiş; ses dosyası yok)                             |
+| Kalıcılık          | `localStorage` (`fn_settings`, `fn_meta`)                                 |
+| Fontlar            | Google Fonts (Fredoka, Nunito)                                            |
 
 Runtime bağımlılığı yalnızca `pixi.js`'tir. Tüm sürümler `package.json` içinde tam sürüm olarak sabitlenmiştir.
 
@@ -29,14 +29,27 @@ Runtime bağımlılığı yalnızca `pixi.js`'tir. Tüm sürümler `package.json
 npm install
 ```
 
+`npm install`, `postinstall` adımında ESLint araç zincirini (`tools/eslint/`) de kurar.
+
 ## Komutlar
 
-| Komut | Açıklama |
-|---|---|
-| `npm run dev` | Vite development server (varsayılan `http://localhost:5173`) |
-| `npm run typecheck` | TypeScript kontrolü (`tsc --noEmit`, çıktı üretmez) |
-| `npm run build` | Production build, çıktı `dist/` klasörüne |
-| `npm run preview` | `dist/` çıktısının yerel önizlemesi (varsayılan `http://localhost:4173`) |
+| Komut               | Açıklama                                                                 |
+| ------------------- | ------------------------------------------------------------------------ |
+| `npm run dev`       | Vite development server (varsayılan `http://localhost:5173`)             |
+| `npm run typecheck` | TypeScript kontrolü (`tsc --noEmit`, çıktı üretmez)                      |
+| `npm run build`     | Production build, çıktı `dist/` klasörüne                                |
+| `npm run preview`   | `dist/` çıktısının yerel önizlemesi (varsayılan `http://localhost:4173`) |
+
+### Kalite kontrolleri
+
+| Komut                  | Açıklama                                                      |
+| ---------------------- | ------------------------------------------------------------- |
+| `npm run typecheck`    | TypeScript (strict + ek katılık seçenekleri)                  |
+| `npm run lint`         | ESLint (type-aware, `typescript-eslint`); `lint:fix` düzeltir |
+| `npm run format:check` | Prettier biçim kontrolü; `format` biçimlendirir               |
+| `npm run check`        | Sırayla typecheck → lint → format:check → build               |
+
+ESLint araç zinciri `tools/eslint/` altında kendi `package.json`'ıyla durur: `typescript-eslint` henüz TypeScript 7'yi desteklemediği için lint parser'ı oradaki TypeScript 6.0.3'ü kullanır; projenin derleyicisi kökteki TypeScript 7.0.2'dir (bkz. `docs/NS4-04-TYPE-SAFETY-AND-QUALITY.md`).
 
 `dist/` ve `node_modules/` Git'e eklenmez.
 
@@ -67,6 +80,9 @@ Development ortamında hata ayıklama için `window.__fn = { game, view, app }` 
 ├── legacy/
 │   └── Ferah Nefes · Sinüs Bulmacası.html   # Orijinal tek dosyalı prototip (değiştirilmedi)
 ├── docs/                 # NS4 görev raporları
+├── tools/eslint/         # ESLint araç zinciri (yalnızca development)
+├── eslint.config.js      # tools/eslint/eslint.config.js'i yeniden export eder
+├── .prettierrc.json      # Prettier ayarları (.prettierignore: legacy, eski raporlar)
 ├── vite.config.ts        # base: './' (bkz. "Dağıtım")
 ├── tsconfig.json
 └── package.json
@@ -91,3 +107,4 @@ Bu dosya production build'e dahil edilmez. PixiJS'i CDN'den yüklediği için te
 - `docs/NS4-02-VITE-MIGRATION.md`: Geçişte alınan kararlar
 - `docs/NS4-02-VERIFICATION.md`: Doğrulama sonuçları
 - `docs/NS4-03-MODULAR-ARCHITECTURE.md`: Modül yapısı, sınırlar ve bağımlılık yönü
+- `docs/NS4-04-TYPE-SAFETY-AND-QUALITY.md`: Tip güvenliği, ESLint/Prettier ve kalite komutları
