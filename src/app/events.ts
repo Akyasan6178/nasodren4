@@ -11,7 +11,6 @@ import { HAPTIC, type Buzz } from '../haptics/haptics';
 import { track } from '../analytics/analytics';
 import { toast, popup } from '../ui/notifications';
 import { award } from '../ui/badges';
-import { showSynUses, showCycUsed } from '../ui/hud';
 
 export interface WireDeps {
   game: Game;
@@ -93,13 +92,12 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
       if (e.rebound) {
         sound.warn();
         popup('Rebound', 'Sık kullanım tıkanıklığı geri getirdi', 'warn');
-        toast('Dekonjestanların uzun süreli kullanımı tıkanıklığın geri dönmesine yol açabilir.', 3600);
+        // NS4-07: uyarı metni oyunda bir kez (rebound'un ilk başladığı 2. kullanımda); popup her seferinde
+        if (game.synUses === 2)
+          toast('Dekonjestanların uzun süreli kullanımı tıkanıklığın geri dönmesine yol açabilir.', 3600);
       } else {
         popup('3 satır açıldı', 'Tekrarlarsan geri tepebilir', 'warn');
       }
-      showSynUses(game.synUses);
-    } else if (e.kind === 'cyc') {
-      showCycUsed();
     }
   });
   game.on('garbage', () => {

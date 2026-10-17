@@ -10,6 +10,14 @@ export function toast(msg: string, ms?: number): void {
   toastTimer = setTimeout(() => t.classList.remove('show'), ms || 2600);
 }
 
+/** NS4-07: görünen toast'u ve bekleyen popup'ları hemen kaldırır (ana menüye dönüş / yeni oyun). */
+export function clearNotifications(): void {
+  clearTimeout(toastTimer);
+  toastTimer = undefined;
+  $('toast').classList.remove('show');
+  $('popups').replaceChildren();
+}
+
 /** <span class="cls">text</span> */
 function span(cls: string, text: string): HTMLSpanElement {
   const s = document.createElement('span');

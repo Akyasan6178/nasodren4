@@ -1,10 +1,11 @@
 /* =====================================================================
    HUD: skor/seviye/drenaj, tıkanıklık metresi, güç butonları, sayaç rozetleri
    ve layout sonrası DOM yerleşimi. Oyun kuralı hesaplamaz; Game'den okur.
-   NS4-03: main.ts'ten taşındı; metinler ve eşikler değişmedi.
+   NS4-03: main.ts'ten taşındı; eşikler değişmedi. NS4-07: güçlendirici durum metinleri ui/powerups.ts'te.
    ===================================================================== */
 import { $, place } from './dom';
-import { toast } from './notifications';
+import { toast, clearNotifications } from './notifications';
+import { CYC_TEXT, SYN_TEXT, cycState, synState, type CycState, type SynState } from './powerups';
 import type { Game } from '../game/Game';
 import type { Layout } from '../types/layout';
 
@@ -19,6 +20,8 @@ interface HudCache {
   mult: number;
   reb: number;
   danger: boolean | null;
+  cycState: CycState | null;
+  synState: SynState | null;
   /** "Sıklamen özütü hazır" toast'u bu oyunda gösterildi mi. */
   cycAnnounced: boolean;
 }
@@ -34,6 +37,8 @@ function initialHud(): HudCache {
     mult: -1,
     reb: -1,
     danger: null,
+    cycState: null,
+    synState: null,
     cycAnnounced: false,
   };
 }
@@ -75,7 +80,6 @@ export function updateHud(g: Game, playing: boolean): void {
     hud.cyc = cyc;
     $('btn-cyc', HTMLButtonElement).disabled = !cyc;
     $('btn-cyc').classList.toggle('ready', cyc);
-    $('cyc-sub').textContent = g.cycUsed ? 'Bu oyunda kullanıldı' : cyc ? 'Hazır' : 'Tıkanıklık %35\u2019te açılır';
     if (cyc && !hud.cycAnnounced) {
       hud.cycAnnounced = true;
       toast('Sinüslerin dolmaya başladı. Sıklamen özütü hazır.');
@@ -85,6 +89,19 @@ export function updateHud(g: Game, playing: boolean): void {
     hud.syn = syn;
     $('btn-syn', HTMLButtonElement).disabled = !syn;
     $('btn-syn').classList.toggle('ready', syn && g.synUses === 0);
+  }
+  // NS4-07: buton durumu (kilitli / hazır / kullanıldı / aktif etki / rebound riski) ve alt metni
+  const cs = cycState(g, playing);
+  if (cs !== hud.cycState) {
+    hud.cycState = cs;
+    $('btn-cyc').dataset['state'] = cs;
+    $('cyc-sub').textContent = CYC_TEXT[cs];
+  }
+  const ss = synState(g, playing);
+  if (ss !== hud.synState) {
+    hud.synState = ss;
+    $('btn-syn').dataset['state'] = ss;
+    $('syn-sub').textContent = SYN_TEXT[ss];
   }
   // NS4-06: oyun bitince (playing=false) ×2 ve Rebound sayaçları gösterilmez; game-over ekranının arkasında
   // donmuş süre kalmaz (NS4-01 Not C). Yeni oyunda resetHud() önbelleği sıfırlar.
@@ -120,15 +137,27 @@ export function forgetDanger(): void {
   hud.danger = null;
 }
 
-// Güç butonu alt etiketleri
-export function resetSynLabel(): void {
-  $('syn-sub').textContent = 'Hızlı ama geri tepebilir';
-}
-export function showSynUses(n: number): void {
-  $('syn-sub').textContent = `Kullanım: ${n}`;
-}
-export function showCycUsed(): void {
-  $('cyc-sub').textContent = 'Bu oyunda kullanıldı';
+/**
+ * NS4-07: oturumun geçici HUD durumlarını temizler (×2 / Rebound rozetleri, tehlike vinyeti, toast, popup)
+ * ve önbelleği sıfırlar; sonraki updateHud her şeyi yeniden yazar. Ana menüye dönüşte ve yeni oyunda çağrılır.
+ */
+export function clearSessionHud(): void {
+  $('badge-mult').style.display = 'none';
+  $('badge-rebound').style.display = 'none';
+  // güçlendirici butonları menünün arkasında eski oyunun durumunu göstermez (yeni oyun başlangıç durumu)
+  for (const [id, sub, text] of [
+    ['btn-cyc', 'cyc-sub', CYC_TEXT.locked],
+    ['btn-syn', 'syn-sub', SYN_TEXT.locked],
+  ] as const) {
+    const b = $(id, HTMLButtonElement);
+    b.disabled = true;
+    b.classList.remove('ready');
+    b.dataset['state'] = 'locked';
+    $(sub).textContent = text;
+  }
+  hideDanger();
+  clearNotifications();
+  resetHud();
 }
 
 /** computeLayout() sonucuna göre DOM HUD elemanlarını yerleştirir (Pixi tarafı View.layout'tadır). */

@@ -74,15 +74,35 @@ export class FakeElement extends FakeEventTarget {
   querySelectorAll(): FakeElement[] {
     return [];
   }
+  parent: FakeElement | null = null;
   append(...els: FakeElement[]): void {
-    this.children.push(...els);
+    for (const el of els) this.appendChild(el);
   }
   appendChild(el: FakeElement): FakeElement {
+    el.parent = this;
     this.children.push(el);
     return el;
   }
   set innerHTML(_v: string) {
+    this.replaceChildren();
+  }
+  // NS4-07: popup kutusu (notifications.ts) için çocuk yönetimi
+  get firstElementChild(): FakeElement | null {
+    return this.children[0] ?? null;
+  }
+  get childElementCount(): number {
+    return this.children.length;
+  }
+  replaceChildren(): void {
+    for (const c of this.children) c.parent = null;
     this.children.length = 0;
+  }
+  remove(): void {
+    const p = this.parent;
+    if (!p) return;
+    const i = p.children.indexOf(this);
+    if (i >= 0) p.children.splice(i, 1);
+    this.parent = null;
   }
   focus(): void {}
   blur(): void {}

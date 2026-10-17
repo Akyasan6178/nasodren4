@@ -13,7 +13,7 @@ import type { GameOverReason } from '../types/game';
 import { HAPTIC, type Buzz } from '../haptics/haptics';
 import { meta, saveMeta } from '../storage/progress';
 import { track } from '../analytics/analytics';
-import { resetHud, hideDanger, forgetDanger, resetSynLabel } from '../ui/hud';
+import { hideDanger, forgetDanger, clearSessionHud } from '../ui/hud';
 import { award, resetNewBadges } from '../ui/badges';
 import { setTip, show, renderGameOver } from '../ui/screens';
 
@@ -43,14 +43,13 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput }: Li
   function start() {
     sound.unlock();
     game.reset();
-    resetHud();
+    clearSessionHud(); // NS4-07: önceki oturumdan kalan rozet/toast/popup temizlenir (önceden yalnızca resetHud)
     resetNewBadges();
     view.overT = -1;
     view.anim = null;
     if (view.wave) view.wave.visible = false;
     for (const f of view.flashes) f.visible = false;
     view.syncAll();
-    resetSynLabel();
     resetInput();
     appState = 'playing';
     show(null);
@@ -83,7 +82,8 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput }: Li
     setTip('tip-start');
     show('scr-start');
     sound.setMusic(false);
-    hideDanger();
+    // NS4-07: yarım oyunun geçici HUD durumu menüde kalmaz (skor bilerek kaydedilmez, NS4-01 Not E)
+    clearSessionHud();
   }
   function showOver(isBest: boolean) {
     renderGameOver({ score: game.score, lines: game.lines, best: meta.best, isBest });
