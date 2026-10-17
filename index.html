@@ -98,17 +98,90 @@
 
       <!-- Start -->
       <section id="scr-start" class="screen on" aria-label="Başlangıç">
+        <!-- NS4-09: dekoratif hava akışı çizgileri (yalnızca CSS transform ile hafif hareket) -->
+        <svg class="airflow" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <path class="flow flow-a" d="M-100 210 C 160 120, 360 300, 620 200 S 1040 110, 1300 220" />
+          <path class="flow flow-b" d="M-100 330 C 200 260, 420 420, 700 320 S 1080 250, 1300 340" />
+          <path class="flow flow-c" d="M-100 560 C 220 500, 440 640, 720 560 S 1100 480, 1300 580" />
+          <path class="flow flow-d" d="M-100 660 C 180 620, 470 720, 760 650 S 1120 600, 1300 680" />
+        </svg>
         <div class="sheet">
-          <svg class="flower" viewBox="0 0 64 64" aria-hidden="true">
-            <g fill="#d6337f">
-              <path d="M32 6c6 6.5 7 13.5 3 20-4-3-7-3-10.5.3C21.6 19 24 12 32 6z" />
-              <path d="M11 17c8.6.6 14.4 5.3 15.2 12.8-5 .6-7.1 2.7-7.8 7.5C11.6 33.4 9.3 26 11 17z" opacity=".82" />
-              <path d="M53 17c1.7 9-.6 16.4-7.4 20.3-.7-4.8-2.8-6.9-7.8-7.5C38.6 22.3 44.4 17.6 53 17z" opacity=".82" />
-            </g>
-            <path d="M32 33c0 9-1.8 16.8-7 24" stroke="#1d9a6c" stroke-width="4.5" fill="none" stroke-linecap="round" />
-            <ellipse cx="40" cy="52" rx="9" ry="4.6" fill="#1d9a6c" transform="rotate(-25 40 52)" />
-          </svg>
-          <h1>Ferah<br />Nefes</h1>
+          <div class="start-brand">
+            <svg class="start-flower" viewBox="0 0 96 112" aria-hidden="true">
+              <defs>
+                <linearGradient id="cy-petal" x1="0" y1="1" x2="0" y2="0">
+                  <stop offset="0" stop-color="#a81f5f" />
+                  <stop offset=".45" stop-color="#d6337f" />
+                  <stop offset="1" stop-color="#f6a3c8" />
+                </linearGradient>
+                <linearGradient id="cy-petal-back" x1="0" y1="1" x2="0" y2="0">
+                  <stop offset="0" stop-color="#8f1a51" />
+                  <stop offset="1" stop-color="#e57aaa" />
+                </linearGradient>
+                <linearGradient id="cy-leaf" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#22a676" />
+                  <stop offset="1" stop-color="#14714f" />
+                </linearGradient>
+              </defs>
+              <!-- tomurcuk ve ince gövdesi -->
+              <path class="stem stem-bud" d="M28 106 C 26 92, 19 82, 18 72" />
+              <path
+                class="petal petal-bud"
+                transform="translate(18 73) rotate(-10) scale(0.5 0.58)"
+                d="M0 0 C -3 -8, -9 -24, -7 -36 C -6 -44, 0 -48, 3 -46 C 8 -40, 8 -24, 3 -10 C 2 -6, 1 -3, 0 0 Z"
+              />
+              <!-- ana gövde: aşağı eğik (nodding) çiçeğe uzanır -->
+              <path class="stem" d="M47 106 C 43 84, 45 64, 54 57 C 57 55, 59 55, 60 56" />
+              <!-- geriye kıvrık, hafif burgulu taç yapraklar (arka → ön) -->
+              <path
+                class="petal petal-back"
+                transform="translate(60 56) rotate(-52) scale(0.78 0.9)"
+                d="M0 0 C -3 -8, -9 -24, -7 -36 C -6 -44, 0 -48, 3 -46 C 8 -40, 8 -24, 3 -10 C 2 -6, 1 -3, 0 0 Z"
+              />
+              <path
+                class="petal petal-back"
+                transform="translate(60 56) rotate(50) scale(0.78 0.9)"
+                d="M0 0 C -3 -8, -9 -24, -7 -36 C -6 -44, 0 -48, 3 -46 C 8 -40, 8 -24, 3 -10 C 2 -6, 1 -3, 0 0 Z"
+              />
+              <path
+                class="petal"
+                transform="translate(60 56) rotate(-25) scale(0.78 1)"
+                d="M0 0 C -3 -8, -9 -24, -7 -36 C -6 -44, 0 -48, 3 -46 C 8 -40, 8 -24, 3 -10 C 2 -6, 1 -3, 0 0 Z"
+              />
+              <path
+                class="petal"
+                transform="translate(60 56) rotate(24) scale(-0.78 1)"
+                d="M0 0 C -3 -8, -9 -24, -7 -36 C -6 -44, 0 -48, 3 -46 C 8 -40, 8 -24, 3 -10 C 2 -6, 1 -3, 0 0 Z"
+              />
+              <path
+                class="petal"
+                transform="translate(60 56) rotate(-1) scale(0.78 1.04)"
+                d="M0 0 C -3 -8, -9 -24, -7 -36 C -6 -44, 0 -48, 3 -46 C 8 -40, 8 -24, 3 -10 C 2 -6, 1 -3, 0 0 Z"
+              />
+              <!-- burun (taç yaprakların birleştiği koyu kısım) -->
+              <ellipse class="nose" cx="60" cy="56.5" rx="4" ry="2.8" />
+              <!-- kalp biçimli, mermer desenli yapraklar -->
+              <g class="leaf">
+                <path
+                  d="M48 104 C 36 106, 18 102, 12 92 C 6 82, 14 74, 24 78 C 26 70, 38 70, 42 80 C 46 88, 49 96, 48 104 Z"
+                />
+                <path
+                  class="marble"
+                  d="M44 100 C 35 101, 22 98, 18 91 C 14 85, 19 80, 26 83 C 28 78, 36 78, 39 85 C 42 90, 44 95, 44 100 Z"
+                />
+              </g>
+              <g class="leaf">
+                <path
+                  d="M52 104 C 62 106, 80 103, 86 94 C 92 84, 84 76, 74 80 C 72 72, 61 72, 57 81 C 53 89, 51 97, 52 104 Z"
+                />
+                <path
+                  class="marble"
+                  d="M56 100 C 65 101, 78 98, 82 92 C 86 86, 81 81, 74 84 C 72 79, 64 79, 61 86 C 58 91, 56 95, 56 100 Z"
+                />
+              </g>
+            </svg>
+            <h1>Ferah<br /><span class="title-accent">Nefes</span></h1>
+          </div>
           <p class="lead">Sinüslerini tıkayan mukus bloklarını yerleştir, satırları boşalt, nefesini aç.</p>
           <button class="btn primary" id="b-play">Oyna</button>
           <div class="row2">

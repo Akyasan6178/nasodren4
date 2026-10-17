@@ -45,6 +45,10 @@
   --color-danger-soft: #ffb1b8;
   --color-danger-bright: #ff5d68;
 
+  /* Doğa: sıklamen gövdesi ve yaprakları (NS4-09 başlangıç ekranı) */
+  --color-leaf: #1d9a6c;
+  --color-leaf-light: #9fe0c4;
+
   /* Buton yüzeyleri ve odak */
   --color-btn-bg: #ffffff;
   --color-btn-text: var(--color-text);
@@ -645,12 +649,6 @@ input:focus-visible {
   margin-top: 14px !important;
   line-height: 1.4 !important;
 }
-.flower {
-  display: block;
-  width: 64px;
-  height: 64px;
-  margin: 0 0 12px;
-}
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -763,8 +761,183 @@ input:focus-visible {
   font-size: 12px;
   font-weight: 700;
 }
+/* ---------- başlangıç ekranı (NS4-09) ----------
+   Ferah hava akışı + sıklamen. Yalnızca #scr-start kapsamında; diğer ekranlar ve HUD değişmez.
+   Hareketler yalnızca transform/opacity kullanır ve reduced motion altında kapanır. */
+#scr-start.screen {
+  overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 12% 8%, color-mix(in srgb, var(--color-fresh) 20%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 92% 96%, color-mix(in srgb, var(--color-cyclamen) 14%, transparent), transparent 70%),
+    color-mix(in srgb, var(--color-bg-top) 80%, transparent);
+}
+#scr-start .airflow {
+  position: absolute;
+  inset: -6%;
+  width: 112%;
+  height: 112%;
+  pointer-events: none;
+  will-change: transform;
+  animation: startAirDrift 28s ease-in-out infinite alternate;
+}
+#scr-start .flow {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+#scr-start .flow-a,
+#scr-start .flow-c {
+  stroke: color-mix(in srgb, var(--color-fresh) 26%, transparent);
+}
+#scr-start .flow-b,
+#scr-start .flow-d {
+  stroke: color-mix(in srgb, var(--color-on-accent) 65%, transparent);
+  stroke-width: 3;
+}
+#scr-start .sheet {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 28px 28px 20px;
+  background: color-mix(in srgb, var(--color-surface-strong) 90%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-on-accent) 75%, transparent);
+  box-shadow:
+    var(--shadow-sheet),
+    inset 0 1px 0 color-mix(in srgb, var(--color-on-accent) 90%, transparent);
+  -webkit-backdrop-filter: blur(var(--blur-surface)) saturate(1.2);
+  backdrop-filter: blur(var(--blur-surface)) saturate(1.2);
+  animation: startSheetIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+#scr-start .start-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+#scr-start .start-flower {
+  display: block;
+  width: 72px;
+  height: 84px;
+  margin: -4px 0 0 -8px;
+  transform-origin: 45% 95%;
+  animation: startFlowerBreathe 7s ease-in-out infinite;
+}
+#scr-start .petal {
+  fill: url(#cy-petal);
+}
+#scr-start .petal-back,
+#scr-start .petal-bud {
+  fill: url(#cy-petal-back);
+}
+#scr-start .nose {
+  fill: color-mix(in srgb, var(--color-cyclamen-strong) 75%, var(--color-text));
+}
+#scr-start .stem {
+  fill: none;
+  stroke: var(--color-leaf);
+  stroke-width: 3.2;
+  stroke-linecap: round;
+}
+#scr-start .stem-bud {
+  stroke-width: 2.2;
+}
+#scr-start .leaf path {
+  fill: url(#cy-leaf);
+}
+#scr-start .leaf .marble {
+  fill: var(--color-leaf-light);
+  opacity: 0.2;
+}
+#scr-start h1 {
+  font-size: 52px;
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: var(--color-text);
+}
+#scr-start .title-accent {
+  color: var(--color-cyclamen-strong);
+}
+#scr-start .lead {
+  max-width: 36ch;
+  margin-bottom: 20px;
+}
+#scr-start .btn.primary {
+  min-height: 56px;
+  font-size: 20px;
+  letter-spacing: 0.01em;
+  background: linear-gradient(135deg, var(--color-cyclamen) 0%, var(--color-cyclamen-strong) 100%);
+  box-shadow:
+    0 14px 26px -14px color-mix(in srgb, var(--color-cyclamen) 80%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--color-on-accent) 28%, transparent);
+}
+#scr-start .btn.ghost {
+  background: color-mix(in srgb, var(--color-btn-bg) 72%, transparent);
+  border-color: var(--color-border-strong);
+}
+@media (hover: hover) {
+  #scr-start .btn.primary:hover {
+    transform: translateY(-1px);
+  }
+  #scr-start .btn.ghost:hover {
+    border-color: var(--color-fresh);
+  }
+}
+#scr-start .tip {
+  margin-top: 18px;
+  border-left-width: 3px;
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  background: color-mix(in srgb, var(--color-cyclamen) 7%, transparent);
+}
+#scr-start .fine {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+}
+/* Büyük ekranlar: kart ve başlık bir kademe büyür (yerleşim aynı) */
+@media (min-width: 1600px) and (min-height: 900px) {
+  #scr-start .sheet {
+    width: 480px;
+    padding: 32px 32px 22px;
+  }
+  #scr-start h1 {
+    font-size: 58px;
+  }
+  #scr-start .start-flower {
+    width: 80px;
+    height: 94px;
+  }
+}
+@keyframes startSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes startAirDrift {
+  from {
+    transform: translate3d(-1.5%, 0.8%, 0);
+  }
+  to {
+    transform: translate3d(1.5%, -0.8%, 0);
+  }
+}
+@keyframes startFlowerBreathe {
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(-2deg) scale(1.03);
+  }
+}
 /* NS4-06: kısa yatay ekranlar (ör. 844×390). Başlangıç kartı sıkıştırılır; Oyna, Nasıl oynanır ve Ayarlar
-   kaydırmadan görünür, ipucu ve uyarı metni kart içinde kaydırılarak okunur (NS4-01 Not D). */
+   kaydırmadan görünür, ipucu ve uyarı metni kart içinde kaydırılarak okunur (NS4-01 Not D).
+   NS4-09: çiçek ve başlık yan yana dizilir. */
 @media (orientation: landscape) and (max-height: 480px) {
   #scr-start.screen {
     padding: 10px;
@@ -772,10 +945,16 @@ input:focus-visible {
   #scr-start .sheet {
     padding: 16px 22px 14px;
   }
-  #scr-start .flower {
-    width: 40px;
-    height: 40px;
-    margin-bottom: 6px;
+  #scr-start .start-brand {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  #scr-start .start-flower {
+    width: 44px;
+    height: 52px;
+    margin: 0;
   }
   #scr-start h1 {
     font-size: 34px;
@@ -790,6 +969,12 @@ input:focus-visible {
   }
   .gbtn.ready,
   #danger.on {
+    animation: none;
+  }
+  /* NS4-09: başlangıç ekranı atmosferi ve giriş hareketi */
+  #scr-start .airflow,
+  #scr-start .sheet,
+  #scr-start .start-flower {
     animation: none;
   }
   #danger.on {
