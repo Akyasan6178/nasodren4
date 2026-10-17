@@ -100,7 +100,7 @@ Bu dosya production build'e dahil edilmez. PixiJS'i CDN'den yüklediği için te
 - **Yerel yüksek skor** mevcuttur (`fn_meta.best`).
 - **Global yüksek skor tablosu henüz kurulmadı.** Ayrı bir görevde ele alınacak; şu an backend veya API yok.
 - **Nihai dağıtım (hosting) hedefi henüz belirlenmedi.** `vite.config.ts` içinde `base: './'` kullanılıyor; bu sayede `dist/` hem alan adı kökünde hem bir alt dizinde çalışır. Hosting seçildiğinde bu karar yeniden doğrulanmalıdır.
-- Mevcut açık/koyu tema CSS'i geçiş sırasında davranış kaybı olmasın diye korunuyor. Nihai üründe tek sabit tema olacak; bu değişiklik ayrı bir tasarım görevidir.
+- Tek, sabit görsel tema kullanılır; sistem açık/koyu tercihi görünümü değiştirmez. Tasarım tokenları `src/styles.css` başındadır (bkz. `docs/NS4-08-SINGLE-THEME-DESIGN-SYSTEM.md`).
 
 ## Dokümantasyon
 
