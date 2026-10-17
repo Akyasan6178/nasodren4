@@ -2,8 +2,8 @@
    STORAGE: localStorage sarmalayıcısı ('fn_' önekli JSON)
    Erişim engellenirse veya JSON bozuksa sessizce varsayılana düşer
    (bilinçli fallback; NS4-01 davranışı).
-   NS4-04: get() artık `unknown` döndürür. Değer DOĞRULANMAZ; tipini kabul
-   eden çağıran taraftır (bkz. storage/settings.ts, storage/progress.ts).
+   NS4-04: get() `unknown` döndürür; değeri doğrulamak çağıranın işidir.
+   NS4-06: storage/settings.ts ve storage/progress.ts kayıtları yüklerken doğrular.
    ===================================================================== */
 export const store = {
   /** fn_<k> değerinin JSON.parse sonucu; anahtar yoksa veya okuma/parse başarısızsa `fallback`. */

@@ -21,6 +21,8 @@ export interface InputDeps {
   readonly getCell: () => number;
   readonly pause: () => void;
   readonly resume: () => void;
+  /** Açık alt ekranı (Ayarlar, Nasıl oynanır) kapatır; kapattıysa true döner. */
+  readonly closeSub: () => boolean;
   readonly unlockAudio: () => void;
 }
 
@@ -109,8 +111,11 @@ export class InputController {
       listen(window, 'keydown', (e) => {
         const appState = this.deps.getState(); // işleyici içinde durum değiştiren çağrılardan önce okunur
         if (KEYS.has(e.key) && appState === 'playing') e.preventDefault();
+        // NS4-06: alt ekran açıksa Escape önce onu kapatır (pause → Ayarlar → Escape pause ekranına döner);
+        // alt ekran açıkken P oyunu sürdürmez. Pause ekranındaki Escape/P davranışı değişmedi.
+        if (e.key === 'Escape' && this.deps.closeSub()) return;
         if (appState === 'paused' && (e.key === 'Escape' || e.key === 'p' || e.key === 'P')) {
-          this.deps.resume();
+          if (document.querySelector('.screen.on')?.id === 'scr-pause') this.deps.resume();
           return;
         }
         if (appState !== 'playing') return;

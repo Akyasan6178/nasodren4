@@ -1,5 +1,5 @@
 // Rozet kazanma (yerel ilerlemeye yazar, toast + analitik) ve oyun sonu rozet listesi.
-// NS4-03: main.ts'ten taşındı. meta.badges doğrulaması (NS4-01 #6 / F) bilerek eklenmedi.
+// NS4-03: main.ts'ten taşındı. NS4-06: meta.badges yüklemede doğrulanır (storage/progress.ts).
 import { BADGES, BADGE_IDS } from '../content/badges';
 import { meta, saveMeta } from '../storage/progress';
 import { track } from '../analytics/analytics';

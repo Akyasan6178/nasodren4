@@ -106,12 +106,37 @@ describe('combo ve back-to-back', () => {
     setupWell(g, 1);
     dropVerticalI(g);
     finishClear(g);
-    // Mevcut davranış: difficult ifadesi (n === 4 || (tspin && n > 0)) T-spin'siz tekli için 0 üretir.
-    expect(g.b2b).toBe(0);
+    expect(g.b2b).toBe(false); // NS4-06: 0 değil, gerçek boolean
     expect(log.payloads('scored').map((e) => [e.b2b, e.pts])).toEqual([
       [false, 800],
       [true, 1250], // floor(800 × 1.5) + combo 1 × 50
       [false, 200], // 100 + combo 2 × 50
+    ]);
+  });
+});
+
+describe('back-to-back değeri', () => {
+  it('her temizleme türünden sonra boolean kalır; puanlar değişmez', () => {
+    const g = createGame(1);
+    const log = recordEvents(g, ['scored']);
+    const types: string[] = [];
+    for (const rows of [1, 4, 4, 2, 1]) {
+      setupWell(g, rows);
+      dropVerticalI(g);
+      types.push(typeof g.b2b);
+      finishClear(g);
+    }
+    clearBoard(g);
+    placePiece(g, PIECE.O, 0, 0, 1);
+    g.hardDrop(); // temizlemesiz kilit b2b'ye dokunmaz
+    types.push(typeof g.b2b);
+    expect(types).toEqual(new Array<string>(6).fill('boolean'));
+    expect(log.payloads('scored').map((e) => [e.b2b, e.pts])).toEqual([
+      [false, 100],
+      [false, 850], // 800 + combo 1 × 50
+      [true, 1300], // floor(800 × 1.5) + combo 2 × 50
+      [false, 450], // 300 + combo 3 × 50
+      [false, 600], // seviye 2: 100 × 2 + combo 4 × 50 × 2
     ]);
   });
 });

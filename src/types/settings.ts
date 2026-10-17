@@ -1,4 +1,6 @@
 // localStorage şemaları. Alan adları fn_settings / fn_meta JSON'unun parçasıdır; değiştirilmemelidir.
+// NS4-06: kayıtlı değerler yüklenirken storage/settings.ts ve storage/progress.ts içinde doğrulanır.
+import type { BadgeId } from './content';
 
 /** fn_settings */
 export interface Settings {
@@ -18,10 +20,10 @@ export type NumericSettingKey = 'das' | 'arr';
 
 /**
  * fn_meta: yalnızca cihazdaki yerel ilerleme (yerel rekor, toplam drenaj, rozetler).
- * `badges` saklanan ham dizedir (doğrulanmaz); yeni rozetler yalnızca BadgeId olarak eklenir.
+ * `badges` yalnızca bilinen, tekrarsız rozet kimlikleridir (yüklemede doğrulanır).
  */
 export interface Meta {
   best: number;
   totalLines: number;
-  badges: string[];
+  badges: BadgeId[];
 }

@@ -1,5 +1,5 @@
 // Overlay ekranları: göster/gizle, alt ekran yığını, ipucu kutuları, oyun sonu ekranı.
-// NS4-03: main.ts'ten taşındı. NS4-01 Not B (Ayarlar'da Esc) ve Not D (844×390 kart) bilerek korunur.
+// NS4-03: main.ts'ten taşındı. NS4-06: Escape alt ekranı closeSub() ile kapatır (NS4-01 Not B düzeltildi).
 import { TIPS } from '../content/tips';
 import { $ } from './dom';
 import { fmt } from './hud';
@@ -42,12 +42,24 @@ export function openSub(id: ScreenId): void {
   screenStack.push(document.querySelector('.screen.on')?.id);
   show(id);
 }
+/** Yığından önceki ekrana döner ([data-back] butonları ve Escape). */
+function back(): void {
+  show(screenStack.pop() || 'scr-start');
+}
 export function bindBackButtons(): void {
-  document.querySelectorAll('[data-back]').forEach((b) =>
-    b.addEventListener('click', () => {
-      show(screenStack.pop() || 'scr-start');
-    }),
-  );
+  document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', back));
+}
+/** Alt ekranlar: openSub() ile açılır, geri dönüşte açıldıkları ekrana döner. */
+const SUB_SCREENS: readonly string[] = ['scr-how', 'scr-set'] satisfies readonly ScreenId[];
+/**
+ * NS4-06: Açık bir alt ekran varsa geri butonu gibi kapatır ve true döner (Escape için).
+ * Pause'dan açılan Ayarlar böylece önce pause ekranına döner (NS4-01 Not B).
+ */
+export function closeSub(): boolean {
+  const id = document.querySelector('.screen.on')?.id;
+  if (id === undefined || !SUB_SCREENS.includes(id)) return false;
+  back();
+  return true;
 }
 
 export interface GameOverView {

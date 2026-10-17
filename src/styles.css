@@ -687,6 +687,27 @@ input:focus-visible {
   font-size: 12px;
   font-weight: 700;
 }
+/* NS4-06: kısa yatay ekranlar (ör. 844×390). Başlangıç kartı sıkıştırılır; Oyna, Nasıl oynanır ve Ayarlar
+   kaydırmadan görünür, ipucu ve uyarı metni kart içinde kaydırılarak okunur (NS4-01 Not D). */
+@media (orientation: landscape) and (max-height: 480px) {
+  #scr-start.screen {
+    padding: 10px;
+  }
+  #scr-start .sheet {
+    padding: 16px 22px 14px;
+  }
+  #scr-start .flower {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 6px;
+  }
+  #scr-start h1 {
+    font-size: 34px;
+  }
+  #scr-start .lead {
+    margin-bottom: 10px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .pop {
     animation-duration: 0.01s;

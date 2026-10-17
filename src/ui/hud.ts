@@ -61,11 +61,13 @@ export function updateHud(g: Game, playing: boolean): void {
   if (cg !== hud.cong) {
     hud.cong = cg;
     $('meter-cover').style.transform = `scaleY(${1 - cg})`;
-    const d = cg >= 0.7 && playing;
-    if (d !== hud.danger) {
-      hud.danger = d;
-      $('danger').classList.toggle('on', d);
-    }
+  }
+  // NS4-06: vinyet her karede değerlendirilir (önceden yalnızca tıkanıklık değişince). pause() önbelleği
+  // sıfırladığı için resume sonrası ilk karede mevcut tıkanıklığa göre yeniden açılır (NS4-01 Not A).
+  const d = cg >= 0.7 && playing;
+  if (d !== hud.danger) {
+    hud.danger = d;
+    $('danger').classList.toggle('on', d);
   }
   const cyc = g.canCyc(),
     syn = g.canSyn();
@@ -84,14 +86,16 @@ export function updateHud(g: Game, playing: boolean): void {
     $('btn-syn', HTMLButtonElement).disabled = !syn;
     $('btn-syn').classList.toggle('ready', syn && g.synUses === 0);
   }
-  const m = Math.ceil(g.multT / 1000);
+  // NS4-06: oyun bitince (playing=false) ×2 ve Rebound sayaçları gösterilmez; game-over ekranının arkasında
+  // donmuş süre kalmaz (NS4-01 Not C). Yeni oyunda resetHud() önbelleği sıfırlar.
+  const m = playing ? Math.ceil(g.multT / 1000) : 0;
   if (m !== hud.mult) {
     hud.mult = m;
     const el = $('badge-mult');
     el.style.display = m > 0 ? 'block' : 'none';
     if (m > 0) el.textContent = `Ferah nefes ×2 · ${m} sn`;
   }
-  const rb = Math.ceil(g.reboundT / 1000);
+  const rb = playing ? Math.ceil(g.reboundT / 1000) : 0;
   if (rb !== hud.reb) {
     hud.reb = rb;
     const el = $('badge-rebound');
@@ -111,7 +115,7 @@ export function resetHud(): void {
 export function hideDanger(): void {
   $('danger').classList.remove('on');
 }
-/** pause() tarafından çağrılır (vinyet önbelleğini sıfırlar; NS4-01 Not A davranışı bilerek korunur). */
+/** pause() tarafından çağrılır: vinyet önbelleğini sıfırlar; resume sonrası ilk updateHud vinyeti yeniden hesaplar. */
 export function forgetDanger(): void {
   hud.danger = null;
 }

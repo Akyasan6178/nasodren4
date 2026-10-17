@@ -36,7 +36,7 @@ export class Game {
   lines!: number;
   level!: number;
   combo!: number;
-  b2b!: boolean | 0;
+  b2b!: boolean;
   maxCombo!: number;
   tetrises!: number;
   tspins!: number;
@@ -340,7 +340,8 @@ export class Game {
   scoreClear(n: number, tspin: TSpinKind) {
     const base =
       tspin === 2 ? [400, 800, 1200, 1600][n] : tspin === 1 ? [100, 200, 400, 400][n] : [0, 100, 300, 500, 800][n];
-    const difficult = n === 4 || (tspin && n > 0);
+    // NS4-06: tspin !== 0 ile ifade her zaman boolean (önceden T-spin'siz temizlemede 0 üretiyordu; doğruluk değeri aynı)
+    const difficult = n === 4 || (tspin !== 0 && n > 0);
     let pts = base * this.level;
     let b2b = false;
     if (n > 0) {

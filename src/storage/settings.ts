@@ -8,15 +8,6 @@ export function createDefaultSettings(): Settings {
   return { sound: true, music: true, haptics: true, ghost: true, fps: false, das: 167, arr: 33 };
 }
 
-// DOĞRULANMAMIŞ JSON SINIRI (teknik borç → NS4-06): store.get() `unknown` döndürür. Object.assign,
-// varsayılanların üzerine kayıtlı nesnenin bütün alanlarını kopyalar ve sonuç `Settings` kabul edilir.
-// Alan tipleri veya fazladan alanlar denetlenmez; davranış NS4-01 referansıyla aynıdır.
-export const settings: Settings = Object.assign(createDefaultSettings(), store.get('settings', {}));
-
-export function saveSettings(): void {
-  store.set('settings', settings);
-}
-
 const BOOLEAN_KEYS: readonly string[] = [
   'sound',
   'music',
@@ -25,6 +16,51 @@ const BOOLEAN_KEYS: readonly string[] = [
   'fps',
 ] satisfies readonly BooleanSettingKey[];
 const NUMERIC_KEYS: readonly string[] = ['das', 'arr'] satisfies readonly NumericSettingKey[];
+
+/** Ayarlar ekranındaki kaydırıcıların sınırları (index.html: min/max, step 1). */
+export const NUMERIC_RANGES: Readonly<Record<NumericSettingKey, readonly [min: number, max: number]>> = {
+  das: [50, 300],
+  arr: [0, 100],
+};
+
+/**
+ * NS4-06: fn_settings doğrulaması. Kayıt nesne değilse varsayılanlar döner. Boolean alanlar yalnızca gerçek
+ * boolean ise alınır. DAS/ARR sonlu sayı değilse varsayılana döner; sonlu ama arayüz aralığı dışındaysa
+ * sınıra çekilir ve tamsayıya yuvarlanır (kaydırıcı adımı 1). Fazladan alanlar taşınmaz; alan sırası
+ * varsayılanlarınkiyle aynıdır. Geçerli kayıt aynı değerlerle döner.
+ */
+export function normalizeSettings(raw: unknown): Settings {
+  const s = createDefaultSettings();
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return s;
+  const r: Partial<Record<keyof Settings, unknown>> = raw;
+  for (const k of ['sound', 'music', 'haptics', 'ghost', 'fps'] as const) {
+    const v = r[k];
+    if (typeof v === 'boolean') s[k] = v;
+  }
+  for (const k of ['das', 'arr'] as const) {
+    const v = r[k];
+    const [min, max] = NUMERIC_RANGES[k];
+    if (typeof v === 'number' && Number.isFinite(v)) s[k] = Math.min(max, Math.max(min, Math.round(v)));
+  }
+  return s;
+}
+
+/**
+ * Kayıtlı değeri okur ve doğrular. Okunan kayıt normalize edilince değiştiyse düzeltilmiş hâli hemen geri
+ * yazılır; geçerli kayıtlar ve kayıt yokken depoya dokunulmaz.
+ */
+function loadSettings(): Settings {
+  const raw = store.get('settings', null);
+  const s = normalizeSettings(raw);
+  if (raw !== null && JSON.stringify(raw) !== JSON.stringify(s)) store.set('settings', s);
+  return s;
+}
+
+export const settings: Settings = loadSettings();
+
+export function saveSettings(): void {
+  store.set('settings', settings);
+}
 
 /** DOM `data-k` değerleri gibi dış kaynaklı anahtarlar için tip koruyucuları. */
 export function isBooleanSettingKey(k: string | undefined): k is BooleanSettingKey {

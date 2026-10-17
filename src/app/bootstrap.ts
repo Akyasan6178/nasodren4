@@ -18,7 +18,7 @@ import { track } from '../analytics/analytics';
 import { ctaUrl } from '../analytics/cta';
 import { $ } from '../ui/dom';
 import { updateHud, applyHudLayout } from '../ui/hud';
-import { initTips, setTip, openSub, bindBackButtons } from '../ui/screens';
+import { initTips, setTip, openSub, bindBackButtons, closeSub } from '../ui/screens';
 import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
@@ -79,6 +79,7 @@ export function bootstrap(): void {
     getCell: () => L!.cell, // pointer olayları yalnızca oynarken, ilk layout'tan sonra gelir
     pause: lifecycle.pause,
     resume: lifecycle.resume,
+    closeSub,
     unlockAudio: () => sound.unlock(),
   });
 
