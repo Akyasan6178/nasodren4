@@ -14,8 +14,8 @@ export default tseslint.config(
     ignores: ['dist/**', 'node_modules/**', 'tools/eslint/node_modules/**', 'legacy/**'],
   },
   {
-    // Uygulama kaynağı: tarayıcı ortamı, type-aware kurallar
-    files: ['src/**/*.ts', 'vite.config.ts'],
+    // Uygulama kaynağı ve testler: type-aware kurallar
+    files: ['src/**/*.ts', 'tests/**/*.ts', 'vite.config.ts', 'vitest.config.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       globals: globals.browser,

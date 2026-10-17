@@ -47,7 +47,8 @@ npm install
 | `npm run typecheck`    | TypeScript (strict + ek katılık seçenekleri)                  |
 | `npm run lint`         | ESLint (type-aware, `typescript-eslint`); `lint:fix` düzeltir |
 | `npm run format:check` | Prettier biçim kontrolü; `format` biçimlendirir               |
-| `npm run check`        | Sırayla typecheck → lint → format:check → build               |
+| `npm test`             | Oyun motoru testleri (Vitest, tek sefer); `test:watch` izler  |
+| `npm run check`        | Sırayla typecheck → lint → format:check → test → build        |
 
 ESLint araç zinciri `tools/eslint/` altında kendi `package.json`'ıyla durur: `typescript-eslint` henüz TypeScript 7'yi desteklemediği için lint parser'ı oradaki TypeScript 6.0.3'ü kullanır; projenin derleyicisi kökteki TypeScript 7.0.2'dir (bkz. `docs/NS4-04-TYPE-SAFETY-AND-QUALITY.md`).
 

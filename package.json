@@ -17,7 +17,9 @@
     "lint:fix": "node tools/eslint/node_modules/eslint/bin/eslint.js . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build"
   },
   "dependencies": {
     "pixi.js": "7.4.2"
@@ -25,6 +27,7 @@
   "devDependencies": {
     "prettier": "3.9.9",
     "typescript": "7.0.2",
-    "vite": "8.3.4"
+    "vite": "8.3.4",
+    "vitest": "4.1.11"
   }
 }
