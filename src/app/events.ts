@@ -11,6 +11,7 @@ import { HAPTIC, type Buzz } from '../haptics/haptics';
 import { track } from '../analytics/analytics';
 import { toast, popup } from '../ui/notifications';
 import { award } from '../ui/badges';
+import { CFG } from '../config/gameConfig';
 
 export interface WireDeps {
   game: Game;
@@ -54,6 +55,7 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
   });
   game.on('clearend', () => view.onClearEnd());
   game.on('scored', (e) => {
+    view.onScored(e); // NS4-15: temizleme dili (Ozmotik / Nörorefleks); Game bunu clearstart'tan önce yayar
     sound.clear(e.n, e.tspin);
     if (e.n) buzz(HAPTIC.clear(e.n));
     const names = ['', 'Tek', 'Çift', 'Üçlü', 'TETRİS'];
@@ -88,8 +90,11 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
     if (lv >= 5 && game.synUses === 0) award('dogal');
   });
   game.on('powerdone', (e) => {
+    // NS4-15: sıklamen tek kullanımlık; ×2 başlangıcı açıkça bildirilir (görsel vuruş GameView.cycBoost)
+    if (e.kind === 'cyc') popup('Puan ×2', `${Math.round(CFG.cycMultMs / 1000)} sn · sıklamen tek kullanımlık`, 'cyc');
     if (e.kind === 'syn') {
       if (e.rebound) {
+        view.onRebound();
         sound.warn();
         popup('Rebound', 'Sık kullanım tıkanıklığı geri getirdi', 'warn');
         // NS4-07: uyarı metni oyunda bir kez (rebound'un ilk başladığı 2. kullanımda); popup her seferinde
@@ -101,7 +106,7 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
     }
   });
   game.on('garbage', () => {
-    view.shake = 0.35;
+    view.onGarbage(); // NS4-15: önceden yalnızca view.shake = 0.35
     sound.warn();
     buzz(30);
   });

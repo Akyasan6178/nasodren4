@@ -48,10 +48,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput, tuto
     game.reset();
     clearSessionHud(); // NS4-07: önceki oturumdan kalan rozet/toast/popup temizlenir (önceden yalnızca resetHud)
     resetNewBadges();
-    view.overT = -1;
-    view.anim = null;
-    if (view.wave) view.wave.visible = false;
-    for (const f of view.flashes) f.visible = false;
+    view.resetFx(); // NS4-15: overT, anim, dalga ve flaşlar ile yeni efekt katmanları ve parçacıklar
     view.syncAll();
     resetInput();
     appState = 'playing';

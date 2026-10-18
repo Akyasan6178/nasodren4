@@ -27,6 +27,7 @@ import { initTips, setTip, openSub, bindBackButtons, closeSub, initScreens } fro
 import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
+import { watchReducedMotion } from './motion';
 
 export function bootstrap(): void {
   const stageEl = $('stage');
@@ -48,6 +49,10 @@ export function bootstrap(): void {
   // Not: ticker.maxFPS bilerek ayarlanmıyor; Pixi'nin kare atlama mantığı 60Hz ekranda
   // rAF jitter'ı yüzünden kare düşürebiliyor. Mantık zaman tabanlı, 120Hz'de de doğru çalışır.
   const view = new View(app, game, settings);
+  // NS4-15: hareketi azalt tercihi Pixi efektlerine de uygulanır (sarsıntı/parçacık azalır, süreler aynı)
+  watchReducedMotion((reduced) => {
+    view.reducedMotion = reduced;
+  });
   let L: Layout | null = null;
 
   function doLayout() {
@@ -164,6 +169,10 @@ export function bootstrap(): void {
   void fontsReady.then(queueLayout);
   // hata ayıklama (yalnızca development; production build'de global debug erişimi yok)
   if (import.meta.env.DEV) {
-    window.__fn = { game, view, app };
+    const fn = (window.__fn = { game, view, app });
+    // NS4-15: efekt gösterimi (__fn.fx); dinamik import production paketinde yer almaz
+    void import('../dev/fxDemo').then(({ createFxDemo }) => {
+      window.__fn = { ...fn, fx: createFxDemo(view, game) };
+    });
   }
 }
