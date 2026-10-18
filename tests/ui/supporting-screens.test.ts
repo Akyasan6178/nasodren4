@@ -166,18 +166,19 @@ describe('Ayarlar', () => {
     expect(groups[2]?.cls).toContain('set-advanced');
   });
   it('kontroller yerel (klavyeyle kullanılabilir) giriş öğeleri ve etiket içinde; sınırlar değişmedi', () => {
-    const inputs = [...set.matchAll(/<input ([^>]+?)\s*\/?>/g)].map((m) => m[1] ?? '');
+    const inputs = [...set.matchAll(/<input\s([^>]+?)\s*\/?>/g)].map((m) => (m[1] ?? '').replace(/\s+/g, ' ').trim());
+    // NS4-17: erişilebilir ad/açıklama bağları ve ilk odak (data-focus) eklendi; tür, anahtar ve sınırlar aynı
     expect(inputs).toEqual([
-      'type="checkbox" data-k="sound"',
+      'type="checkbox" data-k="sound" data-focus',
       'type="checkbox" data-k="music"',
-      'type="checkbox" data-k="haptics"',
+      'type="checkbox" data-k="haptics" aria-labelledby="lbl-haptics" aria-describedby="hap-note"',
       'type="checkbox" data-k="ghost"',
-      'type="range" min="50" max="300" step="1" data-k="das"',
-      'type="range" min="0" max="100" step="1" data-k="arr"',
-      'type="checkbox" data-k="fps"',
+      'type="range" min="50" max="300" step="1" data-k="das" aria-labelledby="lbl-das" aria-describedby="desc-das"',
+      'type="range" min="0" max="100" step="1" data-k="arr" aria-labelledby="lbl-arr" aria-describedby="desc-arr"',
+      'type="checkbox" data-k="fps" aria-labelledby="lbl-fps" aria-describedby="desc-fps"',
     ]);
     // her giriş kendi <label class="set …"> öğesinin içinde (etikete tıklama/odak)
-    for (const m of set.matchAll(/<label class="set[^"]*"([\s\S]*?)<\/label>/g)) expect(m[1]).toMatch(/<input /);
+    for (const m of set.matchAll(/<label class="set[^"]*"([\s\S]*?)<\/label>/g)) expect(m[1]).toMatch(/<input\s/);
     expect([...set.matchAll(/<label class="set/g)]).toHaveLength(7);
     expect(set).toMatch(/Basılı tutunca kayma gecikmesi: <b id="v-das"><\/b> ms/);
     expect(set).toMatch(/Kayma tekrar hızı: <b id="v-arr"><\/b> ms/);
@@ -323,7 +324,7 @@ describe('rozet durumları', () => {
     const { renderBadges } = await import('../../src/ui/badges');
     const bx = dom.el('o-badges');
     renderBadges(bx as unknown as HTMLElement, ['ozmotik', 'akis'], ['akis']);
-    const kids = bx.children.map((c) => [c.textContent, c.className, c.dataset['state']]);
+    const kids = bx.children.map((c) => [c.children[0]?.textContent, c.className, c.dataset['state']]);
     expect(kids).toEqual([
       ['Ozmotik usta', 'earned', 'earned'],
       ['Nörorefleks uzmanı', 'locked', 'locked'],
@@ -334,12 +335,12 @@ describe('rozet durumları', () => {
     expect(BADGE_IDS).toHaveLength(5);
   });
   it('kilitli rozet kesik kenarlı ve soluk; kazanılan dolu ve onay işaretli; yeni ayrıca vurgulu', () => {
-    expect(rule('.badges span.locked')).toMatch(/outline: 1.5px dashed var\(--color-border-strong\)/);
-    expect(rule('.badges span.locked')).toMatch(/color: var\(--color-text-muted\)/);
-    expect(rule('.badges span')).toMatch(/background: var\(--color-cyclamen-soft\)/);
-    expect(rule('.badges span::before')).toMatch(/url\("data:image\/svg\+xml/);
-    expect(rule('.badges span.locked::before')).toMatch(/background: transparent/);
-    expect(rule('.badges span.new')).toMatch(/background: var\(--color-cyclamen\)/);
+    expect(rule('.badges > span.locked')).toMatch(/outline: 1.5px dashed var\(--color-border-strong\)/);
+    expect(rule('.badges > span.locked')).toMatch(/color: var\(--color-text-muted\)/);
+    expect(rule('.badges > span')).toMatch(/background: var\(--color-cyclamen-soft\)/);
+    expect(rule('.badges > span::before')).toMatch(/url\("data:image\/svg\+xml/);
+    expect(rule('.badges > span.locked::before')).toMatch(/background: transparent/);
+    expect(rule('.badges > span.new')).toMatch(/background: var\(--color-cyclamen\)/);
   });
 });
 

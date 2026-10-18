@@ -27,6 +27,8 @@ export function bindSettingsPanel({ settings, save, onAudioChange, canVibrate }:
     const lbl = () => {
       $('v-das').textContent = String(settings.das);
       $('v-arr').textContent = String(settings.arr);
+      // NS4-17: kaydırıcı değeri ekran okuyucuda birimiyle okunur (görünür metin aynı)
+      if (isNum) inp.setAttribute('aria-valuetext', `${settings[k]} ms`);
     };
     lbl();
     inp.addEventListener('input', () => {

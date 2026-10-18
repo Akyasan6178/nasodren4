@@ -24,15 +24,23 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
   game.on('move', () => sound.move());
   game.on('rotate', () => sound.rotate());
   game.on('hold', () => sound.hold());
-  game.on('lock', (cells) => {
-    view.onLock(cells);
-    sound.lock();
-    buzz(HAPTIC.lock);
-  });
+  // NS4-17: Game hard drop'ta önce 'harddrop', hemen ardından (aynı çağrıda) 'lock' yayar. Hard drop kendi daha
+  // güçlü sesi ve titreşimiyle duyulur; oturma sesi/titreşimi üst üste binmesin diye o kilitlenmede atlanır.
+  let hardLock = false;
   game.on('harddrop', (d) => {
     view.onHard(d);
     sound.hard();
     buzz(HAPTIC.hard);
+    hardLock = true;
+  });
+  game.on('lock', (cells) => {
+    view.onLock(cells);
+    if (hardLock) {
+      hardLock = false;
+      return;
+    }
+    sound.lock();
+    buzz(HAPTIC.lock);
   });
   game.on('clearstart', (e) => {
     view.onClearStart(e);
@@ -93,6 +101,7 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
       if (e.rebound) {
         view.onRebound();
         sound.warn();
+        buzz(HAPTIC.rebound);
         popup('Rebound', 'Sık kullanım tıkanıklığı geri getirdi', 'warn');
         // NS4-07: uyarı metni oyunda bir kez (rebound'un ilk başladığı 2. kullanımda); popup her seferinde
         if (game.synUses === 2)
@@ -104,8 +113,9 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
   });
   game.on('garbage', () => {
     view.onGarbage(); // NS4-15: önceden yalnızca view.shake = 0.35
-    sound.warn();
-    buzz(30);
+    // NS4-17: tekrar eden garbage için kısa alçak darbe (önceden rebound uyarısı her satırda yeniden çalıyordu)
+    sound.garbage();
+    buzz(HAPTIC.garbage);
   });
   game.on('gameover', (reason) => lifecycle.handleGameOver(reason));
 }

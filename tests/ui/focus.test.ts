@@ -107,7 +107,7 @@ describe('overlay geçişlerinde odak', () => {
     dom.el('b-set2').focus();
     screens.openSub('scr-set');
     settle();
-    expect(active()).toBe('scr-set-back');
+    expect(active()).toBe('set-sound'); // NS4-17: ilk ayar kontrolü (önceden Kaydet)
     dom.backButton('scr-set').click();
     settle();
     expect(dom.visibleScreen()).toBe('scr-pause');

@@ -33,6 +33,8 @@ export function bootstrap(): void {
   const stageEl = $('stage');
   const game = new Game();
   const sound = new Sound(settings);
+  // NS4-17: sekme gizlenince AudioContext askıya alınır, görünür olunca sürer (oyun zaten otomatik molaya girer)
+  document.addEventListener('visibilitychange', () => sound.setHidden(document.hidden));
   // haptik: ayar her çağrıda okunur
   const buzz = createBuzz(() => settings.haptics);
 
@@ -178,6 +180,10 @@ export function bootstrap(): void {
     });
     void import('../dev/screensDemo').then(({ createScreensDemo }) => {
       fn.ui = createScreensDemo(lifecycle, game);
+    });
+    // NS4-17: ses/haptik gösterimi (__fn.sfx); yalnızca kullanıcı etkileşiminden sonra çalar
+    void import('../dev/audioDemo').then(({ createAudioDemo }) => {
+      fn.sfx = createAudioDemo(sound, buzz);
     });
   }
 }

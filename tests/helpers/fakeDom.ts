@@ -219,6 +219,11 @@ export function installFakeDom(): FakeDom {
     }
     for (const b of SCREEN_BUTTONS[id] ?? []) byId.set(b, s.appendChild(new FakeButton(b)));
   }
+  // NS4-17: Ayarlar açılınca ilk odak ilk ayar kontrolünde (index.html: Ses efektleri, data-focus)
+  const setSound = new FakeElement('set-sound');
+  setSound.dataset['focus'] = '';
+  byId.set('set-sound', setSound);
+  byId.get('scr-set')?.appendChild(setSound);
   for (const id of ['scr-how', 'scr-set']) {
     const b = new FakeButton(id + '-back');
     b.dataset['back'] = '';

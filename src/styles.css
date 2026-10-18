@@ -974,7 +974,7 @@ input:focus-visible {
   gap: 6px;
   margin: 10px 0 0;
 }
-.badges span {
+.badges > span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -987,7 +987,7 @@ input:focus-visible {
   color: var(--color-text);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cyclamen) 40%, transparent);
 }
-.badges span::before {
+.badges > span::before {
   content: '';
   flex: none;
   width: 1.15em;
@@ -996,16 +996,16 @@ input:focus-visible {
   background: var(--color-cyclamen-strong) center / 70% no-repeat
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.3 5 8.6l4.4-5' fill='none' stroke='%23fff' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
-.badges span.new {
+.badges > span.new {
   background: var(--color-cyclamen);
   color: var(--color-on-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-cyclamen) 25%, transparent);
 }
-.badges span.new::before {
+.badges > span.new::before {
   background-color: var(--color-cyclamen-strong);
   box-shadow: 0 0 0 1.5px var(--color-on-accent);
 }
-.badges span.locked {
+.badges > span.locked {
   background: transparent;
   color: var(--color-text-muted);
   font-weight: 700;
@@ -1013,9 +1013,22 @@ input:focus-visible {
   outline: 1.5px dashed var(--color-border-strong);
   outline-offset: -1.5px;
 }
-.badges span.locked::before {
+.badges > span.locked::before {
   background: transparent;
   box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+}
+/* NS4-17: yalnızca ekran okuyucuya okunan metin (görsel olarak gizli, erişilebilirlik ağacında kalır) */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 /* sağlık yönlendirmesi: görünür ama sakin (reklam bandı gibi değil) */
 .health {

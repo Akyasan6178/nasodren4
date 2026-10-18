@@ -310,7 +310,7 @@
               <div><b id="o-lines">0</b><span>Drenaj</span></div>
               <div><b id="o-best">0</b><span>Rekor</span></div>
             </div>
-            <div class="badges" id="o-badges"></div>
+            <div class="badges" id="o-badges" role="list"></div>
           </div>
           <div class="over-next">
             <div class="health">
@@ -340,14 +340,16 @@
             <h2>Ayarlar</h2>
             <fieldset class="set-group">
               <legend>Ses</legend>
-              <label class="set">Ses efektleri<input type="checkbox" data-k="sound" /></label>
+              <label class="set">Ses efektleri<input type="checkbox" data-k="sound" data-focus /></label>
               <label class="set">Ortam müziği<input type="checkbox" data-k="music" /></label>
             </fieldset>
             <fieldset class="set-group">
               <legend>Oynanış</legend>
               <label class="set"
-                ><span>Titreşim<small id="hap-note">Destekleyen Android cihazlarda</small></span
-                ><input type="checkbox" data-k="haptics"
+                ><span
+                  ><span id="lbl-haptics">Titreşim</span
+                  ><small id="hap-note">Destekleyen Android cihazlarda</small></span
+                ><input type="checkbox" data-k="haptics" aria-labelledby="lbl-haptics" aria-describedby="hap-note"
               /></label>
               <label class="set">Hayalet parça<input type="checkbox" data-k="ghost" /></label>
             </fieldset>
@@ -355,17 +357,33 @@
               <legend>İleri ayarlar</legend>
               <label class="set set-range"
                 ><span
-                  >DAS <small>Basılı tutunca kayma gecikmesi: <b id="v-das"></b> ms</small></span
-                ><input type="range" min="50" max="300" step="1" data-k="das"
+                  ><span id="lbl-das">DAS</span>
+                  <small id="desc-das">Basılı tutunca kayma gecikmesi: <b id="v-das"></b> ms</small></span
+                ><input
+                  type="range"
+                  min="50"
+                  max="300"
+                  step="1"
+                  data-k="das"
+                  aria-labelledby="lbl-das"
+                  aria-describedby="desc-das"
               /></label>
               <label class="set set-range"
                 ><span
-                  >ARR <small>Kayma tekrar hızı: <b id="v-arr"></b> ms</small></span
-                ><input type="range" min="0" max="100" step="1" data-k="arr"
+                  ><span id="lbl-arr">ARR</span>
+                  <small id="desc-arr">Kayma tekrar hızı: <b id="v-arr"></b> ms</small></span
+                ><input
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                  data-k="arr"
+                  aria-labelledby="lbl-arr"
+                  aria-describedby="desc-arr"
               /></label>
               <label class="set set-minor"
-                ><span>FPS göstergesi<small>Performans testi için</small></span
-                ><input type="checkbox" data-k="fps"
+                ><span><span id="lbl-fps">FPS göstergesi</span><small id="desc-fps">Performans testi için</small></span
+                ><input type="checkbox" data-k="fps" aria-labelledby="lbl-fps" aria-describedby="desc-fps"
               /></label>
             </fieldset>
           </div>
