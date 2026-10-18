@@ -17,7 +17,8 @@
   </head>
   <body>
     <div id="app">
-      <div id="stage">
+      <!-- NS4-10: overlay açıkken inert (screens.ts); tabindex=-1: overlay kapanınca odak oyun alanına döner -->
+      <div id="stage" inert tabindex="-1">
         <div id="under">
           <div id="board-bg" class="abs"></div>
           <div id="meter" class="abs"><div id="meter-cover"></div></div>
@@ -35,8 +36,10 @@
           </div>
         </div>
         <div id="over-hud">
-          <div id="badge-rebound" class="badge">Rebound</div>
-          <div id="badge-mult" class="badge">Ferah nefes ×2</div>
+          <div id="fx-badges" class="abs">
+            <div id="badge-mult" class="badge">Ferah nefes ×2</div>
+            <div id="badge-rebound" class="badge">Rebound</div>
+          </div>
           <div id="popups" class="abs"></div>
           <div id="toast"></div>
           <button id="btn-hold" class="gbtn" aria-label="Parçayı beklet">
@@ -69,7 +72,10 @@
               />
               <ellipse cx="14.4" cy="18.6" rx="3" ry="1.6" fill="#1d9a6c" transform="rotate(-25 14.4 18.6)" />
             </svg>
-            <span class="t">Sıklamen özütü<small id="cyc-sub">Oyunda 1 kez</small></span>
+            <span class="t"
+              >Sıklamen özütü<small id="cyc-sub">Oyunda 1 kez</small
+              ><span class="chip" id="cyc-chip" aria-hidden="true">Kilitli</span></span
+            >
           </button>
           <button id="btn-syn" class="gbtn" disabled aria-label="Sentetik açıcı kullan">
             <svg
@@ -83,7 +89,10 @@
               <rect x="7" y="9" width="8" height="12" rx="2.5" />
               <path d="M9 9V6h4v3M13 6h3l1.5-1.5M18 3.5l1.5-.8M18.4 6.2h1.8M17.8 8.4l1.4.9" />
             </svg>
-            <span class="t">Sentetik açıcı<small id="syn-sub">Hızlı ama geri tepebilir</small></span>
+            <span class="t"
+              >Sentetik açıcı<small id="syn-sub">Hızlı ama geri tepebilir</small
+              ><span class="chip" id="syn-chip" aria-hidden="true">Kilitli</span></span
+            >
           </button>
           <button id="btn-pause" class="gbtn" aria-label="Duraklat">
             <svg viewBox="0 0 24 24" fill="currentColor">

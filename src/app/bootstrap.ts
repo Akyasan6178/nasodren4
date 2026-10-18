@@ -18,7 +18,7 @@ import { track } from '../analytics/analytics';
 import { ctaUrl } from '../analytics/cta';
 import { $ } from '../ui/dom';
 import { updateHud, applyHudLayout } from '../ui/hud';
-import { initTips, setTip, openSub, bindBackButtons, closeSub } from '../ui/screens';
+import { initTips, setTip, openSub, bindBackButtons, closeSub, initScreens } from '../ui/screens';
 import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
@@ -86,6 +86,7 @@ export function bootstrap(): void {
   // ekranlar
   initTips();
   bindBackButtons();
+  initScreens(); // NS4-10: başlangıç ekranı açıkken arka plan inert
   $('b-play').addEventListener('click', lifecycle.start);
   $('b-again').addEventListener('click', lifecycle.start);
   $('b-menu').addEventListener('click', lifecycle.toMenu);

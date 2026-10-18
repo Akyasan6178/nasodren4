@@ -57,7 +57,19 @@ class FakeClassList {
 }
 
 export class FakeElement extends FakeEventTarget {
+  /** NS4-10: odak takibi için kurulu sahte document (focus/blur activeElement'i günceller). */
+  static doc: { activeElement: FakeElement | null } | null = null;
   readonly classList = new FakeClassList();
+  inert = false;
+  private readonly attrs = new Map<string, string>();
+  setAttribute(name: string, value: string): void {
+    this.attrs.set(name, value);
+  }
+  getAttribute(name: string): string | null {
+    return this.attrs.get(name) ?? null;
+  }
+  tabIndex = 0;
+  readonly isConnected = true;
   readonly style: Record<string, string> = {};
   readonly dataset: Record<string, string | undefined> = {};
   readonly children: FakeElement[] = [];
@@ -68,8 +80,15 @@ export class FakeElement extends FakeEventTarget {
   constructor(readonly id = '') {
     super();
   }
-  querySelector(): FakeElement | null {
+  /** Yalnızca screens.ts'in kullandığı iki sorgu: [data-focus] ve 'button,a' (ilk çocuk düzeyi). */
+  querySelector(sel: string): FakeElement | null {
+    if (sel === '[data-focus]') return this.children.find((c) => c.dataset['focus'] !== undefined) ?? null;
+    if (sel.includes('button')) return this.children.find((c) => c instanceof FakeButton) ?? null;
     return null;
+  }
+  contains(el: unknown): boolean {
+    for (let p = el instanceof FakeElement ? el : null; p; p = p.parent) if (p === this) return true;
+    return false;
   }
   querySelectorAll(): FakeElement[] {
     return [];
@@ -104,8 +123,12 @@ export class FakeElement extends FakeEventTarget {
     if (i >= 0) p.children.splice(i, 1);
     this.parent = null;
   }
-  focus(): void {}
-  blur(): void {}
+  focus(): void {
+    if (FakeElement.doc) FakeElement.doc.activeElement = this;
+  }
+  blur(): void {
+    if (FakeElement.doc?.activeElement === this) FakeElement.doc.activeElement = null;
+  }
   /** [data-back] gibi tıklama dinleyicilerini tetikler. */
   click(): void {
     this.dispatch('click');
@@ -132,7 +155,22 @@ const ELEMENT_IDS = [
   'tip-start',
   'tip-pause',
   'tip-over',
+  'cyc-chip',
+  'syn-chip',
+  'fx-badges',
+  // oyun sonu ekranı (renderGameOver)
+  'o-score',
+  'o-lines',
+  'o-best',
+  'newbest',
+  'o-badges',
 ];
+/** Ekranların odaklanabilir çocukları (index.html sırasıyla; ilk buton ekran açılınca odak alır). */
+const SCREEN_BUTTONS: Record<string, readonly string[]> = {
+  'scr-start': ['b-play', 'b-how', 'b-set1'],
+  'scr-pause': ['b-resume', 'b-set2', 'b-quit'],
+  'scr-over': ['b-again', 'b-menu'],
+};
 
 export interface FakeDom {
   readonly window: FakeEventTarget & { dataLayer: unknown[] };
@@ -150,17 +188,27 @@ export interface FakeDom {
 export function installFakeDom(): FakeDom {
   const byId = new Map<string, FakeElement>();
   const backButtons: FakeElement[] = [];
-  for (const id of BUTTON_IDS) byId.set(id, new FakeButton(id));
+  // NS4-10: #stage, canvas ve HUD butonlarını içerir (overlay açıkken inert olur)
+  const stage = new FakeElement('stage');
+  byId.set('stage', stage);
+  for (const id of BUTTON_IDS) byId.set(id, stage.appendChild(new FakeButton(id)));
   for (const id of ELEMENT_IDS) byId.set(id, new FakeElement(id));
   for (const id of SCREEN_IDS) {
     const s = new FakeElement(id);
     s.classList.add('screen');
     byId.set(id, s);
+    if (id === 'scr-over') {
+      const sheet = new FakeElement('scr-over-sheet');
+      sheet.dataset['focus'] = '';
+      s.appendChild(sheet);
+    }
+    for (const b of SCREEN_BUTTONS[id] ?? []) byId.set(b, s.appendChild(new FakeButton(b)));
   }
   for (const id of ['scr-how', 'scr-set']) {
     const b = new FakeButton(id + '-back');
     b.dataset['back'] = '';
     backButtons.push(b);
+    byId.get(id)?.appendChild(b);
   }
   byId.get('scr-start')?.classList.add('on'); // index.html: başlangıç ekranı açık gelir
   const screens = () => SCREEN_IDS.map((id) => byId.get(id)).filter((s): s is FakeElement => !!s);
@@ -182,6 +230,7 @@ export function installFakeDom(): FakeDom {
   });
   // dataLayer: analytics.track() olayları console yerine buraya yazar
   const win = Object.assign(new FakeEventTarget(), { dataLayer: [] as unknown[] });
+  FakeElement.doc = doc;
   vi.stubGlobal('document', doc);
   vi.stubGlobal('window', win);
   vi.stubGlobal('HTMLElement', FakeElement);
@@ -197,7 +246,7 @@ export function installFakeDom(): FakeDom {
   return {
     window: win,
     document: doc,
-    canvas: new FakeElement('canvas'),
+    canvas: stage.appendChild(new FakeElement('canvas')),
     el(id) {
       const e = byId.get(id);
       if (!e) throw new Error('sahte DOM: #' + id + ' yok');

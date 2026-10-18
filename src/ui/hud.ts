@@ -5,7 +5,18 @@
    ===================================================================== */
 import { $, place } from './dom';
 import { toast, clearNotifications } from './notifications';
-import { CYC_TEXT, SYN_TEXT, cycState, synState, type CycState, type SynState } from './powerups';
+import {
+  CYC_NAME,
+  CYC_SHORT,
+  CYC_TEXT,
+  SYN_NAME,
+  SYN_SHORT,
+  SYN_TEXT,
+  cycState,
+  synState,
+  type CycState,
+  type SynState,
+} from './powerups';
 import type { Game } from '../game/Game';
 import type { Layout } from '../types/layout';
 
@@ -94,14 +105,12 @@ export function updateHud(g: Game, playing: boolean): void {
   const cs = cycState(g, playing);
   if (cs !== hud.cycState) {
     hud.cycState = cs;
-    $('btn-cyc').dataset['state'] = cs;
-    $('cyc-sub').textContent = CYC_TEXT[cs];
+    renderPowerup('cyc', cs);
   }
   const ss = synState(g, playing);
   if (ss !== hud.synState) {
     hud.synState = ss;
-    $('btn-syn').dataset['state'] = ss;
-    $('syn-sub').textContent = SYN_TEXT[ss];
+    renderPowerup('syn', ss);
   }
   // NS4-06: oyun bitince (playing=false) ×2 ve Rebound sayaçları gösterilmez; game-over ekranının arkasında
   // donmuş süre kalmaz (NS4-01 Not C). Yeni oyunda resetHud() önbelleği sıfırlar.
@@ -128,6 +137,24 @@ export function resetHud(): void {
   Object.assign(hud, initialHud());
 }
 
+/**
+ * Güçlendirici butonunun durumunu yazar: data-state (stil), uzun alt metin (geniş düzen), kısa etiket (dar düzen)
+ * ve erişilebilir ad. NS4-10: durum yalnızca renkle değil, her düzende metinle de okunur.
+ */
+function renderPowerup(kind: 'cyc', state: CycState): void;
+function renderPowerup(kind: 'syn', state: SynState): void;
+function renderPowerup(kind: 'cyc' | 'syn', state: CycState | SynState): void {
+  const [text, short, name] =
+    kind === 'cyc'
+      ? [CYC_TEXT[state as CycState], CYC_SHORT[state as CycState], CYC_NAME]
+      : [SYN_TEXT[state as SynState], SYN_SHORT[state as SynState], SYN_NAME];
+  const b = $(kind === 'cyc' ? 'btn-cyc' : 'btn-syn');
+  b.dataset['state'] = state;
+  b.setAttribute('aria-label', `${name}: ${text}`);
+  $(kind + '-sub').textContent = text;
+  $(kind + '-chip').textContent = short;
+}
+
 /** Tehlike vinyetini gizler. */
 export function hideDanger(): void {
   $('danger').classList.remove('on');
@@ -145,16 +172,13 @@ export function clearSessionHud(): void {
   $('badge-mult').style.display = 'none';
   $('badge-rebound').style.display = 'none';
   // güçlendirici butonları menünün arkasında eski oyunun durumunu göstermez (yeni oyun başlangıç durumu)
-  for (const [id, sub, text] of [
-    ['btn-cyc', 'cyc-sub', CYC_TEXT.locked],
-    ['btn-syn', 'syn-sub', SYN_TEXT.locked],
-  ] as const) {
+  for (const id of ['btn-cyc', 'btn-syn'] as const) {
     const b = $(id, HTMLButtonElement);
     b.disabled = true;
     b.classList.remove('ready');
-    b.dataset['state'] = 'locked';
-    $(sub).textContent = text;
   }
+  renderPowerup('cyc', 'locked');
+  renderPowerup('syn', 'locked');
   hideDanger();
   clearNotifications();
   resetHud();
@@ -189,9 +213,11 @@ export function applyHudLayout(L: Layout): void {
   $('toast').style.top = L.board.y + 8 + 'px';
   $('toast').style.left = L.board.x + L.board.w / 2 + 'px';
   $('toast').style.maxWidth = Math.max(180, L.board.w - 16) + 'px';
-  const br = $('badge-rebound'),
-    bm = $('badge-mult');
-  br.style.left = bm.style.left = L.board.x + L.board.w / 2 + 'px';
-  br.style.top = L.board.y + L.board.h - 40 + 'px';
-  bm.style.top = L.board.y + L.board.h - 74 + 'px';
+  // NS4-10: ×2 / Rebound rozetleri tahta genişliğinde bir sütunda, tahtanın alt kenarına hizalı; dar tahtada
+  // metin satır kırar ve tahtanın dışına taşmaz (önceki konum: alt kenardan 40 / 74 px yukarıda, ortalı).
+  const fx = $('fx-badges');
+  fx.style.left = L.board.x + 8 + 'px';
+  fx.style.width = L.board.w - 16 + 'px';
+  fx.style.top = 'auto';
+  fx.style.bottom = L.H - (L.board.y + L.board.h) + 10 + 'px';
 }

@@ -124,6 +124,11 @@ body {
   inset: 0;
   overflow: hidden;
 }
+/* NS4-10: overlay kapanınca odak oyun alanına döner (tabindex=-1). Büyük kapsayıcıda halka gösterilmez;
+   Tab ile HUD butonlarına geçildiğinde onların odak halkası görünür. */
+#stage:focus {
+  outline: none;
+}
 /* Layer order: DOM panels (behind) -> Pixi canvas (transparent) -> DOM HUD/buttons -> overlays */
 #under,
 #over-hud {
@@ -203,8 +208,9 @@ body {
 #stats .score {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
 }
@@ -227,7 +233,7 @@ body {
   text-align: center;
 }
 #stats.compact .score {
-  font-size: 24px;
+  font-size: 27px;
 }
 #stats.compact .row {
   gap: 4px 10px;
@@ -369,15 +375,16 @@ input:focus-visible {
   padding: 0;
   border-radius: 50%;
 }
+/* NS4-10: kısa durum etiketine yer açmak için ikon ve boşluklar bir kademe küçüldü (19 → 16 px) */
 .gbtn.compact-btn {
   flex-direction: column;
-  gap: 3px;
-  padding: 4px 4px;
+  gap: 2px;
+  padding: 3px 4px;
   font-size: 12px;
 }
 .compact-btn svg {
-  width: 19px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
 }
 .compact-btn .t {
   align-items: center;
@@ -386,6 +393,67 @@ input:focus-visible {
 }
 .compact-btn .t small {
   display: none;
+}
+/* NS4-10: kısa durum etiketi. Geniş düzende uzun alt metin (small) okunur; dar düzende alt metin gizlendiği
+   için bunun yerine kısa etiket gösterilir. Durumlar renge ek olarak metin ve kenar çizgisiyle ayrılır. */
+.gbtn .chip {
+  display: none;
+}
+.compact-btn .chip {
+  display: block;
+  margin-top: 2px;
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 9.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+  background: var(--color-btn-locked-bg);
+  color: var(--color-btn-locked-text);
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+.gbtn[data-state='ready'] .chip {
+  background: var(--color-btn-bg);
+  color: var(--color-fresh-strong);
+  box-shadow: inset 0 0 0 1px var(--color-fresh-strong);
+}
+.gbtn[data-state='used'] .chip {
+  background: var(--color-btn-bg);
+  color: var(--color-cyclamen-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cyclamen) 45%, transparent);
+}
+.gbtn[data-state='active'] .chip {
+  background: var(--color-cyclamen-strong);
+  color: var(--color-on-accent);
+  box-shadow: inset 0 0 0 1px var(--color-cyclamen-strong);
+}
+.gbtn[data-state='risk'] .chip {
+  background: var(--color-btn-bg);
+  color: var(--color-danger-strong);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-danger) 55%, transparent);
+}
+.gbtn[data-state='rebound'] .chip {
+  background: var(--color-danger-strong);
+  color: var(--color-on-accent);
+  box-shadow: inset 0 0 0 1px var(--color-danger-strong);
+}
+/* NS4-10: ×2 / Rebound rozetleri tahta genişliğinde, alta hizalı bir sütun (hud.ts yerleştirir) */
+#fx-badges {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+#fx-badges .badge {
+  position: static;
+  transform: none;
+  white-space: normal;
+  max-width: 100%;
+  text-align: center;
+  line-height: 1.25;
 }
 .badge {
   position: absolute;
