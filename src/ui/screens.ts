@@ -61,6 +61,8 @@ export function show(id: string | null | undefined, focusEl?: HTMLElement | null
     const f = focusEl ?? (el.querySelector('[data-focus]') || el.querySelector('button,a'));
     focusSoon(f instanceof HTMLElement ? f : null);
   } else {
+    // NS4-12: bütün overlay'ler kapandı; dönülecek alt ekran kalmaz (ör. "Nasıl oynanır"dan oyun başlatma)
+    screenStack.length = 0;
     focusSoon(document.getElementById('stage'));
   }
 }

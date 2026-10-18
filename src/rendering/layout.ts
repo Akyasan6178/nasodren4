@@ -108,3 +108,25 @@ function landscapeLayout(W: number, H: number, pad: number): LandscapeLayout {
     compactStats: sw < 150,
   };
 }
+
+/** NS4-12: öğretici kartı yerleşimi. h: kartın kullanabileceği en fazla yükseklik (içerik kısa, gerçek kart daha alçak). */
+export interface TutorialRect extends Rect {
+  /** 'margin': yan boşlukta (hiçbir şeyi örtmez); 'board': tahtanın orta bandında (doğma ve iniş satırları açık). */
+  readonly place: 'margin' | 'board';
+}
+/** Yan boşluk bu genişlikten darsa kart tahtanın orta bandına yerleşir. */
+export const TUTORIAL_MIN_MARGIN = 160;
+
+/**
+ * Öğretici kartının yeri. Yatay düzende Sıradaki panelinin sağındaki boşluk yeterliyse oraya (tahta, HUD ve
+ * butonlar açık kalır). Değilse (portre ve dar yatay ekranlar) tahtanın 4–15. satırları arasındaki orta banda:
+ * parçanın doğduğu üst satırlar ve indiği alt satırlar görünür kalır; HUD panellerine ve butonlara binmez.
+ */
+export function tutorialRect(L: Layout): TutorialRect {
+  if (!L.portrait) {
+    const x = L.next.x + L.next.w + 16;
+    const room = L.W - x - 12;
+    if (room >= TUTORIAL_MIN_MARGIN) return { place: 'margin', x, y: L.next.y, w: Math.min(300, room), h: L.board.h };
+  }
+  return { place: 'board', x: L.board.x + 8, y: L.board.y + L.cell * 4, w: L.board.w - 16, h: L.cell * 11 };
+}

@@ -100,6 +100,18 @@
               <rect x="14" y="5" width="4" height="14" rx="1.5" />
             </svg>
           </button>
+          <!-- NS4-12: ilk oyun öğreticisi (oyun alanını kapatmayan kart; yalnızca butonlar tıklanabilir) -->
+          <div id="tutorial" class="tutorial" hidden>
+            <div class="tut-head">
+              <span id="tut-step" class="tut-step">Öğretici · 1/6</span>
+              <button id="tut-skip" class="tut-skip" type="button">Atla</button>
+            </div>
+            <div class="tut-live" aria-live="polite">
+              <p id="tut-title" class="tut-title"></p>
+              <p id="tut-text" class="tut-text"></p>
+            </div>
+            <button id="tut-done" class="tut-done" type="button" hidden>Tamam</button>
+          </div>
         </div>
       </div>
       <div id="danger"></div>
@@ -251,6 +263,7 @@
             </li>
           </ul>
           <button class="btn primary" data-back>Tamam</button>
+          <button class="btn ghost" id="b-tutorial">Öğreticiyle oyna</button>
         </div>
       </section>
 

@@ -16,6 +16,7 @@ import { track } from '../analytics/analytics';
 import { hideDanger, forgetDanger, clearSessionHud } from '../ui/hud';
 import { award, resetNewBadges } from '../ui/badges';
 import { setTip, show, renderGameOver } from '../ui/screens';
+import type { Tutorial } from '../tutorial/Tutorial';
 
 export interface LifecycleDeps {
   game: Game;
@@ -25,6 +26,8 @@ export interface LifecycleDeps {
   buzz: Buzz;
   /** Input durumunu sıfırlar (InputController.reset). */
   resetInput: () => void;
+  /** NS4-12: ilk oyun öğreticisi (isteğe bağlı; testlerde verilmeyebilir). */
+  tutorial?: Pick<Tutorial, 'onGameStart' | 'onPause' | 'onResume' | 'onSessionEnd'>;
 }
 
 export interface Lifecycle {
@@ -37,7 +40,7 @@ export interface Lifecycle {
   readonly handleGameOver: (reason: GameOverReason) => void;
 }
 
-export function createLifecycle({ game, view, sound, app, buzz, resetInput }: LifecycleDeps): Lifecycle {
+export function createLifecycle({ game, view, sound, app, buzz, resetInput, tutorial }: LifecycleDeps): Lifecycle {
   let appState: AppState = 'menu';
 
   function start() {
@@ -54,6 +57,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput }: Li
     appState = 'playing';
     show(null);
     sound.setMusic(true);
+    tutorial?.onGameStart();
     track('game_start', { best: meta.best });
   }
   function pause() {
@@ -68,6 +72,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput }: Li
     sound.setMusic(false);
     hideDanger();
     forgetDanger();
+    tutorial?.onPause(); // NS4-12: kart gizlenir, adım korunur
   }
   function resume() {
     if (appState !== 'paused') return;
@@ -75,6 +80,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput }: Li
     appState = 'playing';
     show(null);
     sound.setMusic(true);
+    tutorial?.onResume();
   }
   function toMenu() {
     app.ticker.start();
@@ -84,6 +90,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput }: Li
     sound.setMusic(false);
     // NS4-07: yarım oyunun geçici HUD durumu menüde kalmaz (skor bilerek kaydedilmez, NS4-01 Not E)
     clearSessionHud();
+    tutorial?.onSessionEnd(); // yarım öğretici tamamlanmış sayılmaz
   }
   function showOver(isBest: boolean) {
     renderGameOver({ score: game.score, lines: game.lines, best: meta.best, isBest });
@@ -118,6 +125,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput }: Li
       tetrises: game.tetrises,
     });
     setTimeout(() => showOver(isBest), 950);
+    tutorial?.onSessionEnd();
   }
 
   return { getState: () => appState, start, pause, resume, toMenu, showOver, handleGameOver };

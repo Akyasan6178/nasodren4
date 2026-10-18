@@ -595,6 +595,99 @@ input:focus-visible {
   display: none;
 }
 
+/* ---------- ilk oyun öğreticisi (NS4-12) ----------
+   Küçük yönlendirme kartı: yan boşlukta ya da tahtanın orta bandında (layout.ts tutorialRect). Kart işaretçi
+   olaylarını oyuna bırakır; yalnızca Atla / Tamam tıklanabilir. Adım bilgisi metinle verilir (Öğretici · 2/6). */
+.tutorial {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  padding: 10px 12px 12px;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-surface-strong) 94%, transparent);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-float);
+  color: var(--color-text);
+  animation: tutIn var(--dur-fade) ease-out both;
+}
+.tutorial[hidden] {
+  display: none;
+}
+.tut-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.tut-step {
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+.tut-skip,
+.tut-done {
+  pointer-events: auto;
+  font-family: var(--font-display);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.tut-skip {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.tut-title {
+  margin: 2px 0 2px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--color-cyclamen-strong);
+}
+.tut-text {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.tut-done {
+  margin-top: 8px;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--color-cyclamen);
+  color: var(--color-on-accent);
+  font-size: 14px;
+}
+.tut-done[hidden] {
+  display: none;
+}
+.tut-skip:focus-visible,
+.tut-done:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+@keyframes tutIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ---------- overlays ---------- */
 .screen {
   position: absolute;
@@ -1037,6 +1130,10 @@ input:focus-visible {
   }
   .gbtn.ready,
   #danger.on {
+    animation: none;
+  }
+  /* NS4-12: öğretici kartı giriş hareketi */
+  .tutorial {
     animation: none;
   }
   /* NS4-09: başlangıç ekranı atmosferi ve giriş hareketi */

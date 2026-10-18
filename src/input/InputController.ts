@@ -24,6 +24,10 @@ export interface InputDeps {
   /** Açık alt ekranı (Ayarlar, Nasıl oynanır) kapatır; kapattıysa true döner. */
   readonly closeSub: () => boolean;
   readonly unlockAudio: () => void;
+  /** NS4-12: yavaş indirme yapıldığında (↓ tuşu veya aşağı sürüklemeyle inen satır). İsteğe bağlı. */
+  readonly onSoftDrop?: () => void;
+  /** NS4-12: son kullanılan giriş tipi (klavye tuşu / dokunmatik). İsteğe bağlı. */
+  readonly onInputMode?: (mode: 'keyboard' | 'touch') => void;
 }
 
 /** Basılı yön: -1 sol, 0 yok, 1 sağ. */
@@ -119,6 +123,7 @@ export class InputController {
           return;
         }
         if (appState !== 'playing') return;
+        this.deps.onInputMode?.('keyboard');
         if (e.repeat && e.key !== 'ArrowDown') return;
         this.deps.unlockAudio();
         switch (e.key) {
@@ -132,6 +137,7 @@ export class InputController {
             break;
           case 'ArrowDown':
             game.softDrop = true;
+            this.deps.onSoftDrop?.();
             break;
           case 'ArrowUp':
           case 'x':
@@ -187,6 +193,7 @@ export class InputController {
       listen(cv, 'pointerdown', (e) => {
         if (this.deps.getState() !== 'playing') return;
         this.deps.unlockAudio();
+        if (e.pointerType === 'touch') this.deps.onInputMode?.('touch');
         try {
           cv.setPointerCapture(e.pointerId);
         } catch {
@@ -243,6 +250,7 @@ export class InputController {
               break;
             }
             g.rows++;
+            this.deps.onSoftDrop?.();
           }
         }
       }),

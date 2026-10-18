@@ -18,6 +18,11 @@ import { track } from '../analytics/analytics';
 import { ctaUrl } from '../analytics/cta';
 import { $ } from '../ui/dom';
 import { updateHud, applyHudLayout } from '../ui/hud';
+import { toast } from '../ui/notifications';
+import { createTutorialView } from '../ui/tutorialView';
+import { Tutorial } from '../tutorial/Tutorial';
+import { TUTORIAL_DONE_TEXT } from '../tutorial/steps';
+import { tutorialStore } from '../storage/tutorial';
 import { initTips, setTip, openSub, bindBackButtons, closeSub, initScreens } from '../ui/screens';
 import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
@@ -52,6 +57,7 @@ export function bootstrap(): void {
     app.renderer.resize(W, H);
     L = computeLayout(W, H);
     applyHudLayout(L);
+    tutorialView.layout(L);
     view.layout(L);
     app.render();
   }
@@ -68,7 +74,14 @@ export function bootstrap(): void {
   if (window.ResizeObserver) new ResizeObserver(queueLayout).observe(stageEl);
 
   // input, lifecycle'dan sonra oluşturulur; lifecycle ona yalnızca çalışma anında (callback ile) erişir
-  const lifecycle = createLifecycle({ game, view, sound, app, buzz, resetInput: () => input.reset() });
+  // NS4-12: ilk oyun öğreticisi. Yalnızca Game olaylarını ve input bildirimlerini dinler; kontrolleri engellemez.
+  // Başlangıç anlatımı: dokunmatik ekranlı cihazda jest, değilse klavye; son kullanılan girişe göre değişir.
+  const tutorialView = createTutorialView({ skip: () => tutorial.skip(), done: () => tutorial.acknowledge() });
+  const tutorial = new Tutorial(game, tutorialView, tutorialStore, {
+    mode: navigator.maxTouchPoints > 0 ? 'touch' : 'keyboard',
+    onComplete: () => toast(TUTORIAL_DONE_TEXT),
+  });
+  const lifecycle = createLifecycle({ game, view, sound, app, buzz, resetInput: () => input.reset(), tutorial });
   wireGameEvents({ game, view, sound, buzz, lifecycle });
 
   const input = new InputController({
@@ -81,6 +94,8 @@ export function bootstrap(): void {
     resume: lifecycle.resume,
     closeSub,
     unlockAudio: () => sound.unlock(),
+    onSoftDrop: () => tutorial.softDrop(),
+    onInputMode: (mode) => tutorial.setMode(mode),
   });
 
   // ekranlar
@@ -93,6 +108,11 @@ export function bootstrap(): void {
   $('b-quit').addEventListener('click', lifecycle.toMenu);
   $('b-resume').addEventListener('click', lifecycle.resume);
   $('b-how').addEventListener('click', () => openSub('scr-how'));
+  // "Nasıl oynanır" → öğreticiyi baştan göstererek yeni oyun başlatır
+  $('b-tutorial').addEventListener('click', () => {
+    tutorial.restart();
+    lifecycle.start();
+  });
   $('b-set1').addEventListener('click', () => openSub('scr-set'));
   $('b-set2').addEventListener('click', () => openSub('scr-set'));
   $('cta-over', HTMLAnchorElement).href = ctaUrl('game_over');

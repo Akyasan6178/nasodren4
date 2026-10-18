@@ -61,6 +61,7 @@ export class FakeElement extends FakeEventTarget {
   static doc: { activeElement: FakeElement | null } | null = null;
   readonly classList = new FakeClassList();
   inert = false;
+  hidden = false;
   private readonly attrs = new Map<string, string>();
   setAttribute(name: string, value: string): void {
     this.attrs.set(name, value);
@@ -192,6 +193,14 @@ export function installFakeDom(): FakeDom {
   const stage = new FakeElement('stage');
   byId.set('stage', stage);
   for (const id of BUTTON_IDS) byId.set(id, stage.appendChild(new FakeButton(id)));
+  // NS4-12: öğretici kartı #over-hud içinde (stage'in parçası); Atla / Tamam butonları
+  const tut = stage.appendChild(new FakeElement('tutorial'));
+  tut.hidden = true;
+  byId.set('tutorial', tut);
+  for (const id of ['tut-step', 'tut-title', 'tut-text']) byId.set(id, tut.appendChild(new FakeElement(id)));
+  for (const id of ['tut-skip', 'tut-done']) byId.set(id, tut.appendChild(new FakeButton(id)));
+  const tutDone = byId.get('tut-done');
+  if (tutDone) tutDone.hidden = true;
   for (const id of ELEMENT_IDS) byId.set(id, new FakeElement(id));
   for (const id of SCREEN_IDS) {
     const s = new FakeElement(id);
@@ -210,6 +219,10 @@ export function installFakeDom(): FakeDom {
     backButtons.push(b);
     byId.get(id)?.appendChild(b);
   }
+  // index.html sırası: Nasıl oynanır'da önce Tamam (data-back), sonra Öğreticiyle oyna
+  const howTut = new FakeButton('b-tutorial');
+  byId.set('b-tutorial', howTut);
+  byId.get('scr-how')?.appendChild(howTut);
   byId.get('scr-start')?.classList.add('on'); // index.html: başlangıç ekranı açık gelir
   const screens = () => SCREEN_IDS.map((id) => byId.get(id)).filter((s): s is FakeElement => !!s);
 
