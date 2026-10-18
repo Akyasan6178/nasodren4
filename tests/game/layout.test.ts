@@ -1,5 +1,6 @@
 // NS4-10: HUD yerleşimi beş hedef görünümde taşma ve çakışma üretmez. computeLayout saf bir fonksiyondur;
-// tahta ölçüleri bilinçli olarak sabitlenir (Pixi oyun görünümü bu görevde değişmemeli).
+// tahta ölçüleri bilinçli olarak sabitlenir. NS4-11: 1600×900, 2560×1440 eklendi; 1920×1080 tahtası
+// bilinçli olarak 400×800 → 520×1040 büyüdü (hücre üst sınırı 40 → 56).
 import { describe, expect, it } from 'vitest';
 import { computeLayout } from '../../src/rendering/layout';
 import type { Rect } from '../../src/types/layout';
@@ -9,16 +10,20 @@ const VIEWPORTS = [
   [844, 390],
   [768, 1024],
   [1366, 768],
+  [1600, 900],
   [1920, 1080],
+  [2560, 1440],
 ] as const;
 
-/** Görünüm → [tahta x, y, genişlik, yükseklik] (NS4-09 ile aynı). */
+/** Görünüm → [tahta x, y, genişlik, yükseklik]. 1920 ve üstü NS4-11'de büyüdü; diğerleri NS4-09 ile aynı. */
 const BOARD: Record<string, readonly number[]> = {
   '390x844': [35, 114, 320, 640],
   '844x390': [332, 15, 180, 360],
   '768x1024': [179, 115, 410, 820],
   '1366x768': [498, 14, 370, 740],
-  '1920x1080': [760, 140, 400, 800],
+  '1600x900': [585, 20, 430, 860],
+  '1920x1080': [700, 20, 520, 1040],
+  '2560x1440': [1000, 160, 560, 1120],
 };
 
 const overlap = (a: Rect, b: Rect) =>
