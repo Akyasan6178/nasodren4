@@ -6,7 +6,7 @@
 import * as PIXI from 'pixi.js';
 import { COLS, HIDDEN, VIS, CFG } from '../config/gameConfig';
 import { PIECE, SHAPES } from '../game/pieces';
-import { COLORS, blockRecord, createBlockAtlas, createDropCanvas, createWaveCanvas } from './textures';
+import { ATLAS_ROWS, COLORS, blockRecord, createBlockAtlas, createDropCanvas, createWaveCanvas } from './textures';
 import type { Game } from '../game/Game';
 import type { PendingClear } from '../types/events';
 import type { BlockId, PendingClearKind, PieceSlot } from '../types/game';
@@ -58,6 +58,8 @@ export class View {
   // buildTextures() içinde atanır; ilk çağrıya kadar tanımsızdır (bkz. NS4-02-VITE-MIGRATION.md)
   tex!: TextureMap;
   ghostTex!: TextureMap;
+  /** NS4-14: düşen (aktif) parça karoları (aynı atlas, ayrı satır). */
+  activeTex!: TextureMap;
   dropTex!: PIXI.Texture;
   waveTex!: PIXI.Texture;
   atlasBase?: PIXI.BaseTexture;
@@ -171,14 +173,19 @@ export class View {
     const res = this.app.renderer.resolution;
     const px = Math.max(8, Math.round(cell * res));
     const oldBase = this.atlasBase,
-      oldTex = [this.tex, this.ghostTex];
+      oldTex = [this.tex, this.ghostTex, this.activeTex];
     const oldDrop = this.dropTex,
       oldWave = this.waveTex;
     const { atlas, P } = createBlockAtlas(px); // NS4-03: çizim rendering/textures.ts içinde
     const base = (this.atlasBase = PIXI.BaseTexture.from(atlas));
     // i: atlas sütunu (BLOCK_IDS sırası). NS4-04: önce bütün blok, sonra bütün hayalet karoları oluşturulur.
     this.tex = blockRecord((_id, i) => new PIXI.Texture(base, new PIXI.Rectangle(i * P + 2, 2, px, px)));
-    this.ghostTex = blockRecord((_id, i) => new PIXI.Texture(base, new PIXI.Rectangle(i * P + 2, P + 2, px, px)));
+    this.ghostTex = blockRecord(
+      (_id, i) => new PIXI.Texture(base, new PIXI.Rectangle(i * P + 2, ATLAS_ROWS.ghost * P + 2, px, px)),
+    );
+    this.activeTex = blockRecord(
+      (_id, i) => new PIXI.Texture(base, new PIXI.Rectangle(i * P + 2, ATLAS_ROWS.active * P + 2, px, px)),
+    );
     // damlacık
     this.dropTex = PIXI.Texture.from(createDropCanvas(cell, res));
     // sıvı dalga dokusu (yatay döşenir)
@@ -259,7 +266,7 @@ export class View {
       const sh = SHAPES[type][g.rot]; // NS4-04: has → type 1..7 (daraltma); döngü boyunca g.rot değişmez
       const cx = g.x + sh[i][0],
         cy = g.y + sh[i][1] - HIDDEN;
-      a.texture = this.tex[type];
+      a.texture = this.activeTex[type]; // NS4-14: aktif parça sabit bloklardan açık iç kenarla ayrılır
       this.setSize(a, c);
       a.position.set(cx * c + c / 2, cy * c + c / 2);
       a.visible = cy >= 0;
