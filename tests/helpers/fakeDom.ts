@@ -75,6 +75,14 @@ export class FakeElement extends FakeEventTarget {
   getAttribute(name: string): string | null {
     return this.attrs.get(name) ?? null;
   }
+  removeAttribute(name: string): void {
+    this.attrs.delete(name);
+  }
+  hasAttribute(name: string): boolean {
+    return this.attrs.has(name);
+  }
+  /** NS4-18: etiket adı (createElement / tablo gövdesi). */
+  tag = '';
   tabIndex = 0;
   readonly isConnected = true;
   readonly style: Record<string, string> = {};
@@ -91,6 +99,7 @@ export class FakeElement extends FakeEventTarget {
   querySelector(sel: string): FakeElement | null {
     if (sel === '[data-focus]') return this.children.find((c) => c.dataset['focus'] !== undefined) ?? null;
     if (sel.includes('button')) return this.children.find((c) => c instanceof FakeButton) ?? null;
+    if (/^[a-z]+$/.test(sel)) return this.children.find((c) => c.tag === sel) ?? null; // NS4-18: 'tbody'
     return null;
   }
   contains(el: unknown): boolean {
@@ -142,10 +151,14 @@ export class FakeElement extends FakeEventTarget {
   }
 }
 class FakeButton extends FakeElement {}
+/** NS4-18: metin girişi (takma ad). */
+export class FakeInput extends FakeElement {
+  value = '';
+}
 class FakeOther {}
 
 /** index.html'deki ekran kimlikleri (class="screen"). */
-export const SCREEN_IDS = ['scr-start', 'scr-how', 'scr-pause', 'scr-over', 'scr-set'] as const;
+export const SCREEN_IDS = ['scr-start', 'scr-how', 'scr-pause', 'scr-over', 'scr-set', 'scr-scores'] as const;
 const BUTTON_IDS = ['btn-hold', 'btn-cyc', 'btn-syn', 'btn-pause'];
 const ELEMENT_IDS = [
   'hud-score',
@@ -171,10 +184,17 @@ const ELEMENT_IDS = [
   'o-best',
   'newbest',
   'o-badges',
+  // NS4-18: Skorlar ekranı ve oyun sonu gönderim formu
+  'panel-local',
+  'panel-global',
+  'local-empty',
+  'global-status',
+  'submit-score',
+  'submit-status',
 ];
 /** Ekranların odaklanabilir çocukları (index.html sırasıyla; ilk buton ekran açılınca odak alır). */
 const SCREEN_BUTTONS: Record<string, readonly string[]> = {
-  'scr-start': ['b-play', 'b-how', 'b-set1'],
+  'scr-start': ['b-play', 'b-how', 'b-set1', 'b-scores'],
   'scr-pause': ['b-resume', 'b-set2', 'b-quit'],
   'scr-over': ['b-again', 'b-menu'],
 };
@@ -224,7 +244,24 @@ export function installFakeDom(): FakeDom {
   setSound.dataset['focus'] = '';
   byId.set('set-sound', setSound);
   byId.get('scr-set')?.appendChild(setSound);
-  for (const id of ['scr-how', 'scr-set']) {
+  // NS4-18: Skorlar: ilk odak Yerel sekmesi; sekmeler, tablolar (tbody), yenile/tekrar dene; gönderim formu
+  const scores = byId.get('scr-scores');
+  for (const id of ['tab-local', 'tab-global']) {
+    const t = new FakeButton(id);
+    if (id === 'tab-local') t.dataset['focus'] = '';
+    byId.set(id, t);
+    scores?.appendChild(t);
+  }
+  for (const id of ['table-local', 'table-global']) {
+    const t = new FakeElement(id);
+    const body = new FakeElement();
+    body.tag = 'tbody';
+    t.appendChild(body);
+    byId.set(id, t);
+  }
+  for (const id of ['b-global-retry', 'b-global-refresh', 'b-submit']) byId.set(id, new FakeButton(id));
+  byId.set('nick-input', new FakeInput('nick-input'));
+  for (const id of ['scr-how', 'scr-set', 'scr-scores']) {
     const b = new FakeButton(id + '-back');
     b.dataset['back'] = '';
     backButtons.push(b);
@@ -241,7 +278,7 @@ export function installFakeDom(): FakeDom {
     hidden: false,
     activeElement: null as FakeElement | null,
     getElementById: (id: string) => byId.get(id) ?? null,
-    createElement: () => new FakeElement(),
+    createElement: (tag: string) => Object.assign(new FakeElement(), { tag }),
     querySelectorAll: (sel: string): FakeElement[] => {
       if (sel === '.screen') return screens();
       if (sel === '[data-back]') return backButtons;
@@ -260,7 +297,7 @@ export function installFakeDom(): FakeDom {
   vi.stubGlobal('HTMLElement', FakeElement);
   vi.stubGlobal('HTMLButtonElement', FakeButton);
   vi.stubGlobal('HTMLAnchorElement', FakeOther);
-  vi.stubGlobal('HTMLInputElement', FakeOther);
+  vi.stubGlobal('HTMLInputElement', FakeInput);
   vi.stubGlobal('SVGElement', FakeOther);
   vi.stubGlobal('requestAnimationFrame', (fn: () => void) => {
     fn();

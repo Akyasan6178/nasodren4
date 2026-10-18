@@ -6,7 +6,7 @@ import { fmt } from './hud';
 import { renderBadges } from './badges';
 import type { BadgeId } from '../types/content';
 
-export type ScreenId = 'scr-start' | 'scr-how' | 'scr-pause' | 'scr-over' | 'scr-set';
+export type ScreenId = 'scr-start' | 'scr-how' | 'scr-pause' | 'scr-over' | 'scr-set' | 'scr-scores';
 export type TipBoxId = 'tip-start' | 'tip-pause' | 'tip-over';
 
 let tipIdx = 0;
@@ -90,7 +90,7 @@ export function bindBackButtons(): void {
   document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', back));
 }
 /** Alt ekranlar: openSub() ile açılır, geri dönüşte açıldıkları ekrana döner. */
-const SUB_SCREENS: readonly string[] = ['scr-how', 'scr-set'] satisfies readonly ScreenId[];
+const SUB_SCREENS: readonly string[] = ['scr-how', 'scr-set', 'scr-scores'] satisfies readonly ScreenId[];
 /**
  * NS4-06: Açık bir alt ekran varsa geri butonu gibi kapatır ve true döner (Escape için).
  * Pause'dan açılan Ayarlar böylece önce pause ekranına döner (NS4-01 Not B).

@@ -15,7 +15,7 @@ export default tseslint.config(
   },
   {
     // Uygulama kaynağı ve testler: type-aware kurallar
-    files: ['src/**/*.ts', 'tests/**/*.ts', 'vite.config.ts', 'vitest.config.ts'],
+    files: ['src/**/*.ts', 'tests/**/*.ts', 'supabase/functions/**/*.ts', 'vite.config.ts', 'vitest.config.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
     languageOptions: {
       globals: globals.browser,

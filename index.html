@@ -209,6 +209,8 @@
             <button class="btn ghost" id="b-how">Nasıl oynanır</button>
             <button class="btn ghost" id="b-set1">Ayarlar</button>
           </div>
+          <!-- NS4-18: yerel ve global skor tablosu (tek ikincil eylem) -->
+          <button class="btn ghost btn-sub" id="b-scores">Skorlar</button>
           <div class="tip" id="tip-start"></div>
           <p class="fine">
             Bu oyun bilgilendirme ve eğlence amaçlıdır; tıbbi tavsiye yerine geçmez. Şikâyetleriniz için hekiminize veya
@@ -327,7 +329,83 @@
               <button class="btn primary" id="b-again">Tekrar oyna</button>
               <button class="btn ghost" id="b-menu">Ana menü</button>
             </div>
+            <!-- NS4-18: yerel skor otomatik kaydedilir; global gönderimi kullanıcı başlatır (ana eylemlerin altında) -->
+            <form class="submit-score" id="submit-score" novalidate>
+              <label class="submit-label" for="nick-input">Takma ad</label>
+              <div class="submit-row">
+                <input
+                  id="nick-input"
+                  type="text"
+                  inputmode="text"
+                  autocomplete="nickname"
+                  autocapitalize="off"
+                  spellcheck="false"
+                  maxlength="32"
+                  aria-describedby="nick-hint submit-status"
+                />
+                <button class="btn ghost" id="b-submit" type="submit">Global tabloya gönder</button>
+              </div>
+              <small class="submit-hint" id="nick-hint">3–16 karakter: harf, rakam, boşluk, - _ .</small>
+              <p class="submit-status" id="submit-status" role="status" aria-live="polite"></p>
+            </form>
             <div class="tip" id="tip-over"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- NS4-18: Skorlar (Yerel / Global sekmeleri) -->
+      <section id="scr-scores" class="screen screen-dim" aria-label="Skorlar">
+        <div class="sheet sheet-scroll">
+          <div class="sheet-body">
+            <h2 id="scores-title">Skorlar</h2>
+            <div class="tabs" role="tablist" aria-labelledby="scores-title">
+              <button class="tab" role="tab" id="tab-local" aria-controls="panel-local" aria-selected="true" data-focus>
+                Yerel
+              </button>
+              <button
+                class="tab"
+                role="tab"
+                id="tab-global"
+                aria-controls="panel-global"
+                aria-selected="false"
+                tabindex="-1"
+              >
+                Global
+              </button>
+            </div>
+            <div class="tab-panel" role="tabpanel" id="panel-local" aria-labelledby="tab-local" tabindex="0">
+              <table class="score-table" id="table-local">
+                <thead>
+                  <tr>
+                    <th scope="col">Sıra</th>
+                    <th scope="col">Takma ad</th>
+                    <th scope="col">Skor</th>
+                    <th scope="col">Drenaj</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <p class="score-empty" id="local-empty" hidden>Henüz kayıtlı oyun yok</p>
+            </div>
+            <div class="tab-panel" role="tabpanel" id="panel-global" aria-labelledby="tab-global" tabindex="0" hidden>
+              <table class="score-table" id="table-global" hidden>
+                <thead>
+                  <tr>
+                    <th scope="col">Sıra</th>
+                    <th scope="col">Takma ad</th>
+                    <th scope="col">Skor</th>
+                    <th scope="col">Drenaj</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <p class="score-empty" id="global-status" role="status" aria-live="polite"></p>
+              <button class="btn ghost btn-sub" id="b-global-retry" type="button" hidden>Tekrar dene</button>
+              <button class="btn ghost btn-sub" id="b-global-refresh" type="button" hidden>Yenile</button>
+            </div>
+          </div>
+          <div class="sheet-actions">
+            <button class="btn primary" data-back>Tamam</button>
           </div>
         </div>
       </section>

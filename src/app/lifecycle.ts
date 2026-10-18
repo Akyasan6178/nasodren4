@@ -17,6 +17,8 @@ import { hideDanger, forgetDanger, clearSessionHud } from '../ui/hud';
 import { award, resetNewBadges } from '../ui/badges';
 import { setTip, show, renderGameOver } from '../ui/screens';
 import type { Tutorial } from '../tutorial/Tutorial';
+import { addLocalScore, type LocalScore } from '../leaderboard/localScores';
+import { loadNickname, newGameId } from '../leaderboard/nickname';
 
 export interface LifecycleDeps {
   game: Game;
@@ -28,6 +30,8 @@ export interface LifecycleDeps {
   resetInput: () => void;
   /** NS4-12: ilk oyun öğreticisi (isteğe bağlı; testlerde verilmeyebilir). */
   tutorial?: Pick<Tutorial, 'onGameStart' | 'onPause' | 'onResume' | 'onSessionEnd'>;
+  /** NS4-18: oyun sonu ekranı açılmadan hemen önce (global gönderim paneli bu oyun için hazırlanır). */
+  onGameRecorded?: (entry: LocalScore) => void;
 }
 
 export interface Lifecycle {
@@ -36,16 +40,29 @@ export interface Lifecycle {
   readonly pause: () => void;
   readonly resume: () => void;
   readonly toMenu: () => void;
-  readonly showOver: (isBest: boolean) => void;
+  readonly showOver: (isBest: boolean, entry?: LocalScore) => void;
   readonly handleGameOver: (reason: GameOverReason) => void;
 }
 
-export function createLifecycle({ game, view, sound, app, buzz, resetInput, tutorial }: LifecycleDeps): Lifecycle {
+export function createLifecycle({
+  game,
+  view,
+  sound,
+  app,
+  buzz,
+  resetInput,
+  tutorial,
+  onGameRecorded,
+}: LifecycleDeps): Lifecycle {
   let appState: AppState = 'menu';
+  /** NS4-18: oyun başına kimlik (yerel kayıt tekrarını ve global tekrar gönderimi engeller). */
+  let gameId = newGameId();
+  let recordedId: string | null = null;
 
   function start() {
     sound.unlock();
     game.reset();
+    gameId = newGameId();
     clearSessionHud(); // NS4-07: önceki oturumdan kalan rozet/toast/popup temizlenir (önceden yalnızca resetHud)
     resetNewBadges();
     view.resetFx(); // NS4-15: overT, anim, dalga ve flaşlar ile yeni efekt katmanları ve parçacıklar
@@ -89,8 +106,27 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput, tuto
     clearSessionHud();
     tutorial?.onSessionEnd(); // yarım öğretici tamamlanmış sayılmaz
   }
-  function showOver(isBest: boolean) {
+  function showOver(isBest: boolean, entry?: LocalScore) {
+    if (entry) onGameRecorded?.(entry);
     renderGameOver({ score: game.score, lines: game.lines, best: meta.best, isBest });
+  }
+  /** NS4-18: tamamlanan oyunu yerel skor listesine yazar (aynı oyun bir kez). Ağa hiçbir şey göndermez. */
+  function recordLocal(): LocalScore {
+    const entry: LocalScore = {
+      id: gameId,
+      nickname: loadNickname(),
+      score: game.score,
+      lines: game.lines,
+      level: game.level,
+      durationSeconds: Math.max(1, Math.round(game.elapsed / 1000)),
+      recordedAt: Date.now(),
+      submitted: false,
+    };
+    if (recordedId !== gameId) {
+      recordedId = gameId;
+      addLocalScore(entry);
+    }
+    return entry;
   }
 
   /**
@@ -111,6 +147,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput, tuto
     const isBest = game.score > meta.best;
     if (isBest) meta.best = game.score;
     saveMeta();
+    const entry = recordLocal();
     track('game_over', {
       reason,
       score: game.score,
@@ -121,7 +158,7 @@ export function createLifecycle({ game, view, sound, app, buzz, resetInput, tuto
       syn_uses: game.synUses,
       tetrises: game.tetrises,
     });
-    setTimeout(() => showOver(isBest), 950);
+    setTimeout(() => showOver(isBest, entry), 950);
     tutorial?.onSessionEnd();
   }
 

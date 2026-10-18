@@ -33,6 +33,8 @@ const at = (s: string, needle: string) => {
   if (i < 0) throw new Error('yok: ' + needle);
   return i;
 };
+/** NS4-18: oyun sonu global gönderim formu. */
+const FORM_RE = /<form class="submit-score"[\s\S]*?<\/form>/;
 const how = section('scr-how'),
   pause = section('scr-pause'),
   over = section('scr-over'),
@@ -67,7 +69,15 @@ describe('görünür metinler değişmedi (a67fe7f)', () => {
       'Nasıl oynanır Dokunmatik Sağa-sola sürükle Bloğu kaydır Dokun Döndür (tahtanın sol üçte biri: ters yön) Aşağı sürükle Yavaşça indir Aşağı fırlat Anında bırak Yukarı fırlat Beklet Klavye ← → Kaydır ↑ / X · Z Döndür · ters döndür ↓ · Boşluk Yavaş indir · anında bırak C / Shift Beklet 1 · 2 Sıklamen özütü · sentetik açıcı Esc / P Duraklat Oyun alanı bir sinüs boşluğu Düşen bloklar biriken mukus; alan dolarsa sinüs tamamen tıkanır. Tam satır = drenaj. Dört satır birden: ozmotik etki. T-spin: nörorefleks etki. Tıkanıklık yükselince iki destek açılır. Sıklamen özütü oyunda bir kez kullanılır, alt yarıyı yavaşça boşaltır ve 30 sn puanları ikiye katlar. Sentetik açıcı anında 3 satır açar. Tekrarlarsan tıkanıklık geri teper: bloklar hızlanır, alttan yeni tıkanıklık yükselir. Tamam Öğreticiyle oyna',
     ],
   ])('%s', (_id, sec, expected) => {
-    expect(text(sec)).toBe(expected);
+    // NS4-18: oyun sonundaki global gönderim formu ayrı testte sabitlenir; mevcut metinler aynı kalmalı
+    expect(text(sec.replace(FORM_RE, ''))).toBe(expected);
+  });
+  it('NS4-18 oyun sonu gönderim formu: yalnızca görevin istediği metinler', () => {
+    const form = FORM_RE.exec(over)?.[0] ?? '';
+    expect(text(form)).toBe('Takma ad Global tabloya gönder 3–16 karakter: harf, rakam, boşluk, - _ .');
+    // ana eylemlerden (Tekrar oyna / Ana menü) sonra gelir: hiyerarşi değişmez
+    expect(at(over, 'id="b-menu"')).toBeLessThan(at(over, 'id="submit-score"'));
+    expect(at(over, 'id="submit-score"')).toBeLessThan(at(over, 'id="tip-over"'));
   });
   it('Ayarlar: yalnızca görevdeki üç grup başlığı eklendi', () => {
     // grup başlıkları (legend) çıkarılınca metin a67fe7f ile aynı

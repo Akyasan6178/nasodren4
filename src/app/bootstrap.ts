@@ -24,6 +24,12 @@ import { Tutorial } from '../tutorial/Tutorial';
 import { TUTORIAL_DONE_TEXT } from '../tutorial/steps';
 import { tutorialStore } from '../storage/tutorial';
 import { initTips, setTip, openSub, bindBackButtons, closeSub, initScreens } from '../ui/screens';
+import { leaderboardConfig } from '../leaderboard/config';
+import { createLeaderboardClient } from '../leaderboard/globalClient';
+import { loadLocalScores, updateLocalScore } from '../leaderboard/localScores';
+import { loadNickname, saveNickname } from '../leaderboard/nickname';
+import { createScoresView } from '../ui/scoresView';
+import { createSubmitPanel } from '../ui/submitScore';
 import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
@@ -90,7 +96,25 @@ export function bootstrap(): void {
     mode: navigator.maxTouchPoints > 0 ? 'touch' : 'keyboard',
     onComplete: () => toast(TUTORIAL_DONE_TEXT),
   });
-  const lifecycle = createLifecycle({ game, view, sound, app, buzz, resetInput: () => input.reset(), tutorial });
+  // NS4-18: yerel + global skor. Ortam değişkenleri yoksa istemci devre dışıdır (oyun ve yerel tablo çalışır).
+  const leaderboard = createLeaderboardClient(leaderboardConfig);
+  const submitPanel = createSubmitPanel({
+    client: leaderboard,
+    loadNickname,
+    saveNickname,
+    updateLocal: updateLocalScore,
+  });
+  const scoresView = createScoresView({ client: leaderboard, loadLocal: loadLocalScores });
+  const lifecycle = createLifecycle({
+    game,
+    view,
+    sound,
+    app,
+    buzz,
+    resetInput: () => input.reset(),
+    tutorial,
+    onGameRecorded: (entry) => submitPanel.prepare(entry),
+  });
   wireGameEvents({ game, view, sound, buzz, lifecycle });
 
   const input = new InputController({
@@ -124,6 +148,10 @@ export function bootstrap(): void {
     lifecycle.start();
   });
   $('b-set1').addEventListener('click', () => openSub('scr-set'));
+  $('b-scores').addEventListener('click', () => {
+    scoresView.open();
+    openSub('scr-scores');
+  });
   $('b-set2').addEventListener('click', () => openSub('scr-set'));
   $('cta-over', HTMLAnchorElement).href = ctaUrl('game_over');
   $('cta-pause', HTMLAnchorElement).href = ctaUrl('pause_menu');

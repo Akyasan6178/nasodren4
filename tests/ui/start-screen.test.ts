@@ -30,7 +30,7 @@ describe('başlangıç ekranı içeriği', () => {
     );
   });
 
-  it('tek birincil eylem (Oyna) ve iki ikincil eylem var; yeni buton veya CTA yok', () => {
+  it('tek birincil eylem (Oyna) ve ikincil eylemler (NS4-18: + Skorlar); CTA yok', () => {
     const buttons = [...start.matchAll(/<button class="([^"]+)" id="([^"]+)"[^>]*>([\s\S]*?)<\/button>/g)].map((m) => [
       m[2],
       m[1],
@@ -40,9 +40,10 @@ describe('başlangıç ekranı içeriği', () => {
       ['b-play', 'btn primary', 'Oyna'],
       ['b-how', 'btn ghost', 'Nasıl oynanır'],
       ['b-set1', 'btn ghost', 'Ayarlar'],
+      ['b-scores', 'btn ghost btn-sub', 'Skorlar'],
     ]);
     expect(start).not.toMatch(/<a\s/);
-    expect((start.match(/<button/g) ?? []).length).toBe(3);
+    expect((start.match(/<button/g) ?? []).length).toBe(4);
   });
 
   it('marka adı ve haricî görsel yok', () => {
