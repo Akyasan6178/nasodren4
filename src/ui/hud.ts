@@ -5,6 +5,8 @@
    ===================================================================== */
 import { $, place } from './dom';
 import { toast, clearNotifications } from './notifications';
+import { track } from '../analytics/analytics';
+import { HEALTH_TOASTS } from '../content/health';
 import {
   CYC_NAME,
   CYC_SHORT,
@@ -35,6 +37,8 @@ interface HudCache {
   synState: SynState | null;
   /** "Sıklamen özütü hazır" toast'u bu oyunda gösterildi mi. */
   cycAnnounced: boolean;
+  /** NS4-19: sentetik açıcı bu oyunda ilk kez kullanılabilir oldu mu (analitik bir kez). */
+  synAnnounced: boolean;
 }
 
 function initialHud(): HudCache {
@@ -51,6 +55,7 @@ function initialHud(): HudCache {
     cycState: null,
     synState: null,
     cycAnnounced: false,
+    synAnnounced: false,
   };
 }
 const hud: HudCache = initialHud();
@@ -93,13 +98,18 @@ export function updateHud(g: Game, playing: boolean): void {
     $('btn-cyc').classList.toggle('ready', cyc);
     if (cyc && !hud.cycAnnounced) {
       hud.cycAnnounced = true;
-      toast('Sinüslerin dolmaya başladı. Sıklamen özütü hazır.');
+      toast(HEALTH_TOASTS.cyclamenReady.text);
+      track('cyclamen_available', { level: g.level, congestion: cg });
     }
   }
   if (syn !== hud.syn) {
     hud.syn = syn;
     $('btn-syn', HTMLButtonElement).disabled = !syn;
     $('btn-syn').classList.toggle('ready', syn && g.synUses === 0);
+    if (syn && !hud.synAnnounced) {
+      hud.synAnnounced = true;
+      track('synthetic_available', { level: g.level, congestion: cg });
+    }
   }
   // NS4-07: buton durumu (kilitli / hazır / kullanıldı / aktif etki / rebound riski) ve alt metni
   const cs = cycState(g, playing);

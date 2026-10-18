@@ -6,6 +6,8 @@
    oyunu ve yerel kaydı etkilemez; kullanıcı tekrar deneyebilir.
    ===================================================================== */
 import { $ } from './dom';
+import { track } from '../analytics/analytics';
+import type { SubmitFailCode } from '../types/analytics';
 import { validateNickname } from '../../supabase/functions/_shared/scoreRules.ts';
 import type { LeaderboardClient, SubmitResult } from '../leaderboard/globalClient';
 import type { LocalScore } from '../leaderboard/localScores';
@@ -22,6 +24,17 @@ export const SUBMIT_TEXT = {
 } as const;
 
 export type SubmitState = 'idle' | 'sending' | 'sent' | 'failed' | 'disabled';
+
+/** İstemci sonucu → analitik hata kodu (sabit küme). */
+const FAIL_CODE: Readonly<Record<Exclude<SubmitResult, { ok: true }>['reason'], SubmitFailCode>> = {
+  disabled: 'disabled',
+  invalid: 'rejected',
+  duplicate: 'duplicate',
+  rate_limited: 'rate_limited',
+  offline: 'offline',
+  timeout: 'timeout',
+  error: 'server',
+};
 
 export interface SubmitPanelDeps {
   readonly client: LeaderboardClient;
@@ -59,8 +72,11 @@ export function createSubmitPanel({ client, loadNickname, saveNickname, updateLo
   async function submit(): Promise<void> {
     const e = entry;
     if (!e || state === 'sending' || state === 'sent' || state === 'disabled') return;
+    // NS4-19: deneme / sonuç olayları; takma ad, skor veya gövde analitiğe yazılmaz
+    track('score_submit_started', {});
     const nick = validateNickname(input.value);
     if (!nick.ok) {
+      track('score_submit_failed', { code: 'nickname' });
       input.setAttribute('aria-invalid', 'true');
       set('failed', SUBMIT_TEXT.invalidNick);
       input.focus();
@@ -88,6 +104,8 @@ export function createSubmitPanel({ client, loadNickname, saveNickname, updateLo
       sentIds.add(e.id);
       updateLocal(e.id, { submitted: true });
     }
+    if (r.ok) track('score_submit_succeeded', {});
+    else track('score_submit_failed', { code: FAIL_CODE[r.reason] });
     if (entry !== e) return; // bu arada yeni oyun başladı; panel artık başka oyunu gösteriyor
     if (r.ok) set('sent', SUBMIT_TEXT.sent);
     else if (r.reason === 'duplicate') set('sent', SUBMIT_TEXT.duplicate);

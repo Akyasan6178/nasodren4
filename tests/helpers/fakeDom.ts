@@ -191,6 +191,9 @@ const ELEMENT_IDS = [
   'global-status',
   'submit-score',
   'submit-status',
+  // NS4-19: CTA bağlantıları (analitik dinleyicileri)
+  'cta-over',
+  'cta-pause',
 ];
 /** Ekranların odaklanabilir çocukları (index.html sırasıyla; ilk buton ekran açılınca odak alır). */
 const SCREEN_BUTTONS: Record<string, readonly string[]> = {

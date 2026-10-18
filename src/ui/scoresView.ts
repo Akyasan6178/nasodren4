@@ -9,6 +9,7 @@
    ===================================================================== */
 import { $ } from './dom';
 import { fmt } from './hud';
+import { track } from '../analytics/analytics';
 import type { LeaderboardClient, GlobalEntry, FetchResult } from '../leaderboard/globalClient';
 import type { LocalScore } from '../leaderboard/localScores';
 
@@ -125,6 +126,11 @@ export function createScoresView({ client, loadLocal }: ScoresViewDeps): ScoresV
     renderGlobal(r);
   }
 
+  /** Kullanıcı sekme değiştirdi (ekran açılışındaki varsayılan seçim sayılmaz). */
+  function userSelect(tab: ScoresTab, focus = false): void {
+    if (tab !== current) track('leaderboard_tab_changed', { tab });
+    select(tab, focus);
+  }
   function select(tab: ScoresTab, focus = false): void {
     current = tab;
     for (const t of ['local', 'global'] as const) {
@@ -138,20 +144,26 @@ export function createScoresView({ client, loadLocal }: ScoresViewDeps): ScoresV
   }
 
   for (const t of ['local', 'global'] as const) {
-    tabs[t].addEventListener('click', () => select(t));
+    tabs[t].addEventListener('click', () => userSelect(t));
     tabs[t].addEventListener('keydown', (e: KeyboardEvent) => {
       const k = e.key;
       if (k === 'ArrowRight' || k === 'ArrowLeft') {
         e.preventDefault();
-        select(current === 'local' ? 'global' : 'local', true);
+        userSelect(current === 'local' ? 'global' : 'local', true);
       } else if (k === 'Home' || k === 'End') {
         e.preventDefault();
-        select(k === 'Home' ? 'local' : 'global', true);
+        userSelect(k === 'Home' ? 'local' : 'global', true);
       }
     });
   }
-  retry.addEventListener('click', () => void loadGlobal());
-  refresh.addEventListener('click', () => void loadGlobal());
+  retry.addEventListener('click', () => {
+    track('leaderboard_refreshed', { action: 'retry' });
+    void loadGlobal();
+  });
+  refresh.addEventListener('click', () => {
+    track('leaderboard_refreshed', { action: 'refresh' });
+    void loadGlobal();
+  });
 
   return {
     open() {

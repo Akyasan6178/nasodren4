@@ -8,6 +8,11 @@
 import type { Game } from '../game/Game';
 import { PIECE } from '../game/pieces';
 import { ROTATE_O_NOTE, TUTORIAL_STEPS, type InputMode, type TutorialStep } from './steps';
+import type { AnalyticsPayloads } from '../types/analytics';
+
+/** NS4-19: öğretici huni olayları (analytics.track ile aynı imza; isteğe bağlı). */
+export type TutorialEventName = 'tutorial_started' | 'tutorial_step' | 'tutorial_completed' | 'tutorial_skipped';
+export type TutorialTrack = <K extends TutorialEventName>(name: K, data: AnalyticsPayloads[K]) => void;
 
 export interface TutorialView {
   /** `note`: adıma ek kısa durum notu (ör. kare blok dönmez). */
@@ -24,6 +29,7 @@ export interface TutorialOptions {
   readonly mode: InputMode;
   /** Bütün adımlar tamamlandığında (atlamada çağrılmaz). */
   readonly onComplete?: () => void;
+  readonly track?: TutorialTrack;
 }
 
 export class Tutorial {
@@ -67,6 +73,7 @@ export class Tutorial {
     if (this.forced || !this.store.isDone()) {
       this.forced = false;
       this.active = true;
+      this.opts.track?.('tutorial_started', { step: this.index + 1, resumed: this.index > 0, mode: this.mode });
       this.render();
     } else {
       this.active = false;
@@ -99,6 +106,7 @@ export class Tutorial {
   }
   /** "Atla": öğretici kapanır ve bir daha otomatik açılmaz. */
   skip(): void {
+    if (this.active) this.opts.track?.('tutorial_skipped', { step: this.index + 1 });
     this.active = false;
     this.index = 0;
     this.store.markDone();
@@ -106,7 +114,9 @@ export class Tutorial {
   }
   /** Son adımdaki "Tamam" (satır temizlemeyi beklemeden bitirir). */
   acknowledge(): void {
-    if (this.step === 'clear') this.complete();
+    if (this.step !== 'clear') return;
+    this.opts.track?.('tutorial_step', { step: this.index + 1, id: 'clear' });
+    this.complete('ack');
   }
   /** "Öğreticiyi yeniden başlat": baştan ve sonraki oyunda gösterilir. */
   restart(): void {
@@ -116,11 +126,13 @@ export class Tutorial {
 
   private did(step: TutorialStep): void {
     if (this.step !== step) return; // yanlış eylem adımı ilerletmez
+    this.opts.track?.('tutorial_step', { step: this.index + 1, id: step });
     this.index++;
-    if (this.index >= TUTORIAL_STEPS.length) this.complete();
+    if (this.index >= TUTORIAL_STEPS.length) this.complete('clear');
     else this.render();
   }
-  private complete(): void {
+  private complete(via: 'clear' | 'ack'): void {
+    this.opts.track?.('tutorial_completed', { via });
     this.active = false;
     this.index = 0;
     this.store.markDone();

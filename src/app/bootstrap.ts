@@ -16,6 +16,7 @@ import { canVibrate, createBuzz } from '../haptics/haptics';
 import { settings, saveSettings } from '../storage/settings';
 import { track } from '../analytics/analytics';
 import { ctaUrl } from '../analytics/cta';
+import { bindUiAnalytics } from '../analytics/funnel';
 import { $ } from '../ui/dom';
 import { updateHud, applyHudLayout } from '../ui/hud';
 import { toast } from '../ui/notifications';
@@ -95,6 +96,7 @@ export function bootstrap(): void {
   const tutorial = new Tutorial(game, tutorialView, tutorialStore, {
     mode: navigator.maxTouchPoints > 0 ? 'touch' : 'keyboard',
     onComplete: () => toast(TUTORIAL_DONE_TEXT),
+    track,
   });
   // NS4-18: yerel + global skor. Ortam değişkenleri yoksa istemci devre dışıdır (oyun ve yerel tablo çalışır).
   const leaderboard = createLeaderboardClient(leaderboardConfig);
@@ -136,6 +138,8 @@ export function bootstrap(): void {
   initTips();
   bindBackButtons();
   initScreens(); // NS4-10: başlangıç ekranı açıkken arka plan inert
+  // NS4-19: CTA / Tekrar oyna / Skorlar huni olayları (davranış dinleyicilerinden önce bağlanır)
+  bindUiAnalytics({ getState: lifecycle.getState, getScore: () => game.score, getLevel: () => game.level });
   $('b-play').addEventListener('click', lifecycle.start);
   $('b-again').addEventListener('click', lifecycle.start);
   $('b-menu').addEventListener('click', lifecycle.toMenu);
@@ -155,8 +159,6 @@ export function bootstrap(): void {
   $('b-set2').addEventListener('click', () => openSub('scr-set'));
   $('cta-over', HTMLAnchorElement).href = ctaUrl('game_over');
   $('cta-pause', HTMLAnchorElement).href = ctaUrl('pause_menu');
-  $('cta-over').addEventListener('click', () => track('cta_click', { placement: 'game_over', score: game.score }));
-  $('cta-pause').addEventListener('click', () => track('cta_click', { placement: 'pause_menu' }));
 
   // ayarlar
   bindSettingsPanel({ settings, save: saveSettings, onAudioChange: () => sound.applySettings(), canVibrate });
@@ -189,6 +191,8 @@ export function bootstrap(): void {
   });
 
   setTip('tip-start');
+  // NS4-19: oyun yüklendi (sayfa başına bir kez). Kişisel veri yok: yalnızca iki durum bayrağı.
+  track('game_loaded', { global_scores: leaderboard.enabled, tutorial_done: tutorialStore.isDone() });
   // document.fonts eski tarayıcılarda yoktur (DOM tipleri her zaman var sayar). FontFaceSet varsa ready her zaman tanımlıdır.
   const fontSet: FontFaceSet | undefined = document.fonts;
   const fontsReady: Promise<unknown> = fontSet
