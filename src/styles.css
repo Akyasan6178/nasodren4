@@ -81,6 +81,35 @@
   --font-display: 'Fredoka', 'Nunito', ui-rounded, 'Segoe UI', system-ui, sans-serif;
   --font-body: 'Nunito', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
+  /* NS4-16: tipografi ölçeği (ölçek 1'deki px değerleri; önceki sabit değerlerle aynı).
+     Kartlar: başlık > bölüm > gövde > arayüz > yardımcı. İstatistik ve buton ayrı kademe. */
+  --fs-display: 44px;
+  --fs-title: 28px;
+  --fs-section: 17px;
+  --fs-lead: 16px;
+  --fs-body: 15px;
+  --fs-ui: 14px;
+  --fs-caption: 12px;
+  --fs-button: 18px;
+  --fs-stat: 22px;
+  --lh-tight: 1.05;
+  --lh-ui: 1.4;
+  --lh-body: 1.5;
+  /* HUD (tahta çevresi) */
+  --fs-hud-score: 32px;
+  --fs-hud-score-compact: 27px;
+  --fs-hud-label: 13px;
+  --fs-hud-value: 15px;
+  --fs-hud-button: 14px;
+  --fs-hud-sub: 11px;
+  --fs-hud-badge: 13px;
+  --fs-pop: 30px;
+  --fs-pop-sub: 15px;
+  /* Ölçek çarpanları: --ui-scale yardımcı ekran kartları (büyük ekran medya sorguları, aşağıda);
+     --hud-scale HUD metinleri (ui/hud.ts tahta hücresine göre #stage üzerinde atar; mobilde 1). */
+  --ui-scale: 1;
+  --hud-scale: 1;
+
   color-scheme: only light;
   box-sizing: border-box;
   padding-top: env(safe-area-inset-top, 0px);
@@ -190,14 +219,14 @@ body {
 .lbl {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 13px;
+  font-size: calc(var(--fs-hud-label) * var(--hud-scale));
   color: var(--color-text-muted);
   letter-spacing: 0.01em;
 }
 #meter-lbl {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: 11px;
+  font-size: calc(var(--fs-hud-sub) * var(--hud-scale));
 }
 #stats {
   display: flex;
@@ -208,7 +237,7 @@ body {
 #stats .score {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 32px;
+  font-size: calc(var(--fs-hud-score) * var(--hud-scale));
   line-height: 1;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
@@ -216,8 +245,8 @@ body {
 }
 #stats .row {
   display: flex;
-  gap: 14px;
-  font-size: 13px;
+  gap: calc(14px * var(--hud-scale));
+  font-size: calc(var(--fs-hud-label) * var(--hud-scale));
   color: var(--color-text-muted);
   font-weight: 700;
 }
@@ -225,7 +254,7 @@ body {
   color: var(--color-text);
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 15px;
+  font-size: calc(var(--fs-hud-value) * var(--hud-scale));
   font-variant-numeric: tabular-nums;
 }
 #stats.compact {
@@ -233,7 +262,7 @@ body {
   text-align: center;
 }
 #stats.compact .score {
-  font-size: 27px;
+  font-size: calc(var(--fs-hud-score-compact) * var(--hud-scale));
 }
 #stats.compact .row {
   gap: 4px 10px;
@@ -254,11 +283,11 @@ body {
   border-radius: var(--radius-control);
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 14px;
+  font-size: calc(var(--fs-hud-button) * var(--hud-scale));
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: calc(8px * var(--hud-scale));
   padding: 0 10px;
   cursor: pointer;
   box-shadow: var(--shadow-control);
@@ -279,8 +308,8 @@ input:focus-visible {
   outline-offset: 2px;
 }
 .gbtn svg {
-  width: 22px;
-  height: 22px;
+  width: calc(22px * var(--hud-scale));
+  height: calc(22px * var(--hud-scale));
   flex: none;
 }
 .gbtn .t {
@@ -293,7 +322,7 @@ input:focus-visible {
 .gbtn .t small {
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 11px;
+  font-size: calc(var(--fs-hud-sub) * var(--hud-scale));
   color: var(--color-text-muted);
 }
 /* Kilitli: düşük opaklık yerine kendi yüzeyi; metin okunur kalır, ikon soluklaşır */
@@ -460,8 +489,8 @@ input:focus-visible {
   pointer-events: none;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 13px;
-  padding: 5px 11px;
+  font-size: calc(var(--fs-hud-badge) * var(--hud-scale));
+  padding: calc(5px * var(--hud-scale)) calc(11px * var(--hud-scale));
   border-radius: var(--radius-pill);
   white-space: nowrap;
   transform: translateX(-50%);
@@ -496,11 +525,11 @@ input:focus-visible {
 }
 .pop .big {
   display: block;
-  font-size: 30px;
+  font-size: calc(var(--fs-pop) * var(--hud-scale));
 }
 .pop .sub {
   display: block;
-  font-size: 15px;
+  font-size: calc(var(--fs-pop-sub) * var(--hud-scale));
   font-weight: 600;
   opacity: 0.95;
 }
@@ -538,7 +567,7 @@ input:focus-visible {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   padding: 9px 14px;
-  font-size: 13px;
+  font-size: calc(var(--fs-hud-label) * var(--hud-scale));
   font-weight: 700;
   max-width: min(320px, 86vw);
   text-align: center;
@@ -703,12 +732,19 @@ input:focus-visible {
 .screen.on {
   display: flex;
 }
+/* NS4-16: oyunun üstünde açılan Mola ve Oyun sonu: arka plan koyu turkuazla kısılır ve hafifçe bulanıklaşır;
+   açık kart, tahta ve bloklarla karışmadan öne çıkar. */
+.screen.screen-dim {
+  background: color-mix(in srgb, var(--color-board) 58%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
 .sheet {
   background: var(--color-surface-strong);
   color: var(--color-text);
   border-radius: var(--radius-sheet);
-  padding: 26px 24px 22px;
-  width: min(420px, 100%);
+  padding: calc(26px * var(--ui-scale)) calc(24px * var(--ui-scale)) calc(22px * var(--ui-scale));
+  width: min(calc(420px * var(--ui-scale)), 100%);
   max-height: 100%;
   overflow-y: auto;
   box-shadow: var(--shadow-sheet);
@@ -717,7 +753,7 @@ input:focus-visible {
 .sheet h1 {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 44px;
+  font-size: calc(var(--fs-display) * var(--ui-scale));
   line-height: 0.95;
   margin: 0 0 6px;
   letter-spacing: -0.01em;
@@ -725,31 +761,63 @@ input:focus-visible {
 .sheet h2 {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 28px;
-  line-height: 1.05;
+  font-size: calc(var(--fs-title) * var(--ui-scale));
+  line-height: var(--lh-tight);
   margin: 0 0 8px;
 }
 .sheet h3 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 17px;
+  font-size: calc(var(--fs-section) * var(--ui-scale));
   margin: 18px 0 6px;
 }
 .sheet p {
   margin: 0 0 10px;
-  line-height: 1.5;
-  font-size: 15px;
+  line-height: var(--lh-body);
+  font-size: calc(var(--fs-body) * var(--ui-scale));
 }
 .sheet .lead {
   color: var(--color-text-muted);
   font-weight: 700;
-  font-size: 16px;
+  font-size: calc(var(--fs-lead) * var(--ui-scale));
   margin-bottom: 18px;
+}
+/* NS4-16: uzun içerikli kartlar (Nasıl oynanır, Ayarlar): gövde kayar, eylemler altta sabit kalır */
+.sheet.sheet-scroll {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+.sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: calc(26px * var(--ui-scale)) calc(24px * var(--ui-scale)) calc(14px * var(--ui-scale));
+}
+/* klavyeyle kaydırılabilir içerik (Nasıl oynanır: tabindex=0, region) */
+.sheet-body:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: -3px;
+}
+.sheet-actions {
+  flex: none;
+  padding: calc(12px * var(--ui-scale)) calc(24px * var(--ui-scale)) calc(18px * var(--ui-scale));
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface-strong);
+}
+.sheet-actions .btn,
+.sheet-actions.row2 .btn {
+  margin-top: 0;
 }
 .btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-align: center;
   width: 100%;
   min-height: 52px;
@@ -757,7 +825,7 @@ input:focus-visible {
   border: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 18px;
+  font-size: calc(var(--fs-button) * var(--ui-scale));
   cursor: pointer;
   text-decoration: none;
   margin-top: 10px;
@@ -780,6 +848,27 @@ input:focus-visible {
   background: var(--color-fresh-strong);
   color: var(--color-on-accent);
 }
+/* NS4-16: üçüncül eylem (Mola'daki sağlık rehberi bağlantısı): kenarlıksız, altı çizili bağlantı görünümü */
+.btn.link {
+  background: transparent;
+  color: var(--color-fresh-strong);
+  min-height: 44px;
+  font-size: calc(var(--fs-body) * var(--ui-scale));
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+/* dış bağlantı işareti (yeni sekmede açılır) */
+.btn .ext {
+  width: 0.85em;
+  height: 0.85em;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .row2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -793,7 +882,7 @@ input:focus-visible {
   background: color-mix(in srgb, var(--color-cyclamen) 9%, transparent);
   padding: 10px 12px;
   border-radius: 0 12px 12px 0;
-  font-size: 14px;
+  font-size: calc(var(--fs-ui) * var(--ui-scale));
   line-height: 1.45;
   margin: 14px 0 4px;
 }
@@ -805,11 +894,34 @@ input:focus-visible {
   color: var(--color-cyclamen-strong);
 }
 .fine {
-  font-size: 12px !important;
+  font-size: calc(var(--fs-caption) * var(--ui-scale)) !important;
   color: var(--color-text-muted);
   margin-top: 14px !important;
-  line-height: 1.4 !important;
+  line-height: var(--lh-ui) !important;
 }
+
+/* ---- Mola (NS4-16) ---- */
+.sheet-pause h2 {
+  margin-bottom: 4px;
+}
+.sheet-pause #b-resume {
+  min-height: calc(58px * var(--ui-scale));
+  margin-top: 12px;
+  font-size: calc(var(--fs-button) * 1.08 * var(--ui-scale));
+  box-shadow: 0 10px 22px -14px var(--color-cyclamen-strong);
+}
+.sheet-pause .row2 .btn {
+  min-height: calc(48px * var(--ui-scale));
+  font-size: calc(var(--fs-button) * 0.92 * var(--ui-scale));
+}
+.sheet-pause .tip {
+  margin: 18px 0 2px;
+}
+.sheet-pause .btn.link {
+  margin-top: 6px;
+}
+
+/* ---- Oyun sonu (NS4-16): yeni rekor → istatistik → rozetler → sağlık → Tekrar oyna → Ana menü ---- */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -825,13 +937,22 @@ input:focus-visible {
 .stat-grid b {
   display: block;
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: calc(var(--fs-stat) * var(--ui-scale));
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 .stat-grid span {
-  font-size: 12px;
+  font-size: calc(var(--fs-caption) * var(--ui-scale));
   color: var(--color-text-muted);
+  font-weight: 700;
+}
+/* skor öne çıkar (aynı ızgara, ayrı vurgu) */
+.stat-grid .stat-main {
+  background: color-mix(in srgb, var(--color-cyclamen) 11%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-cyclamen) 35%, transparent);
+}
+.stat-grid .stat-main b {
+  color: var(--color-cyclamen-strong);
   font-weight: 700;
 }
 .newbest {
@@ -842,41 +963,126 @@ input:focus-visible {
   font-weight: 600;
   border-radius: var(--radius-pill);
   padding: 4px 12px;
-  font-size: 14px;
+  font-size: calc(var(--fs-ui) * var(--ui-scale));
   margin-bottom: 8px;
   width: max-content;
 }
+/* Rozetler: kazanılan = dolu pembe + onay işareti; yeni = koyu pembe + halka; kilitli = kesik kenar, soluk daire */
 .badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: 8px 0 0;
+  margin: 10px 0 0;
 }
 .badges span {
-  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: calc(12.5px * var(--ui-scale));
   font-weight: 800;
-  padding: 5px 10px;
+  line-height: 1.2;
+  padding: 5px 10px 5px 6px;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--color-cyclamen) 14%, transparent);
+  background: var(--color-cyclamen-soft);
   color: var(--color-text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-cyclamen) 40%, transparent);
+}
+.badges span::before {
+  content: '';
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+  border-radius: 50%;
+  background: var(--color-cyclamen-strong) center / 70% no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.6 6.3 5 8.6l4.4-5' fill='none' stroke='%23fff' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 .badges span.new {
   background: var(--color-cyclamen);
   color: var(--color-on-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-cyclamen) 25%, transparent);
 }
-/* Kazanılmamış rozet: soluk metin yerine kesik kenarlık + ikincil metin */
+.badges span.new::before {
+  background-color: var(--color-cyclamen-strong);
+  box-shadow: 0 0 0 1.5px var(--color-on-accent);
+}
 .badges span.locked {
   background: transparent;
   color: var(--color-text-muted);
-  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+  font-weight: 700;
+  box-shadow: none;
+  outline: 1.5px dashed var(--color-border-strong);
+  outline-offset: -1.5px;
+}
+.badges span.locked::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--color-border-strong);
+}
+/* sağlık yönlendirmesi: görünür ama sakin (reklam bandı gibi değil) */
+.health {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-fresh) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-fresh) 20%, transparent);
+}
+.health p {
+  margin: 0 0 8px;
+  font-size: calc(var(--fs-ui) * var(--ui-scale));
+  line-height: 1.45;
+}
+.health .btn.cta {
+  margin-top: 0;
+  min-height: 46px;
+  font-size: calc(var(--fs-lead) * var(--ui-scale));
+  background: var(--color-btn-bg);
+  color: var(--color-fresh-strong);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--color-fresh-strong) 55%, transparent);
+}
+.over-actions {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.over-actions .btn {
+  margin-top: 0;
+}
+.over-actions #b-again {
+  min-height: calc(56px * var(--ui-scale));
+  font-size: calc(var(--fs-button) * 1.08 * var(--ui-scale));
+  box-shadow: 0 10px 22px -14px var(--color-cyclamen-strong);
+}
+.over-actions #b-menu {
+  min-height: calc(56px * var(--ui-scale));
+}
+.sheet-over .tip {
+  margin-top: 16px;
+}
+
+/* ---- Nasıl oynanır (NS4-16) ---- */
+.ctl-groups {
+  display: grid;
+  gap: 0 24px;
+}
+.ctl-group h3 {
+  margin-top: 14px;
 }
 .ctl {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 6px 12px;
-  font-size: 14px;
+  gap: 0 14px;
+  font-size: calc(var(--fs-ui) * var(--ui-scale));
   line-height: 1.35;
-  margin: 4px 0;
+  margin: 2px 0;
+}
+.ctl dt,
+.ctl dd {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.ctl dt:last-of-type,
+.ctl dd:last-of-type {
+  border-bottom: 0;
 }
 .ctl dt {
   font-family: var(--font-display);
@@ -888,8 +1094,23 @@ input:focus-visible {
   color: var(--color-text-muted);
   font-weight: 700;
 }
+.ctl kbd {
+  display: inline-block;
+  min-width: 1.75em;
+  padding: 0 0.4em;
+  border-radius: 6px;
+  background: var(--color-btn-bg);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: 0 1.5px 0 var(--color-border-strong);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.92em;
+  line-height: 1.5;
+  text-align: center;
+  color: var(--color-text);
+}
 .map {
-  font-size: 14px;
+  font-size: calc(var(--fs-ui) * var(--ui-scale));
   line-height: 1.45;
   margin: 0;
   padding-left: 18px;
@@ -897,30 +1118,137 @@ input:focus-visible {
 .map li {
   margin: 4px 0;
 }
+/* geniş kart: kontrol grupları yan yana */
+@media (min-width: 760px) {
+  .sheet.sheet-wide {
+    width: min(calc(720px * var(--ui-scale)), 100%);
+  }
+  .ctl-groups {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ---- Ayarlar (NS4-16): Ses / Oynanış / İleri ayarlar ---- */
+.set-group {
+  margin: 12px 0 0;
+  padding: 0 14px;
+  min-width: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--color-fresh) 6%, transparent);
+}
+.set-group legend {
+  float: left;
+  width: 100%;
+  padding: 10px 0 2px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(var(--fs-caption) * var(--ui-scale));
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--color-fresh-strong);
+}
+.set-group > .set {
+  clear: both;
+}
 .set {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 10px 0;
+  min-height: 48px;
+  padding: 8px 0;
   border-bottom: 1px solid var(--color-border);
   font-weight: 700;
-  font-size: 15px;
+  font-size: calc(var(--fs-body) * var(--ui-scale));
+  cursor: pointer;
+}
+.set-group > .set:last-child {
+  border-bottom: 0;
 }
 .set input[type='checkbox'] {
-  width: 22px;
-  height: 22px;
+  flex: none;
+  width: calc(22px * var(--ui-scale));
+  height: calc(22px * var(--ui-scale));
   accent-color: var(--color-cyclamen);
+  cursor: pointer;
 }
 .set input[type='range'] {
-  width: 140px;
+  flex: none;
+  width: calc(140px * var(--ui-scale));
   accent-color: var(--color-cyclamen);
+  cursor: pointer;
 }
 .set small {
   display: block;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: calc(var(--fs-caption) * var(--ui-scale));
   font-weight: 700;
+}
+.set:focus-within {
+  box-shadow: 0 1px 0 var(--color-fresh-strong);
+}
+/* FPS geliştirici seçeneği geri planda */
+.set.set-minor {
+  min-height: 44px;
+  font-size: calc(var(--fs-ui) * var(--ui-scale));
+  color: var(--color-text-muted);
+}
+
+/* alt eylem satırı (Tamam / Öğreticiyle oyna): dar telefonda iki buton yan yana sığar */
+.sheet-actions.row2 .btn {
+  font-size: calc(var(--fs-button) * 0.94 * var(--ui-scale));
+  padding: 0 6px;
+}
+/* kısa yatay ekran (ör. 844×390): Oyun sonu iki sütun; özet solda, sağlık yönlendirmesi ve eylemler sağda,
+   böylece Tekrar oyna kaydırmadan görünür */
+@media (orientation: landscape) and (max-height: 520px) {
+  .sheet.sheet-over {
+    width: min(820px, 100%);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 20px;
+    align-items: start;
+    padding: 18px 20px 16px;
+  }
+  .over-next .health {
+    margin-top: 0;
+  }
+}
+
+/* ---- büyük ekranlar: yardımcı ekran kartları kontrollü büyür (başlangıç ekranı kapsam dışı) ---- */
+#scr-how .btn,
+#scr-pause .btn,
+#scr-over .btn,
+#scr-set .btn {
+  min-height: calc(52px * var(--ui-scale));
+}
+#scr-pause .btn.link {
+  min-height: 44px;
+}
+@media (min-width: 1500px) and (min-height: 860px) {
+  #scr-how,
+  #scr-pause,
+  #scr-over,
+  #scr-set {
+    --ui-scale: 1.12;
+  }
+}
+@media (min-width: 1880px) and (min-height: 1020px) {
+  #scr-how,
+  #scr-pause,
+  #scr-over,
+  #scr-set {
+    --ui-scale: 1.25;
+  }
+}
+@media (min-width: 2400px) and (min-height: 1340px) {
+  #scr-how,
+  #scr-pause,
+  #scr-over,
+  #scr-set {
+    --ui-scale: 1.45;
+  }
 }
 /* ---------- başlangıç ekranı (NS4-09) ----------
    Ferah hava akışı + sıklamen. Yalnızca #scr-start kapsamında; diğer ekranlar ve HUD değişmez.

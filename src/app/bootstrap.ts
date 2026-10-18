@@ -169,10 +169,15 @@ export function bootstrap(): void {
   void fontsReady.then(queueLayout);
   // hata ayıklama (yalnızca development; production build'de global debug erişimi yok)
   if (import.meta.env.DEV) {
-    const fn = (window.__fn = { game, view, app });
-    // NS4-15: efekt gösterimi (__fn.fx); dinamik import production paketinde yer almaz
+    const fn: NonNullable<Window['__fn']> = { game, view, app };
+    window.__fn = fn;
+    // NS4-15: efekt gösterimi (__fn.fx); NS4-16: yardımcı ekran gösterimi (__fn.ui).
+    // Dinamik importlar production paketinde yer almaz.
     void import('../dev/fxDemo').then(({ createFxDemo }) => {
-      window.__fn = { ...fn, fx: createFxDemo(view, game) };
+      fn.fx = createFxDemo(view, game);
+    });
+    void import('../dev/screensDemo').then(({ createScreensDemo }) => {
+      fn.ui = createScreensDemo(lifecycle, game);
     });
   }
 }

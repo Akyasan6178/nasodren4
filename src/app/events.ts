@@ -11,7 +11,6 @@ import { HAPTIC, type Buzz } from '../haptics/haptics';
 import { track } from '../analytics/analytics';
 import { toast, popup } from '../ui/notifications';
 import { award } from '../ui/badges';
-import { CFG } from '../config/gameConfig';
 
 export interface WireDeps {
   game: Game;
@@ -90,8 +89,6 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
     if (lv >= 5 && game.synUses === 0) award('dogal');
   });
   game.on('powerdone', (e) => {
-    // NS4-15: sıklamen tek kullanımlık; ×2 başlangıcı açıkça bildirilir (görsel vuruş GameView.cycBoost)
-    if (e.kind === 'cyc') popup('Puan ×2', `${Math.round(CFG.cycMultMs / 1000)} sn · sıklamen tek kullanımlık`, 'cyc');
     if (e.kind === 'syn') {
       if (e.rebound) {
         view.onRebound();

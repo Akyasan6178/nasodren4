@@ -43,15 +43,30 @@ describe('efekt bağlantıları', () => {
     expect(calls).toContain('view.onGarbage');
   });
 
-  it('sıklamen bitince ×2 başlangıcı ve tek kullanım açıkça bildirilir', async () => {
-    const { g, lc } = await loadUi();
+  // NS4-16: NS4-15'te izinsiz eklenen "Puan ×2 · 30 sn · sıklamen tek kullanımlık" popup'ı kaldırıldı.
+  // ×2 başlangıcı onaylı rozet/sayaç ve görsel vuruşla (GameView.cycBoost) anlaşılır.
+  it('sıklamen: onaylı başlangıç popup’ı kalır, bitişte yeni metin yok; ×2 rozeti ve sayacı çalışır', async () => {
+    const { g, lc, frame, calls } = await loadUi();
     lc.start();
     stackRows(g, 8);
     expect(g.useCyc()).toBe(true);
-    expect(popups()).toContainEqual(['Sıklamen özütü', 'Ozmotik drenaj başladı']);
+    expect(popups()).toEqual([['Sıklamen özütü', 'Ozmotik drenaj başladı']]);
+    calls.length = 0;
     finishClear(g);
-    expect(popups()).toContainEqual(['Puan ×2', `${CFG.cycMultMs / 1000} sn · sıklamen tek kullanımlık`]);
+    expect(popups()).toEqual([['Sıklamen özütü', 'Ozmotik drenaj başladı']]); // bitişte popup eklenmez
+    expect(JSON.stringify(popups())).not.toMatch(/Puan ×2|tek kullanımlık/);
+    expect(calls).toContain('view.onClearEnd'); // görsel ×2 vuruşu GameView'de
     expect(g.multT).toBe(CFG.cycMultMs);
+    frame();
+    const badge = dom.el('badge-mult');
+    expect(badge.style['display']).toBe('block');
+    expect(badge.textContent).toBe(`Ferah nefes ×2 · ${CFG.cycMultMs / 1000} sn`);
+    g.update(10_000);
+    frame();
+    expect(badge.textContent).toBe(`Ferah nefes ×2 · ${CFG.cycMultMs / 1000 - 10} sn`);
+    g.update(CFG.cycMultMs);
+    frame();
+    expect(badge.style['display']).toBe('none');
   });
 
   it('yeni oyun view.resetFx ile süren efektleri temizler', async () => {

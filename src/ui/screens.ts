@@ -4,6 +4,7 @@ import { TIPS } from '../content/tips';
 import { $ } from './dom';
 import { fmt } from './hud';
 import { renderBadges } from './badges';
+import type { BadgeId } from '../types/content';
 
 export type ScreenId = 'scr-start' | 'scr-how' | 'scr-pause' | 'scr-over' | 'scr-set';
 export type TipBoxId = 'tip-start' | 'tip-pause' | 'tip-over';
@@ -106,6 +107,8 @@ export interface GameOverView {
   readonly lines: number;
   readonly best: number;
   readonly isBest: boolean;
+  /** NS4-16: yalnızca dev ekran gösterimi (storage'a yazmadan örnek rozet durumu). Oyunda verilmez. */
+  readonly badges?: { readonly earned: readonly BadgeId[]; readonly fresh: readonly BadgeId[] };
 }
 
 export function renderGameOver(r: GameOverView): void {
@@ -113,7 +116,8 @@ export function renderGameOver(r: GameOverView): void {
   $('o-lines').textContent = String(r.lines);
   $('o-best').textContent = fmt(r.best);
   $('newbest').style.display = r.isBest ? 'block' : 'none';
-  renderBadges($('o-badges'));
+  if (r.badges) renderBadges($('o-badges'), r.badges.earned, r.badges.fresh);
+  else renderBadges($('o-badges'));
   setTip('tip-over');
   show('scr-over');
 }

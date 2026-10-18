@@ -21,12 +21,24 @@ export function award(id: BadgeId): void {
   track('badge', { id });
 }
 
-export function renderBadges(bx: HTMLElement): void {
+/** NS4-16: rozet durumu (oyun sonu listesi): bu oyunda yeni / önceden kazanılmış / kilitli. */
+export type BadgeState = 'new' | 'earned' | 'locked';
+export function badgeState(id: BadgeId, earned: readonly BadgeId[], fresh: readonly BadgeId[]): BadgeState {
+  return fresh.includes(id) ? 'new' : earned.includes(id) ? 'earned' : 'locked';
+}
+
+/** `earned` / `fresh` yalnızca dev ekran gösterimi içindir (storage'a dokunmadan örnek durum); oyunda verilmez. */
+export function renderBadges(
+  bx: HTMLElement,
+  earned: readonly BadgeId[] = meta.badges,
+  fresh: readonly BadgeId[] = newBadges,
+): void {
   bx.innerHTML = '';
   for (const id of BADGE_IDS) {
     const s = document.createElement('span');
-    const has = meta.badges.includes(id);
-    s.className = newBadges.includes(id) ? 'new' : has ? '' : 'locked';
+    const st = badgeState(id, earned, fresh);
+    s.className = st;
+    s.dataset['state'] = st;
     s.textContent = BADGES[id].name;
     s.title = BADGES[id].desc;
     bx.appendChild(s);

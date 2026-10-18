@@ -184,8 +184,21 @@ export function clearSessionHud(): void {
   resetHud();
 }
 
+/**
+ * NS4-16: HUD yazı ölçeği. Yatay düzende tahta hücresiyle orantılı büyür (40 px hücreye kadar 1, en çok 1,4);
+ * portrede (telefon/tablet) her zaman 1 — mobil ölçüler değişmez. CSS --hud-scale ile çarpılır.
+ * Örnek: 1366×768 → 1, 1600×900 → ~1,08, 1920×1080 → 1,3, 2560×1440 → 1,4.
+ */
+export const HUD_SCALE_BASE_CELL = 40;
+export const HUD_SCALE_MAX = 1.4;
+export function hudScale(L: Pick<Layout, 'portrait' | 'cell'>): number {
+  if (L.portrait) return 1;
+  return Math.min(HUD_SCALE_MAX, Math.max(1, L.cell / HUD_SCALE_BASE_CELL));
+}
+
 /** computeLayout() sonucuna göre DOM HUD elemanlarını yerleştirir (Pixi tarafı View.layout'tadır). */
 export function applyHudLayout(L: Layout): void {
+  $('stage').style.setProperty('--hud-scale', hudScale(L).toFixed(3));
   place($('board-bg'), L.board);
   $('board-bg').style.backgroundSize = L.cell + 'px ' + L.cell + 'px';
   place($('meter'), L.meter);

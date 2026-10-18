@@ -218,119 +218,160 @@
       </section>
 
       <!-- How to -->
-      <section id="scr-how" class="screen" aria-label="Nasıl oynanır">
-        <div class="sheet">
-          <h2>Nasıl oynanır</h2>
-          <h3>Dokunmatik</h3>
-          <dl class="ctl">
-            <dt>Sağa-sola sürükle</dt>
-            <dd>Bloğu kaydır</dd>
-            <dt>Dokun</dt>
-            <dd>Döndür (tahtanın sol üçte biri: ters yön)</dd>
-            <dt>Aşağı sürükle</dt>
-            <dd>Yavaşça indir</dd>
-            <dt>Aşağı fırlat</dt>
-            <dd>Anında bırak</dd>
-            <dt>Yukarı fırlat</dt>
-            <dd>Beklet</dd>
-          </dl>
-          <h3>Klavye</h3>
-          <dl class="ctl">
-            <dt>← →</dt>
-            <dd>Kaydır</dd>
-            <dt>↑ / X · Z</dt>
-            <dd>Döndür · ters döndür</dd>
-            <dt>↓ · Boşluk</dt>
-            <dd>Yavaş indir · anında bırak</dd>
-            <dt>C / Shift</dt>
-            <dd>Beklet</dd>
-            <dt>1 · 2</dt>
-            <dd>Sıklamen özütü · sentetik açıcı</dd>
-            <dt>Esc / P</dt>
-            <dd>Duraklat</dd>
-          </dl>
-          <h3>Oyun alanı bir sinüs boşluğu</h3>
-          <ul class="map">
-            <li>Düşen bloklar biriken mukus; alan dolarsa sinüs tamamen tıkanır.</li>
-            <li>Tam satır = drenaj. Dört satır birden: ozmotik etki. T-spin: nörorefleks etki.</li>
-            <li>
-              Tıkanıklık yükselince iki destek açılır. <b>Sıklamen özütü</b> oyunda bir kez kullanılır, alt yarıyı
-              yavaşça boşaltır ve 30 sn puanları ikiye katlar.
-            </li>
-            <li>
-              <b>Sentetik açıcı</b> anında 3 satır açar. Tekrarlarsan tıkanıklık geri teper: bloklar hızlanır, alttan
-              yeni tıkanıklık yükselir.
-            </li>
-          </ul>
-          <button class="btn primary" data-back>Tamam</button>
-          <button class="btn ghost" id="b-tutorial">Öğreticiyle oyna</button>
+      <section id="scr-how" class="screen screen-dim" aria-label="Nasıl oynanır">
+        <!-- NS4-16: içerik kart gövdesinde kayar, eylemler altta sabit (sheet-scroll). Metinler değişmedi;
+             kbd yalnızca tuşları sarar (dt metni aynı). -->
+        <div class="sheet sheet-wide sheet-scroll">
+          <div class="sheet-body" tabindex="0" role="region" aria-labelledby="how-title">
+            <h2 id="how-title">Nasıl oynanır</h2>
+            <div class="ctl-groups">
+              <div class="ctl-group">
+                <h3>Dokunmatik</h3>
+                <dl class="ctl">
+                  <dt>Sağa-sola sürükle</dt>
+                  <dd>Bloğu kaydır</dd>
+                  <dt>Dokun</dt>
+                  <dd>Döndür (tahtanın sol üçte biri: ters yön)</dd>
+                  <dt>Aşağı sürükle</dt>
+                  <dd>Yavaşça indir</dd>
+                  <dt>Aşağı fırlat</dt>
+                  <dd>Anında bırak</dd>
+                  <dt>Yukarı fırlat</dt>
+                  <dd>Beklet</dd>
+                </dl>
+              </div>
+              <div class="ctl-group">
+                <h3>Klavye</h3>
+                <dl class="ctl ctl-keys">
+                  <dt><kbd>←</kbd> <kbd>→</kbd></dt>
+                  <dd>Kaydır</dd>
+                  <dt><kbd>↑</kbd> / <kbd>X</kbd> · <kbd>Z</kbd></dt>
+                  <dd>Döndür · ters döndür</dd>
+                  <dt><kbd>↓</kbd> · <kbd>Boşluk</kbd></dt>
+                  <dd>Yavaş indir · anında bırak</dd>
+                  <dt><kbd>C</kbd> / <kbd>Shift</kbd></dt>
+                  <dd>Beklet</dd>
+                  <dt><kbd>1</kbd> · <kbd>2</kbd></dt>
+                  <dd>Sıklamen özütü · sentetik açıcı</dd>
+                  <dt><kbd>Esc</kbd> / <kbd>P</kbd></dt>
+                  <dd>Duraklat</dd>
+                </dl>
+              </div>
+            </div>
+            <h3>Oyun alanı bir sinüs boşluğu</h3>
+            <ul class="map">
+              <li>Düşen bloklar biriken mukus; alan dolarsa sinüs tamamen tıkanır.</li>
+              <li>Tam satır = drenaj. Dört satır birden: ozmotik etki. T-spin: nörorefleks etki.</li>
+              <li>
+                Tıkanıklık yükselince iki destek açılır. <b>Sıklamen özütü</b> oyunda bir kez kullanılır, alt yarıyı
+                yavaşça boşaltır ve 30 sn puanları ikiye katlar.
+              </li>
+              <li>
+                <b>Sentetik açıcı</b> anında 3 satır açar. Tekrarlarsan tıkanıklık geri teper: bloklar hızlanır, alttan
+                yeni tıkanıklık yükselir.
+              </li>
+            </ul>
+          </div>
+          <!-- geri dönüş (Tamam) ve oyun başlatan eylem (Öğreticiyle oyna) ayrı ağırlıkta -->
+          <div class="sheet-actions row2">
+            <button class="btn ghost" data-back>Tamam</button>
+            <button class="btn primary" id="b-tutorial">Öğreticiyle oyna</button>
+          </div>
         </div>
       </section>
 
       <!-- Pause -->
-      <section id="scr-pause" class="screen" aria-label="Duraklatıldı">
-        <div class="sheet">
+      <section id="scr-pause" class="screen screen-dim" aria-label="Duraklatıldı">
+        <!-- NS4-16: Devam et ana eylem (başlığın hemen altında); Ayarlar / Ana menü / rehber ikincil -->
+        <div class="sheet sheet-pause">
           <h2>Mola</h2>
-          <div class="tip" id="tip-pause"></div>
           <button class="btn primary" id="b-resume">Devam et</button>
           <div class="row2">
             <button class="btn ghost" id="b-set2">Ayarlar</button>
             <button class="btn ghost" id="b-quit">Ana menü</button>
           </div>
-          <a class="btn ghost" id="cta-pause" target="_blank" rel="noopener">Sinüs sağlığı rehberi</a>
+          <div class="tip" id="tip-pause"></div>
+          <a class="btn link" id="cta-pause" target="_blank" rel="noopener"
+            >Sinüs sağlığı rehberi<svg class="ext" viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6 3h7v7M13 3 6.5 9.5M11 9.5V13H3V5h3.5" /></svg
+          ></a>
         </div>
       </section>
 
       <!-- Game over -->
-      <section id="scr-over" class="screen" aria-label="Oyun bitti">
-        <div class="sheet" tabindex="-1" data-focus style="outline: none">
-          <div class="newbest" id="newbest">Yeni rekor</div>
-          <h2>Sinüslerin tamamen tıkandı</h2>
-          <div class="stat-grid">
-            <div><b id="o-score">0</b><span>Puan</span></div>
-            <div><b id="o-lines">0</b><span>Drenaj</span></div>
-            <div><b id="o-best">0</b><span>Rekor</span></div>
+      <section id="scr-over" class="screen screen-dim" aria-label="Oyun bitti">
+        <!-- NS4-16 hiyerarşi: yeni rekor → skor/drenaj/rekor → rozetler → sağlık yönlendirmesi → Tekrar oyna → Ana menü -->
+        <div class="sheet sheet-over" tabindex="-1" data-focus style="outline: none">
+          <div class="over-summary">
+            <div class="newbest" id="newbest">Yeni rekor</div>
+            <h2>Sinüslerin tamamen tıkandı</h2>
+            <div class="stat-grid">
+              <div class="stat-main"><b id="o-score">0</b><span>Puan</span></div>
+              <div><b id="o-lines">0</b><span>Drenaj</span></div>
+              <div><b id="o-best">0</b><span>Rekor</span></div>
+            </div>
+            <div class="badges" id="o-badges"></div>
           </div>
-          <div class="badges" id="o-badges"></div>
-          <p style="margin-top: 14px">
-            Gerçek hayatta tıkanıklıkla yaşamak zorunda değilsin. Sinüzit ve rahat nefes hakkında güvenilir bilgiler
-            sağlık portalında.
-          </p>
-          <a class="btn cta" id="cta-over" target="_blank" rel="noopener">Rahat nefes rehberini aç</a>
-          <div class="row2">
-            <button class="btn primary" id="b-again">Tekrar oyna</button>
-            <button class="btn ghost" id="b-menu">Ana menü</button>
+          <div class="over-next">
+            <div class="health">
+              <p>
+                Gerçek hayatta tıkanıklıkla yaşamak zorunda değilsin. Sinüzit ve rahat nefes hakkında güvenilir bilgiler
+                sağlık portalında.
+              </p>
+              <a class="btn cta" id="cta-over" target="_blank" rel="noopener"
+                >Rahat nefes rehberini aç<svg class="ext" viewBox="0 0 16 16" aria-hidden="true">
+                  <path d="M6 3h7v7M13 3 6.5 9.5M11 9.5V13H3V5h3.5" /></svg
+              ></a>
+            </div>
+            <div class="over-actions">
+              <button class="btn primary" id="b-again">Tekrar oyna</button>
+              <button class="btn ghost" id="b-menu">Ana menü</button>
+            </div>
+            <div class="tip" id="tip-over"></div>
           </div>
-          <div class="tip" id="tip-over"></div>
         </div>
       </section>
 
       <!-- Settings -->
-      <section id="scr-set" class="screen" aria-label="Ayarlar">
-        <div class="sheet">
-          <h2>Ayarlar</h2>
-          <label class="set">Ses efektleri<input type="checkbox" data-k="sound" /></label>
-          <label class="set">Ortam müziği<input type="checkbox" data-k="music" /></label>
-          <label class="set"
-            ><span>Titreşim<small id="hap-note">Destekleyen Android cihazlarda</small></span
-            ><input type="checkbox" data-k="haptics"
-          /></label>
-          <label class="set">Hayalet parça<input type="checkbox" data-k="ghost" /></label>
-          <label class="set"
-            ><span
-              >DAS <small>Basılı tutunca kayma gecikmesi: <b id="v-das"></b> ms</small></span
-            ><input type="range" min="50" max="300" step="1" data-k="das"
-          /></label>
-          <label class="set"
-            ><span
-              >ARR <small>Kayma tekrar hızı: <b id="v-arr"></b> ms</small></span
-            ><input type="range" min="0" max="100" step="1" data-k="arr"
-          /></label>
-          <label class="set"
-            ><span>FPS göstergesi<small>Performans testi için</small></span
-            ><input type="checkbox" data-k="fps"
-          /></label>
-          <button class="btn primary" data-back>Kaydet</button>
+      <section id="scr-set" class="screen screen-dim" aria-label="Ayarlar">
+        <!-- NS4-16: görsel gruplar (Ses / Oynanış / İleri ayarlar). data-k anahtarları ve davranış değişmedi. -->
+        <div class="sheet sheet-scroll">
+          <div class="sheet-body">
+            <h2>Ayarlar</h2>
+            <fieldset class="set-group">
+              <legend>Ses</legend>
+              <label class="set">Ses efektleri<input type="checkbox" data-k="sound" /></label>
+              <label class="set">Ortam müziği<input type="checkbox" data-k="music" /></label>
+            </fieldset>
+            <fieldset class="set-group">
+              <legend>Oynanış</legend>
+              <label class="set"
+                ><span>Titreşim<small id="hap-note">Destekleyen Android cihazlarda</small></span
+                ><input type="checkbox" data-k="haptics"
+              /></label>
+              <label class="set">Hayalet parça<input type="checkbox" data-k="ghost" /></label>
+            </fieldset>
+            <fieldset class="set-group set-advanced">
+              <legend>İleri ayarlar</legend>
+              <label class="set set-range"
+                ><span
+                  >DAS <small>Basılı tutunca kayma gecikmesi: <b id="v-das"></b> ms</small></span
+                ><input type="range" min="50" max="300" step="1" data-k="das"
+              /></label>
+              <label class="set set-range"
+                ><span
+                  >ARR <small>Kayma tekrar hızı: <b id="v-arr"></b> ms</small></span
+                ><input type="range" min="0" max="100" step="1" data-k="arr"
+              /></label>
+              <label class="set set-minor"
+                ><span>FPS göstergesi<small>Performans testi için</small></span
+                ><input type="checkbox" data-k="fps"
+              /></label>
+            </fieldset>
+          </div>
+          <div class="sheet-actions">
+            <button class="btn primary" data-back>Kaydet</button>
+          </div>
         </div>
       </section>
     </div>
