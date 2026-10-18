@@ -61,6 +61,12 @@ export class FakeElement extends FakeEventTarget {
   static doc: { activeElement: FakeElement | null } | null = null;
   readonly classList = new FakeClassList();
   inert = false;
+  /** NS4-13: canvas için ekran dikdörtgeni (sol-üst 0,0). */
+  rect = { left: 0, top: 0, width: 390, height: 844 };
+  getBoundingClientRect() {
+    const r = this.rect;
+    return { ...r, x: r.left, y: r.top, right: r.left + r.width, bottom: r.top + r.height };
+  }
   hidden = false;
   private readonly attrs = new Map<string, string>();
   setAttribute(name: string, value: string): void {

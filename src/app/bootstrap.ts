@@ -58,6 +58,8 @@ export function bootstrap(): void {
     L = computeLayout(W, H);
     applyHudLayout(L);
     tutorialView.layout(L);
+    // NS4-13: yeniden yerleşimde süren dokunmatik jest iptal edilir (hücre ve tahta konumu değişti)
+    input.cancelGesture();
     view.layout(L);
     app.render();
   }
@@ -90,6 +92,7 @@ export function bootstrap(): void {
     settings,
     getState: lifecycle.getState,
     getCell: () => L!.cell, // pointer olayları yalnızca oynarken, ilk layout'tan sonra gelir
+    getBoard: () => L!.board,
     pause: lifecycle.pause,
     resume: lifecycle.resume,
     closeSub,
