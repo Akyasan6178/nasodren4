@@ -1,12 +1,27 @@
 /* =====================================================================
    LAYOUT (portre / yatay uyarlamalı)
-   NS4-03: main.ts'ten taşındı; eşikler ve ölçü hesapları değişmedi.
+   NS4-03: main.ts'ten taşındı. NS4-11: yatay düzende hücre üst sınırı 40 → 56 px,
+   yan buton yüksekliği 72 px ile sınırlı, Sıradaki paneli 13 → 13,6 hücre.
    NS4-04: kademeli doldurulan nesne + `as Layout` yerine her yön için tam
    nesne döndüren iki saf fonksiyon (ifadeler ve işlem sırası aynı).
    Sonuç hem Pixi görünümüne (View.layout) hem DOM HUD yerleşimine verilir.
    ===================================================================== */
 import { COLS, VIS } from '../config/gameConfig';
 import type { LandscapeLayout, Layout, PortraitLayout, Rect } from '../types/layout';
+
+/** Hücre alt sınırı (px; çok küçük pencerelerde okunabilirlik). */
+export const MIN_CELL = 12;
+/**
+ * NS4-11: yatay düzen hücre üst sınırı (px). Hücre kullanılabilir yükseklik ve genişlikten hesaplanır; bu sınır
+ * yalnızca çok büyük ekranlarda (ör. 2560×1440 ve üstü) tahtanın kontrolsüz büyümesini engeller.
+ * Önceki sabit sınır 40 px idi; 1600×900 ve üstünde tahtayı gereğinden küçük tutuyordu.
+ */
+export const MAX_CELL = 56;
+/** Portre (telefon/tablet) üst sınırı değişmedi. */
+const PORTRAIT_MAX_CELL = 44;
+/** Yatay düzende yan butonların yüksekliği: hücreyle orantılı ama 52..72 px aralığında. */
+const SIDE_BTN_MIN = 52,
+  SIDE_BTN_MAX = 72;
 
 export function computeLayout(W: number, H: number): Layout {
   const pad = 12;
@@ -19,7 +34,7 @@ function portraitLayout(W: number, H: number, pad: number): PortraitLayout {
   const botH = 70;
   const meterW = 10;
   let cell = Math.floor(Math.min((W - pad * 2 - (meterW + 8) * 2) / COLS, (H - topH - botH - pad * 3) / VIS));
-  cell = Math.max(12, Math.min(44, cell));
+  cell = Math.max(MIN_CELL, Math.min(PORTRAIT_MAX_CELL, cell));
   const bw = cell * COLS,
     bh = cell * VIS;
   const bx = Math.round((W - bw) / 2);
@@ -61,7 +76,7 @@ function portraitLayout(W: number, H: number, pad: number): PortraitLayout {
 function landscapeLayout(W: number, H: number, pad: number): LandscapeLayout {
   const side = 6;
   let cell = Math.floor(Math.min((H - pad * 2) / VIS, (W - pad * 2 - 56) / (COLS + side * 2)));
-  cell = Math.max(12, Math.min(40, cell));
+  cell = Math.max(MIN_CELL, Math.min(MAX_CELL, cell));
   const bw = cell * COLS,
     bh = cell * VIS,
     sw = cell * side;
@@ -69,7 +84,7 @@ function landscapeLayout(W: number, H: number, pad: number): LandscapeLayout {
     by = Math.round((H - bh) / 2);
   const lx = bx - 40 - sw,
     rx = bx + bw + 16;
-  const bh2 = Math.max(52, cell * 1.6);
+  const bh2 = Math.min(SIDE_BTN_MAX, Math.max(SIDE_BTN_MIN, cell * 1.6));
   return {
     W,
     H,
@@ -85,10 +100,33 @@ function landscapeLayout(W: number, H: number, pad: number): LandscapeLayout {
     btnHold: { x: lx, y: by + bh - bh2 * 3 - 16, w: sw, h: bh2 },
     btnCyc: { x: lx, y: by + bh - bh2 * 2 - 8, w: sw, h: bh2 },
     btnSyn: { x: lx, y: by + bh - bh2, w: sw, h: bh2 },
-    next: { x: rx, y: by, w: sw, h: cell * 13 },
+    // NS4-11: 5. parça 12,6 + 0,62 = 13,22 hücreye iniyordu; panel 13 hücreydi (taşma). Slotlar aynı.
+    next: { x: rx, y: by, w: sw, h: cell * 13.6 },
     nextSlots: [0, 1, 2, 3, 4].map((k) => ({ x: rx + sw / 2, y: by + cell * (k === 0 ? 2.6 : 2.6 + 0.4 + k * 2.4) })),
     btnPause: { x: rx, y: by + bh - 46, w: 46, h: 46 },
     compactBtns: sw < 150,
     compactStats: sw < 150,
   };
+}
+
+/** NS4-12: öğretici kartı yerleşimi. h: kartın kullanabileceği en fazla yükseklik (içerik kısa, gerçek kart daha alçak). */
+export interface TutorialRect extends Rect {
+  /** 'margin': yan boşlukta (hiçbir şeyi örtmez); 'board': tahtanın orta bandında (doğma ve iniş satırları açık). */
+  readonly place: 'margin' | 'board';
+}
+/** Yan boşluk bu genişlikten darsa kart tahtanın orta bandına yerleşir. */
+export const TUTORIAL_MIN_MARGIN = 160;
+
+/**
+ * Öğretici kartının yeri. Yatay düzende Sıradaki panelinin sağındaki boşluk yeterliyse oraya (tahta, HUD ve
+ * butonlar açık kalır). Değilse (portre ve dar yatay ekranlar) tahtanın 4–15. satırları arasındaki orta banda:
+ * parçanın doğduğu üst satırlar ve indiği alt satırlar görünür kalır; HUD panellerine ve butonlara binmez.
+ */
+export function tutorialRect(L: Layout): TutorialRect {
+  if (!L.portrait) {
+    const x = L.next.x + L.next.w + 16;
+    const room = L.W - x - 12;
+    if (room >= TUTORIAL_MIN_MARGIN) return { place: 'margin', x, y: L.next.y, w: Math.min(300, room), h: L.board.h };
+  }
+  return { place: 'board', x: L.board.x + 8, y: L.board.y + L.cell * 4, w: L.board.w - 16, h: L.cell * 11 };
 }

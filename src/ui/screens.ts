@@ -4,8 +4,9 @@ import { TIPS } from '../content/tips';
 import { $ } from './dom';
 import { fmt } from './hud';
 import { renderBadges } from './badges';
+import type { BadgeId } from '../types/content';
 
-export type ScreenId = 'scr-start' | 'scr-how' | 'scr-pause' | 'scr-over' | 'scr-set';
+export type ScreenId = 'scr-start' | 'scr-how' | 'scr-pause' | 'scr-over' | 'scr-set' | 'scr-scores';
 export type TipBoxId = 'tip-start' | 'tip-pause' | 'tip-over';
 
 let tipIdx = 0;
@@ -25,32 +26,71 @@ export function setTip(id: TipBoxId): void {
   box.append(b, s);
 }
 
-/** Alt ekran yığını: [data-back] önceki ekrana döner (açık ekran yoksa undefined saklanır). */
-const screenStack: (string | undefined)[] = [];
-export function show(id: string | null | undefined): void {
+/**
+ * NS4-10: overlay açıkken #stage (canvas + HUD butonları) `inert` olur: Tab sırasına girmez, işaretçi
+ * olaylarını almaz ve yardımcı teknolojiden gizlenir. Klavye oyun kontrolleri window düzeyinde dinlenir ve
+ * uygulama durumuna bağlıdır; inert bunları etkilemez.
+ */
+function syncStage(overlayOpen: boolean): void {
+  const stage = document.getElementById('stage');
+  if (stage) stage.inert = overlayOpen;
+}
+/** Açılışta işaretlemeyle (başlangıç ekranı açık gelir) #stage durumunu eşitler. */
+export function initScreens(): void {
+  syncStage(!!document.querySelector('.screen.on'));
+}
+
+let focusTimer: ReturnType<typeof setTimeout> | undefined;
+/** Ekran gösterildikten sonra odağı verir (mevcut 30 ms gecikme korunur). */
+function focusSoon(el: HTMLElement | null): void {
+  clearTimeout(focusTimer);
+  if (el) focusTimer = setTimeout(() => el.focus({ preventScroll: true }), 30);
+}
+
+/**
+ * Ekranı gösterir (null: bütün overlay'ler kapanır). `focusEl` verilmezse ekranın [data-focus] öğesi veya
+ * ilk butonu/bağlantısı odak alır; overlay kapanınca odak oyun alanına (#stage, tabindex=-1) döner.
+ */
+export function show(id: string | null | undefined, focusEl?: HTMLElement | null): void {
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('on'));
   const ae = document.activeElement;
   if (ae instanceof HTMLElement || ae instanceof SVGElement) ae.blur();
+  syncStage(!!id);
   if (id) {
     const el = $(id);
     el.classList.add('on');
-    const f = el.querySelector('[data-focus]') || el.querySelector('button,a');
-    if (f instanceof HTMLElement) setTimeout(() => f.focus({ preventScroll: true }), 30);
+    const f = focusEl ?? (el.querySelector('[data-focus]') || el.querySelector('button,a'));
+    focusSoon(f instanceof HTMLElement ? f : null);
+  } else {
+    // NS4-12: bütün overlay'ler kapandı; dönülecek alt ekran kalmaz (ör. "Nasıl oynanır"dan oyun başlatma)
+    screenStack.length = 0;
+    focusSoon(document.getElementById('stage'));
   }
 }
+
+/** Alt ekran yığını: [data-back] önceki ekrana ve alt ekranı açan öğeye döner. */
+interface StackEntry {
+  readonly screen: string | undefined;
+  readonly opener: HTMLElement | null;
+}
+const screenStack: StackEntry[] = [];
 export function openSub(id: ScreenId): void {
-  screenStack.push(document.querySelector('.screen.on')?.id);
+  const ae = document.activeElement;
+  screenStack.push({ screen: document.querySelector('.screen.on')?.id, opener: ae instanceof HTMLElement ? ae : null });
   show(id);
 }
-/** Yığından önceki ekrana döner ([data-back] butonları ve Escape). */
+/** Yığından önceki ekrana döner ([data-back] butonları ve Escape); odak alt ekranı açan butona geri gelir. */
 function back(): void {
-  show(screenStack.pop() || 'scr-start');
+  const prev = screenStack.pop();
+  const target = prev?.screen || 'scr-start';
+  const opener = prev?.opener;
+  show(target, opener?.isConnected && $(target).contains(opener) ? opener : undefined);
 }
 export function bindBackButtons(): void {
   document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', back));
 }
 /** Alt ekranlar: openSub() ile açılır, geri dönüşte açıldıkları ekrana döner. */
-const SUB_SCREENS: readonly string[] = ['scr-how', 'scr-set'] satisfies readonly ScreenId[];
+const SUB_SCREENS: readonly string[] = ['scr-how', 'scr-set', 'scr-scores'] satisfies readonly ScreenId[];
 /**
  * NS4-06: Açık bir alt ekran varsa geri butonu gibi kapatır ve true döner (Escape için).
  * Pause'dan açılan Ayarlar böylece önce pause ekranına döner (NS4-01 Not B).
@@ -67,6 +107,8 @@ export interface GameOverView {
   readonly lines: number;
   readonly best: number;
   readonly isBest: boolean;
+  /** NS4-16: yalnızca dev ekran gösterimi (storage'a yazmadan örnek rozet durumu). Oyunda verilmez. */
+  readonly badges?: { readonly earned: readonly BadgeId[]; readonly fresh: readonly BadgeId[] };
 }
 
 export function renderGameOver(r: GameOverView): void {
@@ -74,7 +116,8 @@ export function renderGameOver(r: GameOverView): void {
   $('o-lines').textContent = String(r.lines);
   $('o-best').textContent = fmt(r.best);
   $('newbest').style.display = r.isBest ? 'block' : 'none';
-  renderBadges($('o-badges'));
+  if (r.badges) renderBadges($('o-badges'), r.badges.earned, r.badges.fresh);
+  else renderBadges($('o-badges'));
   setTip('tip-over');
   show('scr-over');
 }

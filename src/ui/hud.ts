@@ -5,7 +5,20 @@
    ===================================================================== */
 import { $, place } from './dom';
 import { toast, clearNotifications } from './notifications';
-import { CYC_TEXT, SYN_TEXT, cycState, synState, type CycState, type SynState } from './powerups';
+import { track } from '../analytics/analytics';
+import { HEALTH_TOASTS } from '../content/health';
+import {
+  CYC_NAME,
+  CYC_SHORT,
+  CYC_TEXT,
+  SYN_NAME,
+  SYN_SHORT,
+  SYN_TEXT,
+  cycState,
+  synState,
+  type CycState,
+  type SynState,
+} from './powerups';
 import type { Game } from '../game/Game';
 import type { Layout } from '../types/layout';
 
@@ -24,6 +37,8 @@ interface HudCache {
   synState: SynState | null;
   /** "Sıklamen özütü hazır" toast'u bu oyunda gösterildi mi. */
   cycAnnounced: boolean;
+  /** NS4-19: sentetik açıcı bu oyunda ilk kez kullanılabilir oldu mu (analitik bir kez). */
+  synAnnounced: boolean;
 }
 
 function initialHud(): HudCache {
@@ -40,6 +55,7 @@ function initialHud(): HudCache {
     cycState: null,
     synState: null,
     cycAnnounced: false,
+    synAnnounced: false,
   };
 }
 const hud: HudCache = initialHud();
@@ -82,26 +98,29 @@ export function updateHud(g: Game, playing: boolean): void {
     $('btn-cyc').classList.toggle('ready', cyc);
     if (cyc && !hud.cycAnnounced) {
       hud.cycAnnounced = true;
-      toast('Sinüslerin dolmaya başladı. Sıklamen özütü hazır.');
+      toast(HEALTH_TOASTS.cyclamenReady.text);
+      track('cyclamen_available', { level: g.level, congestion: cg });
     }
   }
   if (syn !== hud.syn) {
     hud.syn = syn;
     $('btn-syn', HTMLButtonElement).disabled = !syn;
     $('btn-syn').classList.toggle('ready', syn && g.synUses === 0);
+    if (syn && !hud.synAnnounced) {
+      hud.synAnnounced = true;
+      track('synthetic_available', { level: g.level, congestion: cg });
+    }
   }
   // NS4-07: buton durumu (kilitli / hazır / kullanıldı / aktif etki / rebound riski) ve alt metni
   const cs = cycState(g, playing);
   if (cs !== hud.cycState) {
     hud.cycState = cs;
-    $('btn-cyc').dataset['state'] = cs;
-    $('cyc-sub').textContent = CYC_TEXT[cs];
+    renderPowerup('cyc', cs);
   }
   const ss = synState(g, playing);
   if (ss !== hud.synState) {
     hud.synState = ss;
-    $('btn-syn').dataset['state'] = ss;
-    $('syn-sub').textContent = SYN_TEXT[ss];
+    renderPowerup('syn', ss);
   }
   // NS4-06: oyun bitince (playing=false) ×2 ve Rebound sayaçları gösterilmez; game-over ekranının arkasında
   // donmuş süre kalmaz (NS4-01 Not C). Yeni oyunda resetHud() önbelleği sıfırlar.
@@ -128,6 +147,24 @@ export function resetHud(): void {
   Object.assign(hud, initialHud());
 }
 
+/**
+ * Güçlendirici butonunun durumunu yazar: data-state (stil), uzun alt metin (geniş düzen), kısa etiket (dar düzen)
+ * ve erişilebilir ad. NS4-10: durum yalnızca renkle değil, her düzende metinle de okunur.
+ */
+function renderPowerup(kind: 'cyc', state: CycState): void;
+function renderPowerup(kind: 'syn', state: SynState): void;
+function renderPowerup(kind: 'cyc' | 'syn', state: CycState | SynState): void {
+  const [text, short, name] =
+    kind === 'cyc'
+      ? [CYC_TEXT[state as CycState], CYC_SHORT[state as CycState], CYC_NAME]
+      : [SYN_TEXT[state as SynState], SYN_SHORT[state as SynState], SYN_NAME];
+  const b = $(kind === 'cyc' ? 'btn-cyc' : 'btn-syn');
+  b.dataset['state'] = state;
+  b.setAttribute('aria-label', `${name}: ${text}`);
+  $(kind + '-sub').textContent = text;
+  $(kind + '-chip').textContent = short;
+}
+
 /** Tehlike vinyetini gizler. */
 export function hideDanger(): void {
   $('danger').classList.remove('on');
@@ -145,23 +182,33 @@ export function clearSessionHud(): void {
   $('badge-mult').style.display = 'none';
   $('badge-rebound').style.display = 'none';
   // güçlendirici butonları menünün arkasında eski oyunun durumunu göstermez (yeni oyun başlangıç durumu)
-  for (const [id, sub, text] of [
-    ['btn-cyc', 'cyc-sub', CYC_TEXT.locked],
-    ['btn-syn', 'syn-sub', SYN_TEXT.locked],
-  ] as const) {
+  for (const id of ['btn-cyc', 'btn-syn'] as const) {
     const b = $(id, HTMLButtonElement);
     b.disabled = true;
     b.classList.remove('ready');
-    b.dataset['state'] = 'locked';
-    $(sub).textContent = text;
   }
+  renderPowerup('cyc', 'locked');
+  renderPowerup('syn', 'locked');
   hideDanger();
   clearNotifications();
   resetHud();
 }
 
+/**
+ * NS4-16: HUD yazı ölçeği. Yatay düzende tahta hücresiyle orantılı büyür (40 px hücreye kadar 1, en çok 1,4);
+ * portrede (telefon/tablet) her zaman 1 — mobil ölçüler değişmez. CSS --hud-scale ile çarpılır.
+ * Örnek: 1366×768 → 1, 1600×900 → ~1,08, 1920×1080 → 1,3, 2560×1440 → 1,4.
+ */
+export const HUD_SCALE_BASE_CELL = 40;
+export const HUD_SCALE_MAX = 1.4;
+export function hudScale(L: Pick<Layout, 'portrait' | 'cell'>): number {
+  if (L.portrait) return 1;
+  return Math.min(HUD_SCALE_MAX, Math.max(1, L.cell / HUD_SCALE_BASE_CELL));
+}
+
 /** computeLayout() sonucuna göre DOM HUD elemanlarını yerleştirir (Pixi tarafı View.layout'tadır). */
 export function applyHudLayout(L: Layout): void {
+  $('stage').style.setProperty('--hud-scale', hudScale(L).toFixed(3));
   place($('board-bg'), L.board);
   $('board-bg').style.backgroundSize = L.cell + 'px ' + L.cell + 'px';
   place($('meter'), L.meter);
@@ -189,9 +236,11 @@ export function applyHudLayout(L: Layout): void {
   $('toast').style.top = L.board.y + 8 + 'px';
   $('toast').style.left = L.board.x + L.board.w / 2 + 'px';
   $('toast').style.maxWidth = Math.max(180, L.board.w - 16) + 'px';
-  const br = $('badge-rebound'),
-    bm = $('badge-mult');
-  br.style.left = bm.style.left = L.board.x + L.board.w / 2 + 'px';
-  br.style.top = L.board.y + L.board.h - 40 + 'px';
-  bm.style.top = L.board.y + L.board.h - 74 + 'px';
+  // NS4-10: ×2 / Rebound rozetleri tahta genişliğinde bir sütunda, tahtanın alt kenarına hizalı; dar tahtada
+  // metin satır kırar ve tahtanın dışına taşmaz (önceki konum: alt kenardan 40 / 74 px yukarıda, ortalı).
+  const fx = $('fx-badges');
+  fx.style.left = L.board.x + 8 + 'px';
+  fx.style.width = L.board.w - 16 + 'px';
+  fx.style.top = 'auto';
+  fx.style.bottom = L.H - (L.board.y + L.board.h) + 10 + 'px';
 }

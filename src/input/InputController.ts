@@ -1,14 +1,17 @@
 /* =====================================================================
    INPUT: klavye (DAS/ARR) + dokunmatik jestler + HUD butonları + otomatik mola
-   NS4-03: main.ts'ten taşındı. Tuşlar, eşikler (0.45 / 0.9 hücre, 320 ms,
-   90 ms hız penceresi, 0.75 / -0.6 px/ms) ve tekrar kuralları değişmedi.
+   NS4-03: main.ts'ten taşındı. Klavye tuşları ve DAS/ARR değişmedi.
+   NS4-13: dokunmatik jest kuralları input/gestures.ts'e taşındı (dokunma
+   toleransı, fırlatma eşikleri, tek parmak, tahta dışı başlangıç, iptaller).
    Bağımlılıklar açıkça verilir; dispose() bağlanan bütün dinleyicileri kaldırır.
    ===================================================================== */
 import { $, listen, type Off } from '../ui/dom';
 import type { Game } from '../game/Game';
 import type { AppState } from '../types/app';
 import type { Step } from '../types/game';
+import type { Rect } from '../types/layout';
 import type { Settings } from '../types/settings';
+import { GestureTracker } from './gestures';
 
 export interface InputDeps {
   readonly game: Game;
@@ -24,27 +27,19 @@ export interface InputDeps {
   /** Açık alt ekranı (Ayarlar, Nasıl oynanır) kapatır; kapattıysa true döner. */
   readonly closeSub: () => boolean;
   readonly unlockAudio: () => void;
+  /** NS4-12: yavaş indirme yapıldığında (↓ tuşu veya aşağı sürüklemeyle inen satır). İsteğe bağlı. */
+  readonly onSoftDrop?: () => void;
+  /** NS4-12: son kullanılan giriş tipi (klavye tuşu / dokunmatik). İsteğe bağlı. */
+  readonly onInputMode?: (mode: 'keyboard' | 'touch') => void;
+  /** NS4-13: tahta dikdörtgeni (sahne koordinatları). Verilirse jest yalnızca tahta üzerinde (± yarım hücre) başlar. */
+  readonly getBoard?: () => Rect;
 }
 
 /** Basılı yön: -1 sol, 0 yok, 1 sağ. */
 type Direction = Step | 0;
-/** Jest ekseni: 0 henüz seçilmedi, 1 yatay, 2 dikey. */
-type GestureAxis = 0 | 1 | 2;
-/** Pointer örneği: [clientX, clientY, performance.now()]. */
-type GestureSample = readonly [x: number, y: number, t: number];
-
-interface Gesture {
-  /** Aktif pointer kimliği (diğer pointer'lar yok sayılır). */
-  readonly id: number;
-  readonly x0: number;
-  readonly y0: number;
-  readonly t0: number;
-  /** Bu jestte uygulanan yatay adım / soft drop satır sayısı. */
-  cols: number;
-  rows: number;
-  axis: GestureAxis;
-  /** Son 6 örnek (fırlatma hızı için). */
-  readonly hist: GestureSample[];
+/** Pointer olayının zamanı (ms). timeStamp yoksa (eski tarayıcı / sentetik olay) performance.now(). */
+function eventTime(e: Event): number {
+  return Number.isFinite(e.timeStamp) && e.timeStamp > 0 ? e.timeStamp : performance.now();
 }
 
 const KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' ', 'Space']);
@@ -55,12 +50,21 @@ export class InputController {
   right = false;
   dasT = 0;
   arrT = 0;
-  private gesture: Gesture | null = null;
+  private readonly gestures: GestureTracker;
   private readonly offs: Off[] = [];
   private readonly deps: InputDeps;
 
   constructor(deps: InputDeps) {
     this.deps = deps;
+    const game = deps.game;
+    this.gestures = new GestureTracker({
+      move: (d) => game.move(d),
+      softStep: () => game.softStep(),
+      rotate: (dir) => void game.rotate(dir),
+      hardDrop: () => game.hardDrop(),
+      hold: () => void game.doHold(),
+      onSoftDrop: () => deps.onSoftDrop?.(),
+    });
     this.bindKeyboard();
     this.bindPointer();
     this.bindButtons();
@@ -71,7 +75,11 @@ export class InputController {
     this.dir = 0;
     this.left = this.right = false;
     this.deps.game.softDrop = false;
-    this.gesture = null;
+    this.gestures.cancel();
+  }
+  /** NS4-13: süren dokunmatik jesti sonuçsuz iptal eder (resize, ekran değişimi). */
+  cancelGesture(): void {
+    this.gestures.cancel();
   }
   press(d: Step): void {
     this.dir = d;
@@ -119,6 +127,7 @@ export class InputController {
           return;
         }
         if (appState !== 'playing') return;
+        this.deps.onInputMode?.('keyboard');
         if (e.repeat && e.key !== 'ArrowDown') return;
         this.deps.unlockAudio();
         switch (e.key) {
@@ -132,6 +141,7 @@ export class InputController {
             break;
           case 'ArrowDown':
             game.softDrop = true;
+            this.deps.onSoftDrop?.();
             break;
           case 'ArrowUp':
           case 'x':
@@ -181,102 +191,70 @@ export class InputController {
   }
 
   private bindPointer(): void {
-    const game = this.deps.game,
-      cv = this.deps.canvas;
+    const cv = this.deps.canvas;
+    const tracker = this.gestures;
+    const playing = () => this.deps.getState() === 'playing';
+    /** Jest yalnızca tahta üzerinde (± yarım hücre) başlar; tahta bilgisi verilmezse her yerde. */
+    const onBoard = (e: PointerEvent): boolean => {
+      const getBoard = this.deps.getBoard;
+      if (!getBoard) return true;
+      const b = getBoard(),
+        r = cv.getBoundingClientRect(),
+        m = this.deps.getCell() * 0.5;
+      const x = e.clientX - r.left,
+        y = e.clientY - r.top;
+      return x >= b.x - m && x <= b.x + b.w + m && y >= b.y - m && y <= b.y + b.h + m;
+    };
     this.offs.push(
       listen(cv, 'pointerdown', (e) => {
-        if (this.deps.getState() !== 'playing') return;
+        if (!playing()) return;
+        if (e.pointerType === 'touch') this.deps.onInputMode?.('touch');
+        // ikinci parmak: yok sayılır, süren jestin dokunma/fırlatma sonucunu iptal eder
+        if (tracker.active) {
+          tracker.start(e.pointerId, e.clientX, e.clientY, eventTime(e));
+          return;
+        }
+        if (e.isPrimary === false || !onBoard(e)) return;
         this.deps.unlockAudio();
         try {
           cv.setPointerCapture(e.pointerId);
         } catch {
           /* bilinçli: capture desteklenmezse jest yine çalışır */
         }
-        this.gesture = {
-          id: e.pointerId,
-          x0: e.clientX,
-          y0: e.clientY,
-          t0: performance.now(),
-          cols: 0,
-          rows: 0,
-          axis: 0,
-          hist: [[e.clientX, e.clientY, performance.now()]],
-        };
+        tracker.start(e.pointerId, e.clientX, e.clientY, eventTime(e));
       }),
     );
     this.offs.push(
       listen(cv, 'pointermove', (e) => {
-        const g = this.gesture;
-        if (!g || e.pointerId !== g.id || this.deps.getState() !== 'playing') return;
-        const now = performance.now();
-        g.hist.push([e.clientX, e.clientY, now]);
-        if (g.hist.length > 6) g.hist.shift();
-        const dx = e.clientX - g.x0,
-          dy = e.clientY - g.y0,
-          c = this.deps.getCell();
-        if (!g.axis) {
-          if (Math.abs(dx) > c * 0.45 || Math.abs(dy) > c * 0.45) g.axis = Math.abs(dx) >= Math.abs(dy) ? 1 : 2;
-          else return;
-        }
-        if (g.axis === 1) {
-          const step = c * 0.9;
-          const want = Math.trunc(dx / step);
-          while (g.cols < want) {
-            if (!game.move(1)) {
-              g.cols = want;
-              break;
-            }
-            g.cols++;
-          }
-          while (g.cols > want) {
-            if (!game.move(-1)) {
-              g.cols = want;
-              break;
-            }
-            g.cols--;
-          }
-        } else if (dy > 0) {
-          const want = Math.floor(dy / (c * 0.9));
-          while (g.rows < want) {
-            if (!game.softStep()) {
-              g.rows = want;
-              break;
-            }
-            g.rows++;
-          }
-        }
+        if (!playing()) return;
+        tracker.move(e.pointerId, e.clientX, e.clientY, eventTime(e), this.deps.getCell());
       }),
     );
-    const endGesture = (e: PointerEvent) => {
-      const g = this.gesture;
-      if (!g || e.pointerId !== g.id) return;
-      this.gesture = null;
-      if (this.deps.getState() !== 'playing') return;
-      const now = performance.now(),
-        dy = e.clientY - g.y0,
-        c = this.deps.getCell();
-      let ref = g.hist[0];
-      for (const h of g.hist)
-        if (now - h[2] <= 90) {
-          ref = h;
-          break;
-        }
-      const vdt = Math.max(1, now - ref[2]),
-        vy = (e.clientY - ref[1]) / vdt;
-      if (!g.axis && now - g.t0 < 320) {
-        const r = cv.getBoundingClientRect();
-        game.rotate(e.clientX - r.left < r.width / 3 ? -1 : 1);
-      } else if (g.axis === 2) {
-        if (vy > 0.75 && dy > c * 1.2) game.hardDrop();
-        else if (vy < -0.6 && dy < -c * 1.4) game.doHold();
-      }
-    };
-    this.offs.push(listen(cv, 'pointerup', endGesture));
     this.offs.push(
-      listen(cv, 'pointercancel', (e) => {
-        if (this.gesture && e.pointerId === this.gesture.id) this.gesture = null;
+      listen(cv, 'pointerup', (e) => {
+        if (tracker.pointerId !== e.pointerId) return;
+        if (!playing()) {
+          tracker.cancel();
+          return;
+        }
+        // döndürme yönü: tahtanın sol üçte biri ters, kalanı normal. NS4-13: jestler yalnızca tahtada başladığı
+        // için ölçü ekrandan tahtaya taşındı (yatay düzende ekranın sol üçte biri tahtanın dışında kalıyordu).
+        // Tahta bilgisi verilmezse eski ölçü (canvas'ın sol üçte biri) kullanılır.
+        const r = cv.getBoundingClientRect();
+        const board = this.deps.getBoard?.();
+        const left = board ? e.clientX - r.left - board.x < board.w / 3 : e.clientX - r.left < r.width / 3;
+        const dir = left ? -1 : 1;
+        tracker.end(e.pointerId, e.clientX, e.clientY, eventTime(e), this.deps.getCell(), dir);
       }),
     );
+    const cancel = (e: PointerEvent) => {
+      if (tracker.pointerId === e.pointerId) tracker.cancel();
+    };
+    this.offs.push(listen(cv, 'pointercancel', cancel));
+    this.offs.push(listen(cv, 'lostpointercapture', cancel));
+    // ekran boyutu / yönü değişince süren jest geçersizdir (hücre ve tahta konumu değişir)
+    this.offs.push(listen(window, 'resize', () => tracker.cancel()));
+    this.offs.push(listen(window, 'orientationchange', () => tracker.cancel()));
   }
 
   private bindBtn(id: string, fn: () => void): void {

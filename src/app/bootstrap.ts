@@ -16,17 +16,32 @@ import { canVibrate, createBuzz } from '../haptics/haptics';
 import { settings, saveSettings } from '../storage/settings';
 import { track } from '../analytics/analytics';
 import { ctaUrl } from '../analytics/cta';
+import { bindUiAnalytics } from '../analytics/funnel';
 import { $ } from '../ui/dom';
 import { updateHud, applyHudLayout } from '../ui/hud';
-import { initTips, setTip, openSub, bindBackButtons, closeSub } from '../ui/screens';
+import { toast } from '../ui/notifications';
+import { createTutorialView } from '../ui/tutorialView';
+import { Tutorial } from '../tutorial/Tutorial';
+import { TUTORIAL_DONE_TEXT } from '../tutorial/steps';
+import { tutorialStore } from '../storage/tutorial';
+import { initTips, setTip, openSub, bindBackButtons, closeSub, initScreens } from '../ui/screens';
+import { leaderboardConfig } from '../leaderboard/config';
+import { createLeaderboardClient } from '../leaderboard/globalClient';
+import { loadLocalScores, updateLocalScore } from '../leaderboard/localScores';
+import { loadNickname, saveNickname } from '../leaderboard/nickname';
+import { createScoresView } from '../ui/scoresView';
+import { createSubmitPanel } from '../ui/submitScore';
 import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
+import { watchReducedMotion } from './motion';
 
 export function bootstrap(): void {
   const stageEl = $('stage');
   const game = new Game();
   const sound = new Sound(settings);
+  // NS4-17: sekme gizlenince AudioContext askıya alınır, görünür olunca sürer (oyun zaten otomatik molaya girer)
+  document.addEventListener('visibilitychange', () => sound.setHidden(document.hidden));
   // haptik: ayar her çağrıda okunur
   const buzz = createBuzz(() => settings.haptics);
 
@@ -43,6 +58,10 @@ export function bootstrap(): void {
   // Not: ticker.maxFPS bilerek ayarlanmıyor; Pixi'nin kare atlama mantığı 60Hz ekranda
   // rAF jitter'ı yüzünden kare düşürebiliyor. Mantık zaman tabanlı, 120Hz'de de doğru çalışır.
   const view = new View(app, game, settings);
+  // NS4-15: hareketi azalt tercihi Pixi efektlerine de uygulanır (sarsıntı/parçacık azalır, süreler aynı)
+  watchReducedMotion((reduced) => {
+    view.reducedMotion = reduced;
+  });
   let L: Layout | null = null;
 
   function doLayout() {
@@ -52,6 +71,9 @@ export function bootstrap(): void {
     app.renderer.resize(W, H);
     L = computeLayout(W, H);
     applyHudLayout(L);
+    tutorialView.layout(L);
+    // NS4-13: yeniden yerleşimde süren dokunmatik jest iptal edilir (hücre ve tahta konumu değişti)
+    input.cancelGesture();
     view.layout(L);
     app.render();
   }
@@ -68,7 +90,33 @@ export function bootstrap(): void {
   if (window.ResizeObserver) new ResizeObserver(queueLayout).observe(stageEl);
 
   // input, lifecycle'dan sonra oluşturulur; lifecycle ona yalnızca çalışma anında (callback ile) erişir
-  const lifecycle = createLifecycle({ game, view, sound, app, buzz, resetInput: () => input.reset() });
+  // NS4-12: ilk oyun öğreticisi. Yalnızca Game olaylarını ve input bildirimlerini dinler; kontrolleri engellemez.
+  // Başlangıç anlatımı: dokunmatik ekranlı cihazda jest, değilse klavye; son kullanılan girişe göre değişir.
+  const tutorialView = createTutorialView({ skip: () => tutorial.skip(), done: () => tutorial.acknowledge() });
+  const tutorial = new Tutorial(game, tutorialView, tutorialStore, {
+    mode: navigator.maxTouchPoints > 0 ? 'touch' : 'keyboard',
+    onComplete: () => toast(TUTORIAL_DONE_TEXT),
+    track,
+  });
+  // NS4-18: yerel + global skor. Ortam değişkenleri yoksa istemci devre dışıdır (oyun ve yerel tablo çalışır).
+  const leaderboard = createLeaderboardClient(leaderboardConfig);
+  const submitPanel = createSubmitPanel({
+    client: leaderboard,
+    loadNickname,
+    saveNickname,
+    updateLocal: updateLocalScore,
+  });
+  const scoresView = createScoresView({ client: leaderboard, loadLocal: loadLocalScores });
+  const lifecycle = createLifecycle({
+    game,
+    view,
+    sound,
+    app,
+    buzz,
+    resetInput: () => input.reset(),
+    tutorial,
+    onGameRecorded: (entry) => submitPanel.prepare(entry),
+  });
   wireGameEvents({ game, view, sound, buzz, lifecycle });
 
   const input = new InputController({
@@ -77,27 +125,40 @@ export function bootstrap(): void {
     settings,
     getState: lifecycle.getState,
     getCell: () => L!.cell, // pointer olayları yalnızca oynarken, ilk layout'tan sonra gelir
+    getBoard: () => L!.board,
     pause: lifecycle.pause,
     resume: lifecycle.resume,
     closeSub,
     unlockAudio: () => sound.unlock(),
+    onSoftDrop: () => tutorial.softDrop(),
+    onInputMode: (mode) => tutorial.setMode(mode),
   });
 
   // ekranlar
   initTips();
   bindBackButtons();
+  initScreens(); // NS4-10: başlangıç ekranı açıkken arka plan inert
+  // NS4-19: CTA / Tekrar oyna / Skorlar huni olayları (davranış dinleyicilerinden önce bağlanır)
+  bindUiAnalytics({ getState: lifecycle.getState, getScore: () => game.score, getLevel: () => game.level });
   $('b-play').addEventListener('click', lifecycle.start);
   $('b-again').addEventListener('click', lifecycle.start);
   $('b-menu').addEventListener('click', lifecycle.toMenu);
   $('b-quit').addEventListener('click', lifecycle.toMenu);
   $('b-resume').addEventListener('click', lifecycle.resume);
   $('b-how').addEventListener('click', () => openSub('scr-how'));
+  // "Nasıl oynanır" → öğreticiyi baştan göstererek yeni oyun başlatır
+  $('b-tutorial').addEventListener('click', () => {
+    tutorial.restart();
+    lifecycle.start();
+  });
   $('b-set1').addEventListener('click', () => openSub('scr-set'));
+  $('b-scores').addEventListener('click', () => {
+    scoresView.open();
+    openSub('scr-scores');
+  });
   $('b-set2').addEventListener('click', () => openSub('scr-set'));
   $('cta-over', HTMLAnchorElement).href = ctaUrl('game_over');
   $('cta-pause', HTMLAnchorElement).href = ctaUrl('pause_menu');
-  $('cta-over').addEventListener('click', () => track('cta_click', { placement: 'game_over', score: game.score }));
-  $('cta-pause').addEventListener('click', () => track('cta_click', { placement: 'pause_menu' }));
 
   // ayarlar
   bindSettingsPanel({ settings, save: saveSettings, onAudioChange: () => sound.applySettings(), canVibrate });
@@ -130,6 +191,8 @@ export function bootstrap(): void {
   });
 
   setTip('tip-start');
+  // NS4-19: oyun yüklendi (sayfa başına bir kez). Kişisel veri yok: yalnızca iki durum bayrağı.
+  track('game_loaded', { global_scores: leaderboard.enabled, tutorial_done: tutorialStore.isDone() });
   // document.fonts eski tarayıcılarda yoktur (DOM tipleri her zaman var sayar). FontFaceSet varsa ready her zaman tanımlıdır.
   const fontSet: FontFaceSet | undefined = document.fonts;
   const fontsReady: Promise<unknown> = fontSet
@@ -140,6 +203,19 @@ export function bootstrap(): void {
   void fontsReady.then(queueLayout);
   // hata ayıklama (yalnızca development; production build'de global debug erişimi yok)
   if (import.meta.env.DEV) {
-    window.__fn = { game, view, app };
+    const fn: NonNullable<Window['__fn']> = { game, view, app };
+    window.__fn = fn;
+    // NS4-15: efekt gösterimi (__fn.fx); NS4-16: yardımcı ekran gösterimi (__fn.ui).
+    // Dinamik importlar production paketinde yer almaz.
+    void import('../dev/fxDemo').then(({ createFxDemo }) => {
+      fn.fx = createFxDemo(view, game);
+    });
+    void import('../dev/screensDemo').then(({ createScreensDemo }) => {
+      fn.ui = createScreensDemo(lifecycle, game);
+    });
+    // NS4-17: ses/haptik gösterimi (__fn.sfx); yalnızca kullanıcı etkileşiminden sonra çalar
+    void import('../dev/audioDemo').then(({ createAudioDemo }) => {
+      fn.sfx = createAudioDemo(sound, buzz);
+    });
   }
 }

@@ -25,6 +25,23 @@ export const SYN_TEXT: Readonly<Record<SynState, string>> = {
   rebound: 'Rebound sürüyor',
 };
 
+/** NS4-10: dar (compact) düzende alt metin yerine gösterilen kısa durum etiketleri. */
+export const CYC_SHORT: Readonly<Record<CycState, string>> = {
+  locked: 'Kilitli',
+  ready: 'Hazır',
+  used: 'Kullanıldı',
+  active: '×2 etkin',
+};
+export const SYN_SHORT: Readonly<Record<SynState, string>> = {
+  locked: 'Kilitli',
+  ready: 'Hazır',
+  risk: 'Rebound riski',
+  rebound: 'Rebound sürüyor',
+};
+/** Erişilebilir ad öneki (buton adı; durum metni eklenir). */
+export const CYC_NAME = 'Sıklamen özütü';
+export const SYN_NAME = 'Sentetik açıcı';
+
 /** `playing` değilse (oyun sonu) süren etkiler gösterilmez; HUD rozetleriyle aynı kural. */
 export function cycState(g: Game, playing: boolean): CycState {
   if (g.cycUsed) return playing && g.multT > 0 ? 'active' : 'used';

@@ -1,41 +1,64 @@
 /* =====================================================================
    HAPTICS (navigator.vibrate: Android Chrome. iOS Safari desteklemez.)
    NS4-03: main.ts'ten taşındı. Ayar durumu dışarıdan verilir (DOM/ayar
-   nesnesine doğrudan erişim yok); desenler değişmedi.
+   nesnesine doğrudan erişim yok).
+   NS4-17: desenler yorgunluk oluşturmayacak biçimde kısaltıldı; rebound ve
+   garbage için ayrı desen. Sürekli hareketler (kaydırma, döndürme, yumuşak
+   indirme) titreşim üretmez. Titreşim yalnızca kendi ayarına bağlıdır
+   (reduced motion tercihi onu kapatmaz). navigator yoksa veya vibrate
+   desteklenmiyorsa hiçbir çağrı yapılmaz.
    ===================================================================== */
-export const canVibrate = typeof navigator.vibrate === 'function';
+
+/** navigator.vibrate var mı (navigator'ın olmadığı ortamlarda da güvenli). */
+export function detectVibrate(nav: { vibrate?: unknown } | undefined = globalThis.navigator): boolean {
+  return typeof nav?.vibrate === 'function';
+}
+export const canVibrate = detectVibrate();
 
 /** Desen alanları salt-okunurdur (diziler navigator.vibrate'in beklediği VibratePattern tipindedir). */
 export interface HapticPatterns {
+  /** Yerçekimiyle oturma (hard drop'ta ayrıca çalınmaz, bkz. app/events.ts). */
   readonly lock: number;
   readonly hard: number;
+  /** Satır temizleme: 1 / 2 / 3 / 4 (Tetris) satır. */
   readonly clear: (n: number) => number[];
   readonly over: number[];
   readonly syn: number[];
   readonly cyc: number[];
+  readonly rebound: number[];
+  readonly garbage: number;
 }
 
 export const HAPTIC: HapticPatterns = {
-  lock: 12,
-  hard: 24,
-  clear: (n: number) =>
-    n >= 4 ? [10, 30, 16, 26, 24, 22, 34, 18, 60] : n === 3 ? [10, 30, 18, 26, 36] : n === 2 ? [12, 30, 24] : [18],
-  over: [70, 60, 140, 80, 260],
-  syn: [40, 30, 40],
-  cyc: [10, 40, 14, 40, 18, 40, 24, 40, 40],
+  lock: 10,
+  hard: 22,
+  clear: (n: number) => (n >= 4 ? [14, 36, 20, 36, 34] : n === 3 ? [12, 36, 22] : n === 2 ? [12, 40, 16] : [16]),
+  over: [60, 60, 120, 80, 200],
+  syn: [28, 24, 28],
+  cyc: [8, 50, 10, 50, 14, 50, 20],
+  rebound: [24, 60, 24],
+  garbage: 18,
 };
+
+/** Desenin toplam süresi (ms; titreşim + aralar). */
+export function patternMs(p: VibratePattern): number {
+  return typeof p === 'number' ? p : p.reduce((a, b) => a + b, 0);
+}
 
 export type Buzz = (p: VibratePattern) => void;
 
 /** `isEnabled` her çağrıda okunur (ayar panelindeki değişiklik anında geçerli olur). */
-export function createBuzz(isEnabled: () => boolean, supported: boolean = canVibrate): Buzz {
+export function createBuzz(
+  isEnabled: () => boolean,
+  supported: boolean = canVibrate,
+  nav: { vibrate?: (p: VibratePattern) => boolean } | undefined = globalThis.navigator,
+): Buzz {
   return function buzz(p) {
-    if (isEnabled() && supported) {
-      try {
-        navigator.vibrate(p);
-      } catch {
-        /* bilinçli: desteklenmeyen/engelli titreşim yok sayılır */
-      }
+    if (!supported || !isEnabled() || typeof nav?.vibrate !== 'function') return;
+    try {
+      nav.vibrate(p);
+    } catch {
+      /* bilinçli: desteklenmeyen/engelli titreşim yok sayılır */
     }
   };
 }

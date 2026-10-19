@@ -11,6 +11,7 @@ import { HAPTIC, type Buzz } from '../haptics/haptics';
 import { track } from '../analytics/analytics';
 import { toast, popup } from '../ui/notifications';
 import { award } from '../ui/badges';
+import { HEALTH_TOASTS } from '../content/health';
 
 export interface WireDeps {
   game: Game;
@@ -24,15 +25,23 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
   game.on('move', () => sound.move());
   game.on('rotate', () => sound.rotate());
   game.on('hold', () => sound.hold());
-  game.on('lock', (cells) => {
-    view.onLock(cells);
-    sound.lock();
-    buzz(HAPTIC.lock);
-  });
+  // NS4-17: Game hard drop'ta önce 'harddrop', hemen ardından (aynı çağrıda) 'lock' yayar. Hard drop kendi daha
+  // güçlü sesi ve titreşimiyle duyulur; oturma sesi/titreşimi üst üste binmesin diye o kilitlenmede atlanır.
+  let hardLock = false;
   game.on('harddrop', (d) => {
     view.onHard(d);
     sound.hard();
     buzz(HAPTIC.hard);
+    hardLock = true;
+  });
+  game.on('lock', (cells) => {
+    view.onLock(cells);
+    if (hardLock) {
+      hardLock = false;
+      return;
+    }
+    sound.lock();
+    buzz(HAPTIC.lock);
   });
   game.on('clearstart', (e) => {
     view.onClearStart(e);
@@ -54,8 +63,12 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
   });
   game.on('clearend', () => view.onClearEnd());
   game.on('scored', (e) => {
+    view.onScored(e); // NS4-15: temizleme dili (Ozmotik / Nörorefleks); Game bunu clearstart'tan önce yayar
     sound.clear(e.n, e.tspin);
     if (e.n) buzz(HAPTIC.clear(e.n));
+    // NS4-19: oyundaki ilk drenaj (Game, scored'u satır toplamını artırmadan önce yayar: game.lines henüz 0)
+    if (e.n > 0 && game.lines === 0)
+      track('first_drain', { lines: e.n, level: game.level, dur_s: Math.round(game.elapsed / 1000) });
     const names = ['', 'Tek', 'Çift', 'Üçlü', 'TETRİS'];
     let big = '',
       sub = '',
@@ -90,20 +103,23 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
   game.on('powerdone', (e) => {
     if (e.kind === 'syn') {
       if (e.rebound) {
+        view.onRebound();
         sound.warn();
+        buzz(HAPTIC.rebound);
+        track('rebound_started', { uses: game.synUses, level: game.level });
         popup('Rebound', 'Sık kullanım tıkanıklığı geri getirdi', 'warn');
         // NS4-07: uyarı metni oyunda bir kez (rebound'un ilk başladığı 2. kullanımda); popup her seferinde
-        if (game.synUses === 2)
-          toast('Dekonjestanların uzun süreli kullanımı tıkanıklığın geri dönmesine yol açabilir.', 3600);
+        if (game.synUses === 2) toast(HEALTH_TOASTS.rebound.text, 3600);
       } else {
         popup('3 satır açıldı', 'Tekrarlarsan geri tepebilir', 'warn');
       }
     }
   });
   game.on('garbage', () => {
-    view.shake = 0.35;
-    sound.warn();
-    buzz(30);
+    view.onGarbage(); // NS4-15: önceden yalnızca view.shake = 0.35
+    // NS4-17: tekrar eden garbage için kısa alçak darbe (önceden rebound uyarısı her satırda yeniden çalıyordu)
+    sound.garbage();
+    buzz(HAPTIC.garbage);
   });
   game.on('gameover', (reason) => lifecycle.handleGameOver(reason));
 }

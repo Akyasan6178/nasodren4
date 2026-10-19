@@ -21,14 +21,40 @@ export function award(id: BadgeId): void {
   track('badge', { id });
 }
 
-export function renderBadges(bx: HTMLElement): void {
+/** NS4-16: rozet durumu (oyun sonu listesi): bu oyunda yeni / önceden kazanılmış / kilitli. */
+export type BadgeState = 'new' | 'earned' | 'locked';
+/** NS4-17: durumun ekran okuyucu metni (görünmez; .sr-only). Rozet adından sonra okunur. */
+export const BADGE_STATE_LABEL: Readonly<Record<BadgeState, string>> = {
+  new: ', bu oyunda kazanıldı',
+  earned: ', kazanıldı',
+  locked: ', kilitli',
+};
+export function badgeState(id: BadgeId, earned: readonly BadgeId[], fresh: readonly BadgeId[]): BadgeState {
+  return fresh.includes(id) ? 'new' : earned.includes(id) ? 'earned' : 'locked';
+}
+
+/** `earned` / `fresh` yalnızca dev ekran gösterimi içindir (storage'a dokunmadan örnek durum); oyunda verilmez. */
+export function renderBadges(
+  bx: HTMLElement,
+  earned: readonly BadgeId[] = meta.badges,
+  fresh: readonly BadgeId[] = newBadges,
+): void {
   bx.innerHTML = '';
   for (const id of BADGE_IDS) {
     const s = document.createElement('span');
-    const has = meta.badges.includes(id);
-    s.className = newBadges.includes(id) ? 'new' : has ? '' : 'locked';
-    s.textContent = BADGES[id].name;
-    s.title = BADGES[id].desc;
+    const st = badgeState(id, earned, fresh);
+    s.className = st;
+    s.dataset['state'] = st;
+    // NS4-17: liste öğesi; içerik "ad + durum" olarak okunur (durum yalnızca ekran okuyucuya, .sr-only).
+    // Açıklama ipucu (title) ad öğesindedir: liste öğesinde olsaydı erişilebilir ad yerine geçerdi.
+    s.setAttribute('role', 'listitem');
+    const name = document.createElement('span');
+    name.textContent = BADGES[id].name;
+    name.title = BADGES[id].desc;
+    const sr = document.createElement('span');
+    sr.className = 'sr-only';
+    sr.textContent = BADGE_STATE_LABEL[st];
+    s.append(name, sr);
     bx.appendChild(s);
   }
 }

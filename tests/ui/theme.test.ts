@@ -68,8 +68,13 @@ describe('tek tema', () => {
     expect(css).not.toMatch(/data-theme/);
     expect(html).not.toMatch(/data-theme/);
     for (const [file, src] of Object.entries(sources)) {
-      expect(src, file).not.toMatch(/prefers-color-scheme|data-theme|matchMedia\s*\(/);
+      // NS4-15: tek izinli medya sorgusu hareket tercihidir (src/app/motion.ts); tema sorgusu yok
+      expect(src, file).not.toMatch(/prefers-color-scheme|data-theme/);
+      expect(src.replaceAll('matchMedia(REDUCED_MOTION_QUERY)', ''), file).not.toMatch(/matchMedia\s*\(/);
     }
+    expect(sources['../../src/app/motion.ts'] ?? '').toContain(
+      "export const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';",
+    );
   });
 
   it('renk şeması tek temaya sabit (CSS ve meta)', () => {

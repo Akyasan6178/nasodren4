@@ -7,8 +7,24 @@ import * as PIXI from 'pixi.js';
 import { COLS, HIDDEN, VIS, CFG } from '../config/gameConfig';
 import { PIECE, SHAPES } from '../game/pieces';
 import { COLORS, blockRecord, createBlockAtlas, createDropCanvas, createWaveCanvas } from './textures';
+import {
+  Budget,
+  CYC_DONE,
+  CYC_TINTS,
+  GARBAGE_FX,
+  LINE_FX,
+  NEURO_BURST,
+  NEURO_TINTS,
+  OSMOTIC_TINT,
+  REBOUND_FX,
+  flavorOf,
+  glowAlpha,
+  motionScale,
+  type ClearFlavor,
+  type MotionScale,
+} from './effects';
 import type { Game } from '../game/Game';
-import type { PendingClear } from '../types/events';
+import type { PendingClear, ScoredEvent } from '../types/events';
 import type { BlockId, PendingClearKind, PieceSlot } from '../types/game';
 import type { Layout, Pt } from '../types/layout';
 import type { Settings } from '../types/settings';
@@ -22,6 +38,10 @@ interface Particle {
   max: number;
   g: number;
   base: number;
+  /** NS4-15: hız sönümü (1/s; 0 = yok) ve en-boy çarpanları (kıvılcım çizgisi). */
+  drag: number;
+  sx: number;
+  sy: number;
 }
 interface ClearAnim {
   readonly kind: PendingClearKind;
@@ -29,6 +49,22 @@ interface ClearAnim {
   t: number;
   readonly dur: number;
   recede?: number;
+  /** NS4-15: satır temizlemenin görsel dili ('lines' dışında 'drain'). */
+  readonly flavor: ClearFlavor;
+  /** Sıklamen: çözünme parçacığı salınmış hücreler (görünür hücre indeksi). */
+  readonly done?: Uint8Array;
+}
+/** NS4-15: Texture.WHITE ile tahta üstü vuruşlu ışıma (yeni doku yok). */
+interface Glow {
+  readonly s: PIXI.Sprite;
+  on: boolean;
+  t: number;
+  dur: number;
+  peak: number;
+  beats: number;
+  /** Tahta kenarı çerçevesi (4 ince şerit; yalnızca tahta ışımasında). edgeK: kenar/zemin parlaklık oranı, 0 = kapalı. */
+  readonly edges: readonly PIXI.Sprite[];
+  edgeK: number;
 }
 interface BounceState {
   readonly s: PIXI.Sprite;
@@ -78,6 +114,15 @@ export class View {
   anim: ClearAnim | null;
   overT: number;
   readonly seen: SeenVersions;
+  /** NS4-15: işletim sistemi "hareketi azalt" tercihi (bootstrap atar). Sarsıntı ve parçacıklar azalır; süreler aynı. */
+  reducedMotion: boolean;
+  /** Sıradaki satır temizlemesinin dili (`scored` → `clearstart` sırası; Game önce scored yayar). */
+  flavor: ClearFlavor;
+  lastLock: readonly number[];
+  readonly glow: Glow;
+  readonly band: Glow;
+  readonly crest: PIXI.Sprite;
+  readonly budget: Budget;
   /** layout() ilk kez çağrılana kadar yoktur; sync*() yalnızca layout() sonrasında çağrılır, update() kendi kontrolünü yapar. */
   L!: Layout;
   constructor(app: PIXI.Application<HTMLCanvasElement>, game: Game, settings: Readonly<Pick<Settings, 'ghost'>>) {
@@ -135,6 +180,18 @@ export class View {
       this.flashes.push(f);
     }
     // sıvı dalga (sıklamen): buildTextures() içinde oluşturulur (NS4-02: "this.wave = null" ataması kaldırıldı, bkz. yukarı)
+    // NS4-15: dalga tepesi, tahta ışıması ve satır bandı (Texture.WHITE; yeni doku yok)
+    const white = () => {
+      const s = new PIXI.Sprite(PIXI.Texture.WHITE);
+      s.blendMode = PIXI.BLEND_MODES.ADD;
+      s.visible = false;
+      s.alpha = 0;
+      this.fxLayer.addChild(s);
+      return s;
+    };
+    this.crest = white();
+    this.glow = { s: white(), on: false, t: 0, dur: 1, peak: 0, beats: 1, edges: [0, 1, 2, 3].map(white), edgeK: 0 };
+    this.band = { s: white(), on: false, t: 0, dur: 1, peak: 0, beats: 1, edges: [], edgeK: 0 };
     // parçacıklar
     this.pc = new PIXI.ParticleContainer(420, { vertices: true, position: true, tint: true });
     this.fxLayer.addChild(this.pc);
@@ -145,7 +202,7 @@ export class View {
       s.alpha = 0;
       s.position.set(-999, -999);
       this.pc.addChild(s);
-      this.parts.push({ s, vx: 0, vy: 0, life: 0, max: 1, g: 0, base: 0 });
+      this.parts.push({ s, vx: 0, vy: 0, life: 0, max: 1, g: 0, base: 0, drag: 0, sx: 1, sy: 1 });
     } // base: emitDrop atar (yalnızca life > 0 iken okunur)
     this.partIdx = 0;
 
@@ -154,6 +211,10 @@ export class View {
     this.anim = null; // aktif temizleme animasyonu
     this.overT = -1;
     this.seen = { piece: -1, board: -1, queue: -1, ghost: settings.ghost };
+    this.reducedMotion = false;
+    this.flavor = 'drain';
+    this.lastLock = [];
+    this.budget = new Budget();
   }
 
   mkMini(parent: PIXI.Container): PIXI.Sprite[] {
@@ -209,6 +270,27 @@ export class View {
     for (let i = 0; i < 10; i++) {
       this.flashes[i].width = COLS * c;
       this.flashes[i].height = c;
+    }
+    // NS4-15: süren efekt yeni ölçüye uyar; eski ölçüdeki parçacıklar bırakılır (konumları eski hücre boyutunda)
+    this.killParticles();
+    this.glow.s.width = this.band.s.width = this.crest.width = COLS * c;
+    this.glow.s.height = VIS * c;
+    this.band.s.height = c;
+    this.band.s.y = (VIS - 1) * c;
+    // kenar çerçevesi: üst, alt, sol, sağ
+    const bw = COLS * c,
+      bh = VIS * c,
+      th = Math.max(2, Math.round(c * 0.14));
+    const [top, bottom, left, right] = this.glow.edges;
+    for (const [s, x, y, w, h] of [
+      [top, 0, 0, bw, th],
+      [bottom, 0, bh - th, bw, th],
+      [left, 0, 0, th, bh],
+      [right, bw - th, 0, th, bh],
+    ] as const) {
+      s.position.set(x, y);
+      s.width = w;
+      s.height = h;
     }
     this.buildTextures(c);
   }
@@ -320,22 +402,122 @@ export class View {
   }
 
   // ---- efektler ----
-  emitDrop(x: number, y: number, tint: number, vx: number, vy: number, life: number, g: number, scale: number) {
+  // NS4-15: efektler yalnızca mevcut parçacık havuzunu (420, halka tampon), satır flaşlarını, sıvı dalgayı ve
+  // Texture.WHITE katmanlarını kullanır. Blok dokuları ve atlas değişmez; süreler mekanikteki gibidir (CFG).
+  get motion(): MotionScale {
+    return motionScale(this.reducedMotion);
+  }
+
+  /** Sarsıntı ister (reduced motion altında belirgin biçimde azaltılır). Sürmekte olan daha güçlü sarsıntıyı ezmez. */
+  kick(v: number) {
+    this.shake = Math.max(this.shake, Math.min(1, v * this.motion.shake));
+  }
+
+  /** Hücre başına parçacık sayısı (reduced motion çarpanı + kesir birikimi). */
+  count(per: number): number {
+    return this.budget.take(per, this.motion.particles);
+  }
+
+  emitDrop(
+    x: number,
+    y: number,
+    tint: number,
+    vx: number,
+    vy: number,
+    life: number,
+    g: number,
+    scale: number,
+    drag = 0,
+    sx = 1,
+    sy = 1,
+  ) {
     const p = this.parts[this.partIdx];
     this.partIdx = (this.partIdx + 1) % this.parts.length;
     p.s.position.set(x, y);
     p.s.tint = tint;
     p.s.alpha = 1;
-    p.s.scale.set(scale);
+    p.s.scale.set(scale * sx, scale * sy);
     p.base = scale;
     p.vx = vx;
     p.vy = vy;
     p.life = life;
     p.max = life;
     p.g = g;
+    p.drag = drag;
+    p.sx = sx;
+    p.sy = sy;
+  }
+
+  /** Bütün parçacıkları anında söndürür (havuz boyutu değişmez). */
+  killParticles() {
+    for (const p of this.parts) {
+      p.life = 0;
+      p.s.alpha = 0;
+      p.s.position.set(-999, -999);
+    }
+  }
+
+  startGlow(gl: Glow, tint: number, peak: number, dur: number, beats: number, edgeK = 0) {
+    const m = this.motion;
+    gl.s.tint = tint;
+    gl.s.alpha = 0;
+    gl.s.visible = true;
+    gl.peak = peak * m.glow;
+    gl.beats = m.flicker ? beats : 1;
+    gl.dur = dur;
+    gl.t = 0;
+    gl.on = true;
+    gl.edgeK = gl.edges.length ? edgeK : 0;
+    for (const e of gl.edges) {
+      e.tint = tint;
+      e.alpha = 0;
+      e.visible = gl.edgeK > 0;
+    }
+  }
+
+  stopGlow(gl: Glow) {
+    gl.on = false;
+    gl.s.visible = false;
+    gl.s.alpha = 0;
+    gl.edgeK = 0;
+    for (const e of gl.edges) {
+      e.visible = false;
+      e.alpha = 0;
+    }
+  }
+
+  updateGlow(gl: Glow, dt: number) {
+    if (!gl.on) return;
+    gl.t += dt;
+    const p = gl.t / gl.dur;
+    if (p >= 1) return this.stopGlow(gl);
+    const a = glowAlpha(p, gl.peak, gl.beats);
+    gl.s.alpha = a;
+    if (gl.edgeK) for (const e of gl.edges) e.alpha = Math.min(0.9, a * gl.edgeK);
+  }
+
+  /** Yeni oyun: süren bütün efektler temizlenir (NS4-15 öncesi lifecycle'daki sıfırlamaları da kapsar). */
+  resetFx() {
+    this.overT = -1;
+    this.anim = null;
+    this.flavor = 'drain';
+    if (this.wave) {
+      this.wave.visible = false;
+      this.wave.alpha = 1;
+    }
+    this.crest.visible = false;
+    for (const f of this.flashes) f.visible = false;
+    if (this.L) for (const f of this.flashes) f.height = this.L.cell;
+    this.stopGlow(this.glow);
+    this.stopGlow(this.band);
+    this.killParticles();
+    this.budget.reset();
+    this.shake = 0;
+    if (this.L) this.boardC.position.set(this.L.board.x, this.L.board.y);
   }
 
   onLock(cells: readonly number[]) {
+    this.lastLock = cells;
     for (const idx of cells) {
       const r = ((idx / COLS) | 0) - HIDDEN;
       if (r < 0) continue;
@@ -345,67 +527,213 @@ export class View {
   }
 
   onHard(d: number) {
-    this.shake = Math.min(1, 0.25 + d * 0.04);
+    this.kick(Math.min(1, 0.25 + d * 0.04));
+  }
+
+  /** `scored` (Game bunu `clearstart`'tan önce yayar): temizleme dilini seçer; T-spin'de kilit noktasından kıvılcım. */
+  onScored(e: Pick<ScoredEvent, 'n' | 'tspin'>) {
+    if (!this.L) return;
+    if (e.n > 0) this.flavor = flavorOf(e);
+    if (e.tspin) this.neuroBurst(e.n > 0 ? 1 : 0.5);
+  }
+
+  /** Son kilitlenen parçanın görünür merkezi (hücre koordinatı) veya yoksa null. */
+  lockCenter(): Pt | null {
+    let sx = 0,
+      sy = 0,
+      n = 0;
+    for (const idx of this.lastLock) {
+      const r = ((idx / COLS) | 0) - HIDDEN;
+      if (r < 0) continue;
+      sx += idx % COLS;
+      sy += r;
+      n++;
+    }
+    return n ? { x: sx / n, y: sy / n } : null;
+  }
+
+  /** Nörorefleks: T merkezinden düz, hızla sönümlenen radyal kıvılcımlar (yerçekimi yok). */
+  neuroBurst(power: number) {
+    const o = this.lockCenter();
+    if (!o) return;
+    const c = this.L.cell,
+      dw = this.dropTex.orig.width;
+    const k = this.count(NEURO_BURST * power);
+    for (let i = 0; i < k; i++) {
+      const ang = (i / k) * Math.PI * 2 + Math.random() * 0.3,
+        sp = c * (5 + Math.random() * 3);
+      this.emitDrop(
+        o.x * c + c / 2,
+        o.y * c + c / 2,
+        NEURO_TINTS[i % NEURO_TINTS.length],
+        Math.cos(ang) * sp,
+        Math.sin(ang) * sp,
+        260 + Math.random() * 120,
+        0,
+        ((0.22 + Math.random() * 0.12) * c) / dw,
+        5.5,
+      );
+    }
   }
 
   onClearStart(e: PendingClear) {
     const c = this.L.cell,
       g = this.game;
+    const flavor: ClearFlavor = e.kind === 'lines' ? this.flavor : 'drain';
+    this.flavor = 'drain';
     this.syncBoard();
     this.anim = {
       kind: e.kind,
       rows: e.rows.map((r) => r - HIDDEN).filter((r) => r >= 0),
       t: 0,
       dur: e.kind === 'cyc' ? CFG.drainMs : e.kind === 'syn' ? CFG.synClearMs : CFG.lineClearMs,
+      flavor,
+      ...(e.kind === 'cyc' ? { done: new Uint8Array(COLS * VIS) } : {}),
     };
     const rows = this.anim.rows;
     if (e.kind !== 'cyc') {
+      const R = LINE_FX[e.kind === 'syn' ? 'syn' : flavor],
+        dw = this.dropTex.orig.width;
       rows.forEach((r, i) => {
         const f = this.flashes[i];
         f.visible = true;
         f.alpha = 1;
+        f.height = c;
         f.y = r * c;
-        f.tint = e.kind === 'syn' ? 0xff6070 : 0xffffff;
+        f.tint = R.flash;
       });
-      // drenaj damlacıkları: hücre başına 2 adet, aşağı akar
+      const lc = this.lockCenter(),
+        tcol = lc ? lc.x : COLS / 2;
       for (const r of rows)
         for (let col = 0; col < COLS; col++) {
           const v = asBlock(g.board[(r + HIDDEN) * COLS + col] || 1);
           // NS4-02: utils.string2hex(x) npm paketinde her oturumda bir deprecation uyarısı basıyor (CDN pixi.min.js basmıyordu).
           // Aynı hesaplamanın kendisi (string2hex = Color.shared.setValue(x).toNumber()) doğrudan çağrılıyor; sonuç birebir aynı.
-          const tint = e.kind === 'syn' ? 0xff8a95 : PIXI.Color.shared.setValue(COLORS[v]).toNumber();
-          for (let k = 0; k < 2; k++)
+          const tint = PIXI.Color.shared.setValue(COLORS[v]).toNumber();
+          const x = col * c + c / 2;
+          // sıçrayan damlalar (drenaj: blok rengi + beyaz; Ozmotik: + turkuaz, tahta kenarlarına doğru açılır)
+          for (let k = 0, n = this.count(R.splash); k < n; k++) {
+            const out = flavor === 'osmotic' ? ((col + 0.5 - COLS / 2) / (COLS / 2)) * c * (2 + Math.random() * 3) : 0;
             this.emitDrop(
-              col * c + c / 2 + (Math.random() - 0.5) * c * 0.6,
+              x + (Math.random() - 0.5) * c * 0.6,
               r * c + c / 2,
-              k ? 0xffffff : tint,
-              (Math.random() - 0.5) * c * 3,
-              (Math.random() * 0.5 - 0.9) * c * 6,
+              k % 3 === 1 ? 0xffffff : k % 3 === 2 ? OSMOTIC_TINT : tint,
+              out + (Math.random() - 0.5) * c * 3,
+              (Math.random() * 0.5 - (flavor === 'osmotic' ? 1.0 : 0.9)) * c * 6,
               500 + Math.random() * 350,
               c * 38,
-              (((0.45 + Math.random() * 0.5) * c) / this.dropTex.orig.width) * 1.2,
+              (((0.45 + Math.random() * 0.5) * c) / dw) * 1.2,
             );
+          }
+          // süzülen damla: satırın altından yavaşça aşağı akar (sıvı boşalma hissi)
+          for (let k = 0, n = this.count(R.drip); k < n; k++)
+            this.emitDrop(
+              x + (Math.random() - 0.5) * c * 0.7,
+              r * c + c * 0.85,
+              tint,
+              (Math.random() - 0.5) * c * 0.4,
+              c * (0.6 + Math.random() * 0.8),
+              420 + Math.random() * 260,
+              c * 24,
+              ((0.22 + Math.random() * 0.18) * c) / dw,
+            );
+          // yatay kıvılcım çizgisi (Nörorefleks: T sütunundan dışa; sentetik: iki yana keskin)
+          for (let k = 0, n = this.count(R.streak); k < n; k++) {
+            const syn = e.kind === 'syn';
+            const dir = syn ? (Math.random() < 0.5 ? -1 : 1) : col >= tcol ? 1 : -1;
+            this.emitDrop(
+              x,
+              r * c + c / 2 + (Math.random() - 0.5) * c * 0.5,
+              syn ? (k % 2 ? 0xffffff : 0xff8a95) : NEURO_TINTS[(col + k) % NEURO_TINTS.length],
+              dir * c * (7 + Math.random() * 4),
+              (Math.random() - 0.5) * c * 0.8,
+              (syn ? 200 : 260) + Math.random() * 120,
+              0,
+              ((0.24 + Math.random() * 0.12) * c) / dw,
+              5,
+              2.4,
+              0.55,
+            );
+          }
         }
+      if (R.shake) this.kick(R.shake);
+      if (R.glow) this.startGlow(this.glow, R.glow, R.glowPeak, flavor === 'osmotic' ? 380 : 300, 1);
     } else {
       this.wave.visible = true;
+      this.wave.alpha = 1;
       this.wave.width = COLS * c;
       this.wave.height = 1;
       this.wave.y = VIS * c;
       this.wave.tileScale.set((c * 2.6) / 256, (VIS * 0.6 * c) / 128);
       this.wave.tilePosition.y = 0;
+      this.crest.tint = 0xffd6ea;
+      this.crest.alpha = 0;
+      this.crest.visible = true;
     }
   }
 
   onClearEnd() {
     for (const f of this.flashes) f.visible = false;
+    if (this.L) for (const f of this.flashes) f.height = this.L.cell;
+    const cycDone = this.anim?.kind === 'cyc' && this.anim.recede == null;
     this.anim = this.anim && this.anim.kind === 'cyc' ? Object.assign(this.anim, { recede: 0 }) : null;
     this.syncAll();
+    if (cycDone) this.cycBoost();
+  }
+
+  /** Sıklamen bitti, ×2 başladı: tek, yumuşak pembe vuruş ve alttan yükselen pembe/turkuaz kabarcıklar. */
+  cycBoost() {
+    const c = this.L.cell,
+      dw = this.dropTex.orig.width;
+    this.startGlow(this.glow, CYC_DONE.glow, CYC_DONE.peak, CYC_DONE.dur, 1);
+    for (let i = 0, n = this.count(CYC_DONE.rise); i < n; i++)
+      this.emitDrop(
+        ((i + Math.random()) / n) * COLS * c,
+        VIS * c - c * 0.3,
+        CYC_TINTS[i % CYC_TINTS.length],
+        (Math.random() - 0.5) * c * 0.8,
+        -c * (6 + Math.random() * 4),
+        560 + Math.random() * 240,
+        c * 5,
+        ((0.3 + Math.random() * 0.2) * c) / dw,
+        1.5,
+      );
+  }
+
+  /** Rebound başladı: kısa, kontrollü kırmızı-turuncu uyarı (normal hareket: iki vuruş; azaltılmış: tek). */
+  onRebound() {
+    const R = REBOUND_FX;
+    this.startGlow(this.glow, R.tint, R.peak, R.dur, R.beats, R.edge);
+    this.kick(R.shake);
+  }
+
+  /** Garbage geldi: alt satırda gri bant, yukarı itilen toz parçacıkları ve sarsıntı. Garbage dokusu değişmez. */
+  onGarbage() {
+    const G = GARBAGE_FX;
+    this.kick(G.shake);
+    if (!this.L) return;
+    const c = this.L.cell,
+      dw = this.dropTex.orig.width;
+    this.band.s.y = (VIS - 1) * c;
+    this.startGlow(this.band, G.tint, G.peak, G.dur, G.beats);
+    for (let i = 0, n = this.count(G.puffs); i < n; i++)
+      this.emitDrop(
+        ((i + Math.random()) / n) * COLS * c,
+        VIS * c - c * 0.2,
+        0xd5dae8,
+        (Math.random() - 0.5) * c * 1.5,
+        -c * (2 + Math.random() * 2),
+        380 + Math.random() * 200,
+        c * 3,
+        ((0.3 + Math.random() * 0.2) * c) / dw,
+        2,
+      );
   }
 
   onGameOver() {
     this.overT = 0;
     this.syncPiece();
-    this.shake = 0.8;
+    this.kick(0.8);
   }
 
   update(dt: number) {
@@ -433,16 +761,19 @@ export class View {
 
     // temizleme animasyonu
     const a = this.anim;
+    const m = this.motion;
     if (a) {
       a.t += dt;
       if (a.recede != null) {
         a.recede += dt;
         const p = Math.min(1, a.recede / 520);
         this.wave.alpha = 1 - p;
+        this.crest.alpha = 0.5 * (1 - p) * m.glow;
         this.wave.tilePosition.x -= dt * 0.12;
         if (p >= 1) {
           this.wave.visible = false;
           this.wave.alpha = 1;
+          this.crest.visible = false;
           this.anim = null;
         }
       } else if (a.kind === 'cyc') {
@@ -450,19 +781,46 @@ export class View {
           e = 1 - Math.pow(1 - p, 3);
         const top = a.rows.length ? Math.min(...a.rows) : VIS;
         const h = (VIS - top) * c * e + c * 0.6;
+        // ölçüler her karede (yeniden yerleşim sırasında da doğru kalır)
+        this.wave.width = COLS * c;
+        this.wave.tileScale.set((c * 2.6) / 256, (VIS * 0.6 * c) / 128);
         this.wave.height = h;
         this.wave.y = VIS * c - h;
         this.wave.tilePosition.x -= dt * 0.12;
+        // dalga tepesi: ince, parlak pembe şerit (yükselen sıvının yüzeyi)
+        this.crest.height = c * 0.32;
+        this.crest.y = this.wave.y - c * 0.1;
+        this.crest.alpha = (0.55 - 0.25 * p) * m.glow;
+        const dw = this.dropTex.orig.width;
         for (const r of a.rows)
           for (let col = 0; col < COLS; col++) {
-            const s = this.cells[r * COLS + col];
+            const i = r * COLS + col,
+              s = this.cells[i];
             if (!s.visible) continue;
             if (s.y > this.wave.y) {
+              // sıvıya giren hücre bir kez çözünme parçacığı salar, sonra pembeleşerek erir ve hafifçe yükselir
+              if (a.done && !a.done[i]) {
+                a.done[i] = 1;
+                for (let k = 0, n = this.count(2); k < n; k++)
+                  this.emitDrop(
+                    s.x + (Math.random() - 0.5) * c * 0.6,
+                    s.y,
+                    CYC_TINTS[(col + k) % CYC_TINTS.length],
+                    (Math.random() - 0.5) * c * 0.8,
+                    -c * (1.2 + Math.random() * 1.5),
+                    520 + Math.random() * 300,
+                    -c * 1.5,
+                    ((0.3 + Math.random() * 0.2) * c) / dw,
+                  );
+              }
               s.alpha = Math.max(0, s.alpha - dt / 260);
               s.scale.set((c / s.texture.orig.width) * (0.6 + 0.4 * s.alpha));
+              s.y -= dt * c * 0.0012;
+              const q = 1 - s.alpha;
+              s.tint = (255 << 16) | (Math.round(255 - 61 * q) << 8) | Math.round(255 - 31 * q);
             }
           }
-        if (Math.random() < dt / 16)
+        if (Math.random() < (dt / 16) * m.particles)
           this.emitDrop(
             Math.random() * COLS * c,
             VIS * c - Math.random() * h,
@@ -471,25 +829,51 @@ export class View {
             -c * (2 + Math.random() * 3),
             700,
             -c * 2,
-            ((0.25 + Math.random() * 0.3) * c) / this.dropTex.orig.width,
+            ((0.25 + Math.random() * 0.3) * c) / dw,
           );
       } else {
-        const p = Math.min(1, a.t / a.dur);
-        for (let i = 0; i < a.rows.length; i++) this.flashes[i].alpha = Math.max(0, 1 - p * 1.6);
+        const p = Math.min(1, a.t / a.dur),
+          syn = a.kind === 'syn',
+          R = LINE_FX[syn ? 'syn' : a.flavor];
+        for (let i = 0; i < a.rows.length; i++) {
+          const f = this.flashes[i];
+          let al = Math.max(0, 1 - p * (syn ? 2.2 : 1.6));
+          // Nörorefleks: hızlı titreşimli flaş (reduced motion'da düz sönüm)
+          if (a.flavor === 'neuro' && m.flicker) al *= 0.6 + 0.4 * Math.cos(p * Math.PI * 8);
+          f.alpha = al;
+          const fh = c * (1 + R.bloom * p * (m.flicker ? 1 : 0.5));
+          f.height = fh;
+          f.y = a.rows[i] * c - (fh - c) / 2;
+        }
         const k = 1 - Math.pow(p, 1.6);
         for (const r of a.rows)
           for (let col = 0; col < COLS; col++) {
             const s = this.cells[r * COLS + col];
             if (!s.visible) continue;
             const base = c / s.texture.orig.width;
+            if (syn) {
+              // sentetik: hızlı ve keskin; hücre yatay bir çizgiye sıkışır
+              const q = 1 - p;
+              s.scale.set(base * (1 + 0.18 * p), base * Math.max(0.001, q * q));
+              s.alpha = 1 - p * p;
+              s.y = r * c + c / 2;
+              continue;
+            }
             s.scale.set(base * Math.max(0.001, k), base * Math.max(0.001, k * 0.7));
             s.alpha = k;
-            s.y = r * c + c / 2 + p * c * 0.35;
+            s.y = r * c + c / 2 + p * c * (a.flavor === 'osmotic' ? 0.2 : 0.35);
+            // Ozmotik: hücreler zar boyunca tahtanın ortasına süzülür
+            if (a.flavor === 'osmotic') s.x = col * c + c / 2 + (COLS / 2 - col - 0.5) * c * 0.18 * p;
           }
       }
     }
 
+    // tahta ışıması ve satır bandı
+    this.updateGlow(this.glow, dt);
+    this.updateGlow(this.band, dt);
+
     // parçacıklar
+    const sec = dt / 1000;
     for (let i = 0; i < this.parts.length; i++) {
       const p = this.parts[i];
       if (p.life <= 0) continue;
@@ -498,13 +882,18 @@ export class View {
         p.s.alpha = 0;
         continue;
       }
-      const sec = dt / 1000;
+      if (p.drag) {
+        const d = Math.exp(-p.drag * sec);
+        p.vx *= d;
+        p.vy *= d;
+      }
       p.vy += p.g * sec;
       p.s.x += p.vx * sec;
       p.s.y += p.vy * sec;
       const f = p.life / p.max;
       p.s.alpha = f;
-      p.s.scale.set(p.base * (0.5 + 0.5 * f)); // life > 0 ise emitDrop base atamıştır
+      const sc = p.base * (0.5 + 0.5 * f); // life > 0 ise emitDrop base atamıştır
+      p.s.scale.set(sc * p.sx, sc * p.sy);
     }
 
     // oyun sonu: yığını alttan yukarı griye çevir
@@ -524,8 +913,8 @@ export class View {
     // sarsıntı
     if (this.shake > 0.01) {
       this.shake *= Math.pow(0.0015, dt / 1000);
-      const m = this.shake * c * 0.18;
-      this.boardC.position.set(L.board.x + (Math.random() - 0.5) * m, L.board.y + Math.random() * m);
+      const amp = this.shake * c * 0.18;
+      this.boardC.position.set(L.board.x + (Math.random() - 0.5) * amp, L.board.y + Math.random() * amp);
     } else if (this.shake !== 0) {
       this.shake = 0;
       this.boardC.position.set(L.board.x, L.board.y);
