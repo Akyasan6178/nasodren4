@@ -24,6 +24,11 @@ export interface GameConfig {
   readonly powerThreshold: number;
   readonly cycMultMs: number;
   readonly cycMult: number;
+  /** NS4-09: sıklamen gücünü dolduran satır sayısı ve gücün boşalttığı en fazla dolu alt satır. */
+  readonly cycChargeLines: number;
+  readonly cycRows: number;
+  /** Serbest oyunda başlangıç şarjı. */
+  readonly cycStartCharge: number;
   readonly reboundMs: number;
   readonly reboundSpeed: number;
   readonly reboundGarbageEvery: number;
@@ -41,8 +46,11 @@ export const CFG = {
   maxLevel: 20,
   linesPerLevel: 10,
   powerThreshold: 0.35, // tıkanıklık oranı: destekler bu seviyede açılır
-  cycMultMs: 30000,
+  cycMultMs: 20000,
   cycMult: 2,
+  cycChargeLines: 8,
+  cycRows: 3,
+  cycStartCharge: 0.5,
   reboundMs: 40000,
   reboundSpeed: 1.5,
   reboundGarbageEvery: 10000,

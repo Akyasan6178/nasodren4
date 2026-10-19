@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CFG, COLS } from '../../src/config/gameConfig';
 import { PIECE } from '../../src/game/pieces';
 import {
+  chargeCyc,
   createGame,
   dropVerticalI,
   finishClear,
@@ -35,62 +36,87 @@ describe('tıkanıklık (congestion)', () => {
   });
 });
 
-describe('siklamen (cyc)', () => {
-  it('%35 altındaki tıkanıklıkta açılmaz', () => {
+describe('siklamen (cyc) · NS4-09: şarjla dolar, tekrar kullanılır', () => {
+  it('şarj dolmadan açılmaz; sentetik %35 tıkanıklık eşiğine bağlı kalır', () => {
     const g = createGame(1);
     stackRows(g, 6); // 0.30
     const log = recordEvents(g, ['clearstart']);
+    expect(g.cycCharge).toBe(CFG.cycStartCharge);
     expect(g.canCyc()).toBe(false);
     expect(g.useCyc()).toBe(false);
     expect(g.canSyn()).toBe(false);
     expect(g.useSyn()).toBe(false);
-    expect([g.state, g.cycUsed, g.synUses, log.count('clearstart')]).toEqual(['play', false, 0, 0]);
+    expect([g.state, g.cycUses, g.synUses, log.count('clearstart')]).toEqual(['play', 0, 0, 0]);
     stackRows(g, 7); // 0.35
-    expect(g.canCyc()).toBe(true);
+    expect(g.canCyc()).toBe(false); // tıkanıklık sıklameni açmaz
     expect(g.canSyn()).toBe(true);
+    chargeCyc(g);
+    expect(g.canCyc()).toBe(true);
   });
 
-  it('alt bölgedeki (satır 12..21) dolu satırları drenajla temizler; puan ve 30 sn ×2 verir', () => {
+  it('temizlenen satırlar şarj eder; dolunca bir kez cycready', () => {
+    const g = createGame(1);
+    const log = recordEvents(g, ['cycready']);
+    g.cycCharge = 0;
+    setupWell(g, 4);
+    dropVerticalI(g); // 4 satır
+    expect(g.cycCharge).toBeCloseTo(4 / CFG.cycChargeLines);
+    finishClear(g);
+    setupWell(g, 4);
+    dropVerticalI(g);
+    expect(g.cycCharge).toBe(1);
+    expect(log.count('cycready')).toBe(1);
+    finishClear(g);
+    setupWell(g, 1);
+    dropVerticalI(g);
+    expect(log.count('cycready')).toBe(1); // dolu şarj taşmaz, olay tekrarlanmaz
+  });
+
+  it('en alttaki dolu 3 satırı drenajla temizler; puan ve ×2 verir; şarj sıfırlanır', () => {
     const g = createGame(1);
     stackRows(g, 10); // satır 12..21
-    setCell(g, 2, 11, PIECE.L); // pencerenin (satır 12+) dışında
+    setCell(g, 2, 11, PIECE.L);
+    chargeCyc(g);
     const log = recordEvents(g, ['clearstart', 'powerdone', 'clearend']);
     expect(g.useCyc()).toBe(true);
-    const rows = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+    const rows = [19, 20, 21];
     expect(g.state).toBe('draining');
+    expect(g.cycCharge).toBe(0);
     expect(log.payloads('clearstart')).toEqual([{ rows, kind: 'cyc' }]);
     g.update(CFG.drainMs - 1);
     expect(g.state).toBe('draining');
     g.update(1);
     expect(g.state).toBe('play');
-    expect(log.payloads('powerdone')).toEqual([{ kind: 'cyc', n: 10 }]);
+    expect(log.payloads('powerdone')).toEqual([{ kind: 'cyc', n: 3 }]);
     expect(log.payloads('clearend')).toEqual([{ rows, kind: 'cyc' }]);
-    expect(g.score).toBe(150 * 10);
+    expect(g.score).toBe(150 * 3);
     expect(g.multT).toBe(CFG.cycMultMs);
-    expect(getCell(g, 2, 21)).toBe(PIECE.L); // 10 satır aşağı kaydı
-    expect(rowCells(g, 20)).toEqual(new Array<number>(COLS).fill(0));
+    expect(getCell(g, 2, 14)).toBe(PIECE.L); // 3 satır aşağı kaydı
+    expect(g.stackHeight()).toBe(8);
   });
 
-  it('yalnızca bir kez kullanılabilir', () => {
+  it('yeniden şarj olunca tekrar kullanılır', () => {
     const g = createGame(1);
     stackRows(g, 7);
+    chargeCyc(g);
     expect(g.useCyc()).toBe(true);
     finishClear(g);
-    stackRows(g, 7);
     expect(g.canCyc()).toBe(false);
-    expect(g.useCyc()).toBe(false);
-    expect(g.canSyn()).toBe(true);
+    chargeCyc(g);
+    expect(g.useCyc()).toBe(true);
+    expect(g.cycUses).toBe(2);
   });
 
-  it('×2 çarpanı 30 saniye sürer, sonra biter', () => {
+  it('×2 çarpanı süre boyunca puanı ikiye katlar, sonra biter', () => {
     const g = createGame(1);
     const log = recordEvents(g, ['scored']);
     stackRows(g, 7);
+    chargeCyc(g);
     g.useCyc();
     finishClear(g);
     setupWell(g, 1);
     dropVerticalI(g);
-    finishClear(g); // multT 30000 - 300
+    finishClear(g); // multT = süre - 300
     g.update(CFG.cycMultMs - CFG.lineClearMs - 1); // aktif parça düşüp temizlemesiz kilitlenir; multT = 1
     expect(g.multT).toBe(1);
     setupWell(g, 1);

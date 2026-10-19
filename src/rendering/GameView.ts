@@ -2,11 +2,15 @@
    VIEW (PixiJS): sprite havuzları, texture yaşam döngüsü, efektler
    NS4-03: main.ts'ten taşındı. Game'i yalnızca okur; oyun kuralı, skor,
    storage, CTA veya içerik seçimi yapmaz.
+   NS4-09: sinüs boşluğu dekoru (rendering/decor.ts), kıpırdayan mikroplar,
+   mikrop patlaması, Sıklamen'den tahtaya sprey ve bölüm sonu efekti.
    ===================================================================== */
 import * as PIXI from 'pixi.js';
 import { COLS, HIDDEN, VIS, CFG } from '../config/gameConfig';
 import { PIECE, SHAPES } from '../game/pieces';
 import { COLORS, blockRecord, createBlockAtlas, createDropCanvas, createWaveCanvas } from './textures';
+import { SinusDecor } from './decor';
+import { GERM } from '../game/stages';
 import type { Game } from '../game/Game';
 import type { PendingClear } from '../types/events';
 import type { BlockId, PendingClearKind, PieceSlot } from '../types/game';
@@ -55,6 +59,9 @@ export class View {
   readonly ghostLayer: PIXI.Container;
   readonly activeLayer: PIXI.Container;
   readonly fxLayer: PIXI.Container;
+  readonly decor: SinusDecor;
+  /** Mikrop kıpırdama saati (ms). */
+  private germT = 0;
   // buildTextures() içinde atanır; ilk çağrıya kadar tanımsızdır (bkz. NS4-02-VITE-MIGRATION.md)
   tex!: TextureMap;
   ghostTex!: TextureMap;
@@ -92,7 +99,8 @@ export class View {
     this.ghostLayer = new PIXI.Container();
     this.activeLayer = new PIXI.Container();
     this.fxLayer = new PIXI.Container();
-    this.boardC.addChild(this.ghostLayer, this.cellLayer, this.activeLayer, this.fxLayer);
+    this.decor = new SinusDecor();
+    this.boardC.addChild(this.decor.root, this.ghostLayer, this.cellLayer, this.activeLayer, this.fxLayer);
     // NS4-02: orijinaldeki "this.tex = this.ghostTex = this.dropTex = this.waveTex = null" ataması kaldırıldı;
     // alanlar ilk buildTextures() çağrısına kadar undefined kalır (yalnızca truthiness ile kontrol ediliyorlar).
 
@@ -210,6 +218,7 @@ export class View {
       this.flashes[i].width = COLS * c;
       this.flashes[i].height = c;
     }
+    this.decor.layout(c);
     this.buildTextures(c);
   }
 
@@ -359,6 +368,23 @@ export class View {
       dur: e.kind === 'cyc' ? CFG.drainMs : e.kind === 'syn' ? CFG.synClearMs : CFG.lineClearMs,
     };
     const rows = this.anim.rows;
+    // NS4-09: temizlenen sıralardaki mikroplar yeşil bir "puf" ile kaybolur
+    for (const r of rows)
+      for (let col = 0; col < COLS; col++)
+        if (g.board[(r + HIDDEN) * COLS + col] === GERM)
+          for (let k = 0; k < 10; k++) {
+            const a = (k / 10) * Math.PI * 2;
+            this.emitDrop(
+              col * c + c / 2,
+              r * c + c / 2,
+              k & 1 ? 0x6fc24c : 0xd9ff9a,
+              Math.cos(a) * c * 4,
+              Math.sin(a) * c * 4,
+              450,
+              c * 6,
+              ((0.35 * c) / this.dropTex.orig.width) * 1.2,
+            );
+          }
     if (e.kind !== 'cyc') {
       rows.forEach((r, i) => {
         const f = this.flashes[i];
@@ -402,6 +428,61 @@ export class View {
     this.syncAll();
   }
 
+  /** NS4-09: Sıklamen gücü: karakterden (layout'taki btnCyc) alt sıralara pembe damla yağmuru. */
+  onSpray() {
+    if (!this.L) return;
+    const L = this.L,
+      c = L.cell;
+    const from: Pt = { x: L.btnCyc.x + L.btnCyc.w / 2 - L.board.x, y: L.btnCyc.y + L.btnCyc.h * 0.4 - L.board.y };
+    for (let k = 0; k < 60; k++) {
+      const tx = Math.random() * COLS * c,
+        ty = (VIS - Math.random() * 4) * c;
+      const life = 380 + Math.random() * 260;
+      this.emitDrop(
+        from.x,
+        from.y,
+        k % 3 ? 0xff8cc0 : 0xffffff,
+        ((tx - from.x) / life) * 1000,
+        ((ty - from.y) / life) * 1000 - c * 4,
+        life,
+        c * 16,
+        ((0.3 + Math.random() * 0.35) * c) / this.dropTex.orig.width,
+      );
+    }
+  }
+
+  /** NS4-09: bölüm bitti: ostium açılır, tahtadan yukarı ışıltı yükselir. */
+  onWin() {
+    if (!this.L) return;
+    const c = this.L.cell;
+    this.decor.openOstium();
+    this.syncPiece();
+    for (let k = 0; k < 90; k++)
+      this.emitDrop(
+        COLS * c * (0.3 + Math.random() * 0.4),
+        VIS * c,
+        k % 3 ? 0xffffff : 0xffc2dc,
+        (Math.random() - 0.5) * c * 6,
+        -c * (6 + Math.random() * 10),
+        900 + Math.random() * 600,
+        c * 4,
+        ((0.25 + Math.random() * 0.35) * c) / this.dropTex.orig.width,
+      );
+  }
+
+  /** NS4-09: yeni oyun/bölüm: süren efektler ve ostium sıfırlanır (önceden lifecycle alanları tek tek sıfırlıyordu). */
+  resetFx() {
+    this.overT = -1;
+    this.anim = null;
+    if (this.wave) this.wave.visible = false;
+    for (const f of this.flashes) f.visible = false;
+    for (const p of this.parts) {
+      p.life = 0;
+      p.s.alpha = 0;
+    }
+    this.decor.reset();
+  }
+
   onGameOver() {
     this.overT = 0;
     this.syncPiece();
@@ -416,6 +497,17 @@ export class View {
     if (g.boardVer !== this.seen.board && !this.anim) this.syncBoard();
     if (g.pieceVer !== this.seen.piece || this.settings.ghost !== this.seen.ghost) this.syncPiece();
     if (g.queueVer !== this.seen.queue) this.syncQueue();
+    this.decor.update(dt);
+
+    // NS4-09: mikroplar yerlerinde hafifçe kıpırdar (temizleme animasyonu sürerken dokunulmaz)
+    this.germT += dt;
+    if (!this.anim && this.tex)
+      for (const s of this.cells)
+        if (s.visible && s.texture === this.tex[GERM]) {
+          const k = 1 + Math.sin(this.germT / 180 + s.x * 0.05) * 0.06;
+          const base = c / s.texture.orig.width;
+          s.scale.set(base * k, base * (2 - k));
+        }
 
     // oturma yaylanması
     for (let i = this.bounce.length - 1; i >= 0; i--) {

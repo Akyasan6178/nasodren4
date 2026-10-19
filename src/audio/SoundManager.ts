@@ -3,6 +3,7 @@
    NS4-03: main.ts'ten taşındı (sınıf adı Sound korundu). AudioContext yalnızca
    unlock() ile, kullanıcı etkileşiminde oluşturulur. Ses parametreleri değişmedi.
    DOM veya ayar paneline erişmez; ayarları constructor'dan alır.
+   NS4-09: mikrop, karakter ve bölüm sonu sesleri eklendi (mevcut sesler değişmedi).
    NS4-04: AudioContext'e bağlı düğümler tek bir `AudioGraph | null` alanında
    tutulur (unlock() öncesi gerçekten yoklar); Web Audio çağrı sırası aynıdır.
    ===================================================================== */
@@ -144,6 +145,21 @@ export class Sound {
   }
   level() {
     [523, 659, 784].forEach((f, i) => this.tone(f, 0.22, 'triangle', 0.05, 0, i * 0.07));
+  }
+  /** NS4-09: mikrop temizlendi: kısa, komik "pop". */
+  germ() {
+    this.tone(880, 0.08, 'square', 0.03, 1400);
+    this.tone(1320, 0.1, 'sine', 0.04, 600, 0.06);
+  }
+  /** NS4-09: Sıklamen konuşur / güç doldu: tatlı iki nota. */
+  chirp() {
+    this.tone(988, 0.1, 'sine', 0.04, 1175);
+    this.tone(1318, 0.14, 'sine', 0.035, 0, 0.09);
+  }
+  /** NS4-09: bölüm tamamlandı: derin nefes + yükselen arpej. */
+  win() {
+    this.breath(1.2, 220, 2400, 0.12, 0.9);
+    [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, 0.5, 'triangle', 0.05, 0, 0.15 + i * 0.1));
   }
   over() {
     this.tone(330, 0.7, 'triangle', 0.12, 82);

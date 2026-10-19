@@ -1,5 +1,6 @@
 // Game olay adları ve payload tipleri. Olay adları ve payload alanları çalışma davranışının
 // parçasıdır; değiştirilmemelidir. Payload'ı olmayan olaylar `void` ile işaretlenir.
+// NS4-09: germs, cycready ve stagecomplete olayları eklendi (mevcut olaylar değişmedi).
 import type { GameOverReason, PendingClearKind, TSpinKind } from './game';
 
 /** Temizleme/drenaj işlemi (satırlar küçükten büyüğe sıralı tahta satır indeksleri). */
@@ -20,6 +21,15 @@ export type PowerDoneEvent =
   | { readonly kind: 'cyc'; readonly n: number }
   | { readonly kind: 'syn'; readonly n: number; readonly rebound: boolean };
 
+/** Bölüm tamamlandı. */
+export interface StageResult {
+  readonly stars: 1 | 2 | 3;
+  /** Kullanılan parça sayısı. */
+  readonly pieces: number;
+  readonly score: number;
+  readonly germs: number;
+}
+
 export interface GameEvents {
   spawn: void;
   move: void;
@@ -36,6 +46,11 @@ export interface GameEvents {
   clearend: PendingClear;
   scored: ScoredEvent;
   powerdone: PowerDoneEvent;
+  /** Temizlenen satırlardaki mikrop sayısı (satır temizleme veya güç). */
+  germs: number;
+  /** Sıklamen gücünün şarjı doldu. */
+  cycready: void;
+  stagecomplete: StageResult;
 }
 
 export type GameEventName = keyof GameEvents;

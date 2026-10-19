@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CFG } from '../../src/config/gameConfig';
 import { installFakeDom, type FakeDom } from '../helpers/fakeDom';
-import { finishClear, stackRows } from '../helpers/gameHelpers';
+import { chargeCyc, finishClear, stackRows } from '../helpers/gameHelpers';
 import { loadUi } from '../helpers/uiHarness';
 
 const REBOUND_TOAST = 'Dekonjestanların uzun süreli kullanımı tıkanıklığın geri dönmesine yol açabilir.';
@@ -23,33 +23,30 @@ function btn(id: 'btn-cyc' | 'btn-syn') {
   };
 }
 
-describe('sıklamen butonu', () => {
-  it('kilitli → hazır → kullanıldı → aktif etki → kullanıldı', async () => {
+describe('sıklamen butonu (NS4-09: karakter, şarjla dolar)', () => {
+  it('şarj oluyor → hazır (Bana dokun!) → ×2 etkin → yeniden şarj', async () => {
     const { g, lc, frame } = await loadUi();
     lc.start();
     frame();
-    expect(btn('btn-cyc')).toEqual({ state: 'locked', text: 'Tıkanıklık %35’te açılır', disabled: true, ready: false });
-    stackRows(g, 7); // %35
+    expect(btn('btn-cyc')).toEqual({ state: 'charging', text: 'Güç %50', disabled: true, ready: false });
+    expect(dom.el('hero').dataset['mood']).toBe('happy'); // başlangıç tepkisi
+    chargeCyc(g);
     frame();
-    expect(btn('btn-cyc')).toEqual({ state: 'ready', text: 'Hazır · oyunda 1 kez', disabled: false, ready: true });
+    expect(btn('btn-cyc')).toEqual({ state: 'ready', text: 'Bana dokun!', disabled: false, ready: true });
+    stackRows(g, 7);
     g.useCyc();
-    frame(); // drenaj sürerken
-    expect(btn('btn-cyc')).toEqual({ state: 'used', text: 'Bu oyunda kullanıldı', disabled: true, ready: false });
     finishClear(g);
     frame();
-    expect(btn('btn-cyc')).toEqual({ state: 'active', text: 'Kullanıldı · ×2 etkin', disabled: true, ready: false });
+    expect(btn('btn-cyc')).toEqual({ state: 'active', text: '×2 · güç %0', disabled: true, ready: false });
     expect(dom.el('badge-mult').style['display']).toBe('block');
-    expect(dom.el('badge-mult').textContent).toBe('Ferah nefes ×2 · 30 sn');
-    stackRows(g, 7); // tıkanıklık yeniden yüksek: tek kullanım, açılmaz
-    frame();
-    expect(btn('btn-cyc').state).toBe('active');
-    expect(g.canCyc()).toBe(false);
+    expect(dom.el('badge-mult').textContent).toBe('Ferah nefes ×2 · 20 sn');
   });
 
-  it('×2 süresi bitince sayaç temizlenir ve buton "Bu oyunda kullanıldı" olur', async () => {
+  it('×2 süresi bitince sayaç temizlenir ve buton şarj durumuna döner', async () => {
     const { g, lc, frame } = await loadUi();
     lc.start();
     stackRows(g, 7);
+    chargeCyc(g);
     g.useCyc();
     finishClear(g);
     frame();
@@ -61,7 +58,27 @@ describe('sıklamen butonu', () => {
     frame();
     expect(g.multT).toBe(0);
     expect(dom.el('badge-mult').style['display']).toBe('none');
-    expect(btn('btn-cyc')).toMatchObject({ state: 'used', text: 'Bu oyunda kullanıldı', disabled: true });
+    expect(btn('btn-cyc')).toMatchObject({ state: 'charging', disabled: true });
+  });
+
+  it('şarj dolunca Sıklamen konuşur ve heyecanlanır', async () => {
+    const { g, lc, frame } = await loadUi();
+    lc.start();
+    vi.advanceTimersByTime(7000); // açılış konuşması ve tepkisi biter
+    frame();
+    g.emit('cycready');
+    expect(dom.el('say-text').textContent).toBe('Gücüm doldu! Bana dokun, en alttaki sıraları eriteyim.');
+    expect(dom.el('say').classList.contains('show')).toBe(true);
+    expect(dom.el('hero').dataset['mood']).toBe('ready');
+  });
+
+  it('bölümde kapalıysa "Sıklamen" etiketi, kullanılamaz', async () => {
+    const { g, lc, frame } = await loadUi();
+    lc.start('adventure', 0);
+    g.cycCharge = 1;
+    frame();
+    expect(btn('btn-cyc')).toEqual({ state: 'off', text: 'Sıklamen', disabled: true, ready: false });
+    expect(btn('btn-syn')).toMatchObject({ state: 'off', text: 'Sonraki sinüste', disabled: true });
   });
 });
 
@@ -70,7 +87,7 @@ describe('sentetik açıcı butonu', () => {
     const { g, lc, frame } = await loadUi();
     lc.start();
     frame();
-    expect(btn('btn-syn')).toEqual({ state: 'locked', text: 'Hızlı rahatlama', disabled: true, ready: false });
+    expect(btn('btn-syn')).toEqual({ state: 'locked', text: 'Tıkanıklık %35’te açılır', disabled: true, ready: false });
     stackRows(g, 7);
     frame();
     expect(btn('btn-syn')).toEqual({ state: 'ready', text: 'Hazır · hızlı rahatlama', disabled: false, ready: true });

@@ -4,6 +4,8 @@
    Game → Sound → Pixi Application → canvas → View → resize dinleyicileri →
    lifecycle + olay bağlantıları → input → ipuçları/ekranlar → butonlar/CTA →
    ayarlar → ana döngü → ilk ipucu → doLayout → fontlar hazır olunca yeniden layout.
+   NS4-09: Sıklamen karakterleri yerleştirilir; macera / harita / serbest oyun /
+   bilgi kartları / bölüm sonu butonları bağlanır.
    ===================================================================== */
 import * as PIXI from 'pixi.js';
 import type { Layout } from '../types/layout';
@@ -18,7 +20,18 @@ import { track } from '../analytics/analytics';
 import { ctaUrl } from '../analytics/cta';
 import { $ } from '../ui/dom';
 import { updateHud, applyHudLayout } from '../ui/hud';
-import { initTips, setTip, openSub, bindBackButtons, closeSub } from '../ui/screens';
+import {
+  initTips,
+  setTip,
+  openSub,
+  bindBackButtons,
+  closeSub,
+  nextStage,
+  openAlbum,
+  renderMap,
+  renderStartMenu,
+} from '../ui/screens';
+import { mountHero } from '../ui/hero';
 import { bindSettingsPanel } from '../ui/settingsPanel';
 import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
@@ -83,11 +96,36 @@ export function bootstrap(): void {
     unlockAudio: () => sound.unlock(),
   });
 
+  // NS4-09: Sıklamen karakterleri (HUD, konuşma balonu avatarı, menü ve sonuç ekranları)
+  mountHero($('hero'), 'hud');
+  mountHero($('say-ava'), 'ava');
+  mountHero($('hero-start'), 'start');
+  mountHero($('hero-win'), 'win', 'cheer');
+  mountHero($('hero-over'), 'over', 'sad');
+
   // ekranlar
   initTips();
   bindBackButtons();
-  $('b-play').addEventListener('click', lifecycle.start);
-  $('b-again').addEventListener('click', lifecycle.start);
+  const playStage = (i: number) => lifecycle.start('adventure', i);
+  const openMap = () => {
+    renderMap(playStage);
+    openSub('scr-map');
+  };
+  $('b-play').addEventListener('click', () => playStage(nextStage()));
+  $('b-endless').addEventListener('click', () => lifecycle.start('endless'));
+  $('b-map').addEventListener('click', openMap);
+  $('b-cards').addEventListener('click', () => openAlbum((id) => track('card_view', { id })));
+  $('b-again').addEventListener('click', lifecycle.restart);
+  $('b-retry').addEventListener('click', lifecycle.restart);
+  $('b-next').addEventListener('click', () => {
+    if (lifecycle.nextStage()) return;
+    lifecycle.toMenu();
+    openMap();
+  });
+  $('b-wmap').addEventListener('click', () => {
+    lifecycle.toMenu();
+    openMap();
+  });
   $('b-menu').addEventListener('click', lifecycle.toMenu);
   $('b-quit').addEventListener('click', lifecycle.toMenu);
   $('b-resume').addEventListener('click', lifecycle.resume);
@@ -96,6 +134,10 @@ export function bootstrap(): void {
   $('b-set2').addEventListener('click', () => openSub('scr-set'));
   $('cta-over', HTMLAnchorElement).href = ctaUrl('game_over');
   $('cta-pause', HTMLAnchorElement).href = ctaUrl('pause_menu');
+  $('cta-win', HTMLAnchorElement).href = ctaUrl('stage_complete');
+  $('cta-win').addEventListener('click', () =>
+    track('cta_click', { placement: 'stage_complete', stage: lifecycle.getStage() + 1 }),
+  );
   $('cta-over').addEventListener('click', () => track('cta_click', { placement: 'game_over', score: game.score }));
   $('cta-pause').addEventListener('click', () => track('cta_click', { placement: 'pause_menu' }));
 
@@ -130,6 +172,7 @@ export function bootstrap(): void {
   });
 
   setTip('tip-start');
+  renderStartMenu();
   // document.fonts eski tarayıcılarda yoktur (DOM tipleri her zaman var sayar). FontFaceSet varsa ready her zaman tanımlıdır.
   const fontSet: FontFaceSet | undefined = document.fonts;
   const fontsReady: Promise<unknown> = fontSet
@@ -140,6 +183,6 @@ export function bootstrap(): void {
   void fontsReady.then(queueLayout);
   // hata ayıklama (yalnızca development; production build'de global debug erişimi yok)
   if (import.meta.env.DEV) {
-    window.__fn = { game, view, app };
+    window.__fn = { game, view, app, lc: lifecycle };
   }
 }

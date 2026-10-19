@@ -3,25 +3,42 @@
    NS4-03: main.ts'ten taşındı. Bu sınıf DOM, PixiJS, localStorage, ses,
    titreşim, analitik ve CTA bilmez; dış dünyayla yalnızca on()/emit()
    olaylarıyla konuşur. Kurallar, süreler ve skor tabloları değişmedi.
+   NS4-09: bölüm (sinüs) modu. Tahta alttan boşluklu tıkaç satırlarıyla
+   başlar (içinde mikroplar); bütün tıkaç temizlenince bölüm biter ('won').
+   Sıklamen gücü artık temizlenen satırlarla şarj olur ve tekrar kullanılır.
    ===================================================================== */
 import { COLS, ROWS, HIDDEN, VIS, CFG } from '../config/gameConfig';
 import { PIECE, SHAPES, KICK_JLSTZ, KICK_I, kickKey, nextRotation } from './pieces';
+import { CLOG, GERM, buildClog } from './stages';
 import type { GameEventArgs, GameEventListener, GameEventName, PendingClear } from '../types/events';
 import type {
+  GameMode,
   GameOverReason,
   GameState,
   PieceSlot,
   RotationDirection,
   RotationState,
+  StageRules,
   Step,
   TSpinKind,
   TetrominoType,
 } from '../types/game';
 
+/** Tahta dışı hücre (yanlar ve taban) için cell() dönüş değeri. NS4-09: hücre değerleri 10'a çıktığı için 9 → 255. */
+export const OUT = 255;
+
+export interface ResetOptions {
+  readonly mode?: GameMode;
+  /** mode 'adventure' ise bölüm kuralları. */
+  readonly stage?: StageRules;
+}
+
 export class Game {
   private readonly handlers: { [K in GameEventName]?: GameEventListener<K>[] };
   /** Hücre değerleri: CellValue (0 boş, 1-7 tetromino, 8 çöp). */
   readonly board: Uint8Array;
+  mode: GameMode = 'endless';
+  stage: StageRules | null = null;
   // reset() içinde atanan alanlar (reset() constructor'dan çağrılır)
   state!: GameState;
   type!: PieceSlot;
@@ -49,8 +66,15 @@ export class Game {
   softDrop!: boolean;
   lastRot!: boolean;
   lastKick!: number;
-  cycUsed!: boolean;
+  /** Sıklamen gücü: şarj (0..1) ve kullanım sayısı. */
+  cycCharge!: number;
+  cycUses!: number;
   synUses!: number;
+  /** Kilitlenen parça sayısı ve temizlenen mikrop sayısı. */
+  pieces!: number;
+  germsCleared!: number;
+  /** Bölüm başındaki tıkaç hücresi sayısı (ilerleme çubuğu için). */
+  clogTotal!: number;
   multT!: number;
   reboundT!: number;
   garbageT!: number;
@@ -92,7 +116,9 @@ export class Game {
     return t;
   }
 
-  reset() {
+  reset(opts: ResetOptions = {}) {
+    this.mode = opts.mode ?? 'endless';
+    this.stage = this.mode === 'adventure' ? (opts.stage ?? null) : null;
     this.board.fill(0);
     this.bag = [];
     this.queue = [];
@@ -117,8 +143,16 @@ export class Game {
     this.softDrop = false;
     this.lastRot = false;
     this.lastKick = 0;
-    this.cycUsed = false;
+    this.cycCharge = this.stage ? this.stage.charge : CFG.cycStartCharge;
+    this.cycUses = 0;
     this.synUses = 0;
+    this.pieces = 0;
+    this.germsCleared = 0;
+    if (this.stage) {
+      buildClog(this.board, this.stage);
+      this.level = this.stage.speed;
+    }
+    this.clogTotal = this.clogLeft();
     this.multT = 0;
     this.reboundT = 0;
     this.garbageT = 0;
@@ -147,7 +181,23 @@ export class Game {
   }
 
   cell(x: number, y: number) {
-    return x < 0 || x >= COLS || y >= ROWS ? 9 : y < 0 ? 0 : this.board[y * COLS + x];
+    return x < 0 || x >= COLS || y >= ROWS ? OUT : y < 0 ? 0 : this.board[y * COLS + x];
+  }
+
+  /** Tahtada kalan tıkaç (mikroplu dahil) hücresi. */
+  clogLeft() {
+    let n = 0;
+    for (let i = 0; i < this.board.length; i++) if (this.board[i] === CLOG || this.board[i] === GERM) n++;
+    return n;
+  }
+  germsLeft() {
+    let n = 0;
+    for (let i = 0; i < this.board.length; i++) if (this.board[i] === GERM) n++;
+    return n;
+  }
+  /** Bölüm ilerlemesi (0..1); serbest oyunda 0. */
+  progress() {
+    return this.clogTotal > 0 ? 1 - this.clogLeft() / this.clogTotal : 0;
   }
 
   fits(type: TetrominoType, rot: RotationState, px: number, py: number) {
@@ -311,6 +361,7 @@ export class Game {
     }
     this.boardVer++;
     this.canHold = true;
+    this.pieces++;
     this.emit('lock', cells);
     if (allHidden) return this.gameOver('lockout');
 
@@ -361,12 +412,21 @@ export class Game {
     if (n > 0 || tspin) this.emit('scored', { n, tspin, b2b, combo: this.combo, pts });
     if (n > 0) {
       this.lines += n;
+      this.charge(n);
+      // bölüm modunda hız bölüm tanımında sabittir
       const lv = Math.min(CFG.maxLevel, 1 + Math.floor(this.lines / CFG.linesPerLevel));
-      if (lv > this.level) {
+      if (!this.stage && lv > this.level) {
         this.level = lv;
         this.emit('levelup', lv);
       }
     }
+  }
+
+  /** NS4-09: temizlenen satır sıklamen gücünü doldurur. */
+  charge(lines: number) {
+    if (this.cycCharge >= 1 || (this.stage && !this.stage.cyc)) return;
+    this.cycCharge = Math.min(1, this.cycCharge + lines / CFG.cycChargeLines);
+    if (this.cycCharge >= 1) this.emit('cycready');
   }
 
   removeRows(rows: readonly number[]) {
@@ -412,16 +472,17 @@ export class Game {
   }
 
   canCyc() {
-    return this.state === 'play' && !this.cycUsed && this.congestion() >= CFG.powerThreshold;
+    return this.state === 'play' && this.cycCharge >= 1 && (!this.stage || this.stage.cyc);
   }
   canSyn() {
-    return this.state === 'play' && this.congestion() >= CFG.powerThreshold;
+    return this.state === 'play' && this.congestion() >= CFG.powerThreshold && (!this.stage || this.stage.syn);
   }
 
   useCyc() {
     if (!this.canCyc()) return false;
-    this.cycUsed = true;
-    const rows = this.nonEmptyBottomRows(10, ROWS - 10);
+    this.cycCharge = 0;
+    this.cycUses++;
+    const rows = this.nonEmptyBottomRows(CFG.cycRows, HIDDEN);
     this.state = 'draining';
     this.stateT = CFG.drainMs;
     this.pending = { kind: 'cyc', rows };
@@ -440,11 +501,24 @@ export class Game {
     return true;
   }
 
+  /** Satırlardaki mikrop hücreleri. */
+  private germsIn(rows: readonly number[]) {
+    let n = 0;
+    for (const y of rows) for (let x = 0; x < COLS; x++) if (this.board[y * COLS + x] === GERM) n++;
+    return n;
+  }
+
   finishPending() {
     const p = this.pending!;
     this.pending = null; // NS4-02: yalnızca clearing/draining sırasında çağrılır, pending doludur
     this.state = 'play';
+    const germs = this.germsIn(p.rows);
     this.removeRows(p.rows);
+    if (germs > 0) {
+      this.germsCleared += germs;
+      this.score += 100 * germs * this.level;
+      this.emit('germs', germs);
+    }
     if (p.kind === 'cyc') {
       this.score += 150 * p.rows.length * this.level;
       this.multT = CFG.cycMultMs;
@@ -459,8 +533,21 @@ export class Game {
       this.emit('powerdone', { kind: 'syn', n: p.rows.length, rebound: this.synUses >= 2 });
     }
     this.emit('clearend', p);
+    if (this.stage && this.clogLeft() === 0) return this.win();
     if (p.kind === 'lines') this.spawn();
     else this.fixActiveOverlap();
+  }
+
+  /** Bölümün bütün tıkacı temizlendi: parça kalmaz, yıldızlar parça sayısına göre verilir. */
+  win() {
+    const par = this.stage ? this.stage.par : 0;
+    const stars = this.pieces <= par ? 3 : this.pieces <= Math.ceil(par * 1.5) ? 2 : 1;
+    this.state = 'won';
+    this.type = 0;
+    this.multT = 0;
+    this.reboundT = 0;
+    this.pieceVer++;
+    this.emit('stagecomplete', { stars, pieces: this.pieces, score: this.score, germs: this.germsCleared });
   }
 
   fixActiveOverlap() {
@@ -497,7 +584,7 @@ export class Game {
   }
 
   update(dt: number) {
-    if (this.state === 'over') return;
+    if (this.state === 'over' || this.state === 'won') return;
     this.elapsed += dt;
     if (this.multT > 0) this.multT = Math.max(0, this.multT - dt);
     if (this.state === 'clearing' || this.state === 'draining') {

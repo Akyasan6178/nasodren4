@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { COLS, ROWS } from '../../src/config/gameConfig';
-import { Game } from '../../src/game/Game';
+import { CFG, COLS, ROWS } from '../../src/config/gameConfig';
+import { Game, OUT } from '../../src/game/Game';
 import { PIECE } from '../../src/game/pieces';
 import type { TetrominoType } from '../../src/types/game';
 import {
@@ -34,7 +34,10 @@ describe('tahta başlangıç durumu ve reset', () => {
     expect(g.b2b).toBe(false);
     expect(g.hold).toBe(0);
     expect(g.canHold).toBe(true);
-    expect(g.cycUsed).toBe(false);
+    expect(g.cycUses).toBe(0);
+    expect(g.cycCharge).toBe(CFG.cycStartCharge);
+    expect(g.mode).toBe('endless');
+    expect(g.stage).toBeNull();
     expect(g.synUses).toBe(0);
     expect(g.multT).toBe(0);
     expect(g.reboundT).toBe(0);
@@ -63,11 +66,11 @@ describe('tahta başlangıç durumu ve reset', () => {
 });
 
 describe('cell() ve fits()', () => {
-  it('tahta dışı yanlar ve taban dolu (9), üst kenarın üstü boş (0) sayılır', () => {
+  it('tahta dışı yanlar ve taban dolu (OUT = 255; NS4-09 öncesi 9), üst kenarın üstü boş (0) sayılır', () => {
     const g = createGame(1);
-    expect(g.cell(-1, 5)).toBe(9);
-    expect(g.cell(COLS, 5)).toBe(9);
-    expect(g.cell(0, ROWS)).toBe(9);
+    expect(g.cell(-1, 5)).toBe(OUT);
+    expect(g.cell(COLS, 5)).toBe(OUT);
+    expect(g.cell(0, ROWS)).toBe(OUT);
     expect(g.cell(0, -1)).toBe(0);
     expect(g.cell(4, 10)).toBe(0);
   });
