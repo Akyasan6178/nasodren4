@@ -189,17 +189,15 @@ describe('bileşen kuralları', () => {
     expect(body).toMatch(/color:\s*var\(--color-btn-locked-text\)/);
   });
 
-  it('güçlendirici durumları (hazır/aktif, şarj, risk, rebound) ayrı stillere sahip', () => {
+  it('güçlendirici durumları (aktif, kullanıldı, risk, rebound) ayrı stillere sahip', () => {
     for (const sel of [
-      "#btn-cyc[data-state='ready'] .hero-lbl, #btn-cyc[data-state='active'] .hero-lbl",
-      "#btn-cyc[data-state='charging'] .hero-lbl, #btn-cyc[data-state='off'] .hero-lbl",
+      "#btn-cyc[data-state='active']",
+      "#btn-cyc[data-state='used']",
       "#btn-syn[data-state='risk']",
       "#btn-syn[data-state='rebound']",
     ])
       expect(rule(sel).length, sel).toBeGreaterThan(0);
-    expect(rule("#btn-cyc[data-state='ready'] .hero-lbl, #btn-cyc[data-state='active'] .hero-lbl")).toMatch(
-      /--color-cyclamen/,
-    );
+    expect(rule("#btn-cyc[data-state='active']")).toMatch(/--color-cyclamen/);
     expect(rule("#btn-syn[data-state='rebound']")).toMatch(/--color-danger/);
   });
 

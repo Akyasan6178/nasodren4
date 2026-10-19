@@ -6,8 +6,8 @@
    ===================================================================== */
 import type { BlockId } from '../types/game';
 
-/** Atlas sütun sırası (Object.keys(COLORS) ile aynı: 1..10 artan). */
-export const BLOCK_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const satisfies readonly BlockId[];
+/** Atlas sütun sırası (Object.keys(COLORS) ile aynı: 1..8 artan). */
+export const BLOCK_IDS = [1, 2, 3, 4, 5, 6, 7, 8] as const satisfies readonly BlockId[];
 
 export const COLORS: Readonly<Record<BlockId, string>> = {
   1: '#3fd2de',
@@ -17,10 +17,7 @@ export const COLORS: Readonly<Record<BlockId, string>> = {
   5: '#ff7868',
   6: '#5d8bff',
   7: '#ffa14a',
-  8: '#b58a96',
-  // NS4-09: yapışkan mukus tıkacı ve mikrop gövdesi
-  9: '#cbd35a',
-  10: '#6fc24c',
+  8: '#8e93a6',
 };
 
 function hexToRgb(h: string) {
@@ -60,105 +57,10 @@ export function blockRecord<V>(make: (id: BlockId, i: number) => V): Record<Bloc
     6: make(6, 5),
     7: make(7, 6),
     8: make(8, 7),
-    9: make(9, 8),
-    10: make(10, 9),
   };
 }
 
-/**
- * NS4-09: yapışkan mukus tıkacı. Komşu hücrelere taşan, düzensiz kenarlı, kabarcıklı bir doku; satır boyunca
- * tek parça bir tabaka gibi görünür (bloklardan ayrışsın diye parlak "şeker" görünümü yoktur).
- */
-function drawMucus(x: CanvasRenderingContext2D, px: number) {
-  const c = COLORS[9];
-  const g = x.createLinearGradient(0, 0, 0, px);
-  g.addColorStop(0, shade(c, 0.18));
-  g.addColorStop(1, shade(c, -0.2));
-  x.fillStyle = g;
-  x.beginPath();
-  // hafif dalgalı kenar: hücre sınırına kadar uzanır
-  x.moveTo(0, px * 0.06);
-  x.quadraticCurveTo(px * 0.5, -px * 0.04, px, px * 0.06);
-  x.lineTo(px, px * 0.94);
-  x.quadraticCurveTo(px * 0.5, px * 1.04, 0, px * 0.94);
-  x.closePath();
-  x.fill();
-  // koyu lekeler
-  x.fillStyle = shade(c, -0.28);
-  x.globalAlpha = 0.35;
-  for (const [cx, cy, r] of [
-    [0.25, 0.7, 0.12],
-    [0.72, 0.35, 0.09],
-    [0.62, 0.78, 0.07],
-  ] as const) {
-    x.beginPath();
-    x.arc(px * cx, px * cy, px * r, 0, Math.PI * 2);
-    x.fill();
-  }
-  // kabarcıklar
-  x.globalAlpha = 0.8;
-  x.strokeStyle = 'rgba(255,255,255,.75)';
-  x.lineWidth = Math.max(1, px * 0.03);
-  for (const [cx, cy, r] of [
-    [0.3, 0.3, 0.08],
-    [0.78, 0.66, 0.06],
-    [0.45, 0.6, 0.04],
-  ] as const) {
-    x.beginPath();
-    x.arc(px * cx, px * cy, px * r, 0, Math.PI * 2);
-    x.stroke();
-  }
-  x.globalAlpha = 1;
-}
-
-/** NS4-09: mikrop: mukusun içinde dikenli, sevimli-yaramaz yeşil yaratık. */
-function drawGerm(x: CanvasRenderingContext2D, px: number) {
-  drawMucus(x, px);
-  const c = COLORS[10],
-    cx = px / 2,
-    cy = px * 0.52,
-    r = px * 0.27;
-  x.fillStyle = shade(c, -0.25);
-  for (let k = 0; k < 8; k++) {
-    const a = (k / 8) * Math.PI * 2;
-    x.beginPath();
-    x.arc(cx + Math.cos(a) * r * 1.15, cy + Math.sin(a) * r * 1.15, px * 0.06, 0, Math.PI * 2);
-    x.fill();
-  }
-  const g = x.createRadialGradient(cx - r * 0.3, cy - r * 0.4, 0, cx, cy, r);
-  g.addColorStop(0, shade(c, 0.35));
-  g.addColorStop(1, c);
-  x.fillStyle = g;
-  x.beginPath();
-  x.arc(cx, cy, r, 0, Math.PI * 2);
-  x.fill();
-  x.strokeStyle = shade(c, -0.35);
-  x.lineWidth = Math.max(1, px * 0.03);
-  x.stroke();
-  // gözler (yukarı bakar) ve yaramaz kaşlar
-  for (const sx of [-1, 1]) {
-    x.fillStyle = '#fff';
-    x.beginPath();
-    x.ellipse(cx + sx * r * 0.38, cy - r * 0.12, r * 0.24, r * 0.28, 0, 0, Math.PI * 2);
-    x.fill();
-    x.fillStyle = '#1d2b16';
-    x.beginPath();
-    x.arc(cx + sx * r * 0.38, cy - r * 0.2, r * 0.12, 0, Math.PI * 2);
-    x.fill();
-    x.strokeStyle = '#1d2b16';
-    x.lineWidth = Math.max(1, px * 0.035);
-    x.beginPath();
-    x.moveTo(cx + sx * r * 0.62, cy - r * 0.5);
-    x.lineTo(cx + sx * r * 0.18, cy - r * 0.38);
-    x.stroke();
-  }
-  // sırıtış
-  x.beginPath();
-  x.arc(cx, cy + r * 0.25, r * 0.32, 0.15 * Math.PI, 0.85 * Math.PI);
-  x.stroke();
-}
-
-/** Tek atlas: blok + hayalet karoları -> tahtanın tamamı tek draw call. `P` karo adımıdır. */
+/** Tek atlas: 8 blok + 8 hayalet karo -> tahtanın tamamı tek draw call. `P` karo adımıdır. */
 export function createBlockAtlas(px: number): { atlas: HTMLCanvasElement; P: number } {
   const P = px + 4,
     keys = BLOCK_IDS;
@@ -171,12 +73,6 @@ export function createBlockAtlas(px: number): { atlas: HTMLCanvasElement; P: num
       ox = i * P + 2;
     x.save();
     x.translate(ox, 2);
-    if (k === 9 || k === 10) {
-      if (k === 9) drawMucus(x, px);
-      else drawGerm(x, px);
-      x.restore();
-      return;
-    }
     const ins = px * 0.045,
       r = px * 0.26,
       w = px - ins * 2;

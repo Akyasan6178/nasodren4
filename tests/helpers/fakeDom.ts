@@ -132,17 +132,6 @@ const ELEMENT_IDS = [
   'tip-start',
   'tip-pause',
   'tip-over',
-  // NS4-09: karakter, konuşma balonu, bölüm paneli, başlangıç menüsü
-  'hero',
-  'say',
-  'say-text',
-  'stats',
-  'hud-stage',
-  'hud-prog',
-  'hud-prog-txt',
-  'hud-germs',
-  'play-sub',
-  'cards-badge',
 ];
 
 export interface FakeDom {

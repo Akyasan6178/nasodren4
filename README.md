@@ -1,6 +1,6 @@
 # Ferah Nefes · Sinüs Bulmacası
 
-Tarayıcıda oynanan, kısa süreli, Tetris benzeri bir bulmaca oyunu (advergame). Ana karakter Sıklamen'le oyuncu tıkanmış sinüslerin içine girer: her bölümde alttaki yapışkan mukus tabakalarındaki boşlukları bloklarla doldurur, dolan sıra erir; bütün tıkanıklık temizlenince sinüs açılır ve bir bilgi kartı kazanılır. Dört sinüs (maksiller, frontal, etmoid, sfenoid) sekiz bölümlük bir haritada; ayrıca sonsuz "Serbest oyun" vardır. Ayrıntılar: `docs/NS4-09-GAME-TRANSFORMATION.md`.
+Tarayıcıda oynanan, kısa süreli, Tetris benzeri bir bulmaca oyunu (advergame). Oyun alanı bir sinüs boşluğunu, düşen bloklar biriken tıkanıklığı temsil eder; satır temizlemek drenaj anlamına gelir.
 
 Oyun içi metinler `index.html`, `src/content/` ve `src/ui/` içinde; CTA bağlantısı `src/config/gameConfig.ts` ve `src/analytics/cta.ts` içindedir. Sağlıkla ilgili içerik yalnızca oradan yönetilir; bu README sağlık bilgisi içermez.
 
@@ -65,7 +65,7 @@ Development ortamında hata ayıklama için `window.__fn = { game, view, app }` 
 │   ├── main.ts           # Giriş: CSS + bootstrap()
 │   ├── styles.css        # Tüm stiller
 │   ├── app/              # bootstrap, lifecycle (durum geçişleri), oyun olayı bağlantıları
-│   ├── game/             # Saf oyun motoru (Game), bölüm tıkaç yerleşimi, tohumlu RNG, parça/SRS verileri
+│   ├── game/             # Saf oyun motoru (Game) ve parça/SRS verileri
 │   ├── rendering/        # PixiJS görünümü, dokular, layout hesabı
 │   ├── input/            # Klavye, dokunmatik jestler, HUD butonları
 │   ├── audio/            # Web Audio ses ve müzik
@@ -73,7 +73,7 @@ Development ortamında hata ayıklama için `window.__fn = { game, view, app }` 
 │   ├── storage/          # localStorage (fn_settings, fn_meta)
 │   ├── analytics/        # Analitik olayları ve CTA/UTM
 │   ├── ui/               # DOM: HUD, ekranlar, bildirimler, rozetler, ayarlar paneli
-│   ├── content/          # İpuçları, rozetler, bölümler (sinüs haritası) ve bilgi kartları
+│   ├── content/          # İpuçları ve rozet metinleri
 │   ├── config/           # Tahta boyutları ve oyun ayarları
 │   └── types/            # Paylaşılan TypeScript tipleri
 ├── public/
@@ -109,5 +109,3 @@ Bu dosya production build'e dahil edilmez. PixiJS'i CDN'den yüklediği için te
 - `docs/NS4-02-VERIFICATION.md`: Doğrulama sonuçları
 - `docs/NS4-03-MODULAR-ARCHITECTURE.md`: Modül yapısı, sınırlar ve bağımlılık yönü
 - `docs/NS4-04-TYPE-SAFETY-AND-QUALITY.md`: Tip güvenliği, ESLint/Prettier ve kalite komutları
-- `docs/NS4-05` … `NS4-08`: Test altyapısı, hata düzeltmeleri, güçlendirici UX, tema sistemi
-- `docs/NS4-09-GAME-TRANSFORMATION.md`: Sıklamen karakteri, sinüs haritası, bilgi kartları; araştırma değerlendirmesi, kalibrasyon ve inceleme gerektiren metinler

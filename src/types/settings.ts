@@ -1,6 +1,6 @@
 // localStorage şemaları. Alan adları fn_settings / fn_meta JSON'unun parçasıdır; değiştirilmemelidir.
 // NS4-06: kayıtlı değerler yüklenirken storage/settings.ts ve storage/progress.ts içinde doğrulanır.
-import type { BadgeId, CardId } from './content';
+import type { BadgeId } from './content';
 
 /** fn_settings */
 export interface Settings {
@@ -26,10 +26,4 @@ export interface Meta {
   best: number;
   totalLines: number;
   badges: BadgeId[];
-  /**
-   * NS4-09 (isteğe bağlı; eski kayıtlar olduğu gibi geçerlidir ve yeniden yazılmaz):
-   * stages: sinüs haritası bölüm başına yıldız (0 = geçilmedi, 1..3); cards: açılan bilgi kartları.
-   */
-  stages?: number[];
-  cards?: CardId[];
 }

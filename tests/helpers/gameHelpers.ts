@@ -86,11 +86,6 @@ export function dropVerticalI(g: Game): void {
   g.hardDrop();
 }
 
-/** NS4-09: sıklamen gücünü doldurur (şarj = 1). */
-export function chargeCyc(g: Game): void {
-  g.cycCharge = 1;
-}
-
 /** Bekleyen temizleme/drenaj işlemini oyunun kendi süresi kadar update() ile bitirir. */
 export function finishClear(g: Game): void {
   const p = g.pending;
@@ -112,9 +107,6 @@ const EVENT_FLAGS: Record<GameEventName, true> = {
   clearend: true,
   scored: true,
   powerdone: true,
-  germs: true,
-  cycready: true,
-  stagecomplete: true,
 };
 /** GameEvents içindeki tüm olay adları (Record tipi eksik/fazla adı derleme hatası yapar). */
 export const ALL_EVENTS = Object.keys(EVENT_FLAGS) as GameEventName[];

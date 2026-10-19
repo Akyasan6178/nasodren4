@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { installFakeDom, type FakeDom } from '../helpers/fakeDom';
-import { chargeCyc, dropVerticalI, finishClear, setupWell, stackRows } from '../helpers/gameHelpers';
+import { dropVerticalI, finishClear, setupWell, stackRows } from '../helpers/gameHelpers';
 import { loadUi } from '../helpers/uiHarness';
 
 let dom: FakeDom;
@@ -15,7 +15,6 @@ async function busySession() {
   const { g, lc, frame } = ui;
   lc.start();
   stackRows(g, 7);
-  chargeCyc(g);
   g.useCyc();
   finishClear(g);
   for (let i = 0; i < 2; i++) {
@@ -53,9 +52,9 @@ describe('pause → ana menü', () => {
     expect(dom.visibleScreen()).toBe('scr-start');
     expect(transientUi()).toEqual(CLEAN);
     // güçlendirici butonları menünün arkasında eski oturumun durumunu göstermez
-    expect([dom.el('btn-cyc').dataset['state'], dom.el('btn-syn').dataset['state']]).toEqual(['charging', 'locked']);
+    expect([dom.el('btn-cyc').dataset['state'], dom.el('btn-syn').dataset['state']]).toEqual(['locked', 'locked']);
     expect([dom.el('btn-cyc').disabled, dom.el('btn-syn').disabled]).toEqual([true, true]);
-    expect(dom.el('syn-sub').textContent).toBe('Tıkanıklık %35’te açılır');
+    expect(dom.el('syn-sub').textContent).toBe('Hızlı rahatlama');
   });
 
   it('menüde süren oyun zamanlayıcıları görsel durum üretmez', async () => {
@@ -77,9 +76,9 @@ describe('pause → ana menü', () => {
     frame();
     expect(transientUi()).toEqual(CLEAN);
     expect(dom.el('hud-score').textContent).toBe('0');
-    expect(dom.el('cyc-sub').textContent).toBe('Güç %50'); // NS4-09: serbest oyun yarı şarjla başlar
-    expect(dom.el('syn-sub').textContent).toBe('Tıkanıklık %35’te açılır');
-    expect(dom.el('btn-cyc').dataset['state']).toBe('charging');
+    expect(dom.el('cyc-sub').textContent).toBe('Tıkanıklık %35’te açılır');
+    expect(dom.el('syn-sub').textContent).toBe('Hızlı rahatlama');
+    expect(dom.el('btn-cyc').dataset['state']).toBe('locked');
     expect(dom.el('btn-syn').dataset['state']).toBe('locked');
   });
 

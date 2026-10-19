@@ -66,28 +66,6 @@ describe('fn_meta doğrulama', () => {
   });
 });
 
-describe('fn_meta NS4-09 alanları (stages, cards)', () => {
-  it('isteğe bağlı alanlar yoksa eklenmez (eski kayıt yeniden yazılmaz)', () => {
-    expect(Object.keys(normalizeMeta({ best: 1, totalLines: 2, badges: [] }))).toEqual([
-      'best',
-      'totalLines',
-      'badges',
-    ]);
-  });
-
-  it('stages: bölüm sayısı uzunluğunda 0..3 tamsayı yıldız', () => {
-    expect(normalizeMeta({ stages: [3, 2, 9, -1, 1.5, 'x'] }).stages).toEqual([3, 2, 0, 0, 0, 0, 0, 0]);
-    expect(normalizeMeta({ stages: 'x' })).not.toHaveProperty('stages');
-  });
-
-  it('cards: bilinmeyenler atılır, tekrarlar kaldırılır', () => {
-    expect(normalizeMeta({ cards: ['maksiller', 'yok', 'virus', 'maksiller', 4] }).cards).toEqual([
-      'maksiller',
-      'virus',
-    ]);
-  });
-});
-
 describe('fn_settings doğrulama', () => {
   it.each<[string, unknown]>([
     ['yok', undefined],

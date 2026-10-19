@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAppStubs } from '../helpers/appStubs';
 import { installFakeDom, type FakeDom } from '../helpers/fakeDom';
-import { chargeCyc, createGame, finishClear, stackRows } from '../helpers/gameHelpers';
+import { createGame, finishClear, stackRows } from '../helpers/gameHelpers';
 
 // Modül durumu (HUD önbelleği, ekran yığını) testler arasında taşınmasın diye her testte yeniden yüklenir.
 async function load() {
@@ -67,7 +67,6 @@ describe('efekt rozetleri (×2 ve Rebound)', () => {
   /** Siklamen + iki sentetik: ×2 ve Rebound sayaçları çalışır. */
   function activateEffects(g: ReturnType<typeof createGame>) {
     stackRows(g, 7);
-    chargeCyc(g);
     g.useCyc();
     finishClear(g);
     for (let i = 0; i < 2; i++) {

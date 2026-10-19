@@ -2,12 +2,11 @@
 import type * as PIXI from 'pixi.js';
 import type { Game } from '../game/Game';
 import type { View } from '../rendering/GameView';
-import type { Lifecycle } from '../app/lifecycle';
 
 declare global {
   interface Window {
     /** Yalnızca development build'de atanır (bkz. app/bootstrap.ts). */
-    __fn?: { game: Game; view: View; app: PIXI.Application<HTMLCanvasElement>; lc: Lifecycle };
+    __fn?: { game: Game; view: View; app: PIXI.Application<HTMLCanvasElement> };
     /**
      * Etiket yöneticisi (ör. GTM) kuyruğu. Sayfaya dışarıdan eklenir; öğeleri bu kodun kontrolünde
      * olmadığı için `unknown[]` olarak modellenir. track() yalnızca Array.isArray sonrası push eder.

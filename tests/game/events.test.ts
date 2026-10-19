@@ -13,9 +13,7 @@ import {
   stackRows,
 } from '../helpers/gameHelpers';
 
-const NO_PAYLOAD: readonly GameEventName[] = ['spawn', 'move', 'rotate', 'hold', 'garbage', 'cycready'];
-/** NS4-09: yalnızca bölüm (macera) modunda üretilen olaylar; tests/game/stages.test.ts kapsar. */
-const ADVENTURE_ONLY: readonly GameEventName[] = ['germs', 'stagecomplete'];
+const NO_PAYLOAD: readonly GameEventName[] = ['spawn', 'move', 'rotate', 'hold', 'garbage'];
 
 describe('olaylar', () => {
   it('olay adları sabittir', () => {
@@ -23,9 +21,6 @@ describe('olaylar', () => {
       [
         'clearend',
         'clearstart',
-        'cycready',
-        'germs',
-        'stagecomplete',
         'garbage',
         'gameover',
         'harddrop',
@@ -78,7 +73,6 @@ describe('olaylar', () => {
     g.doHold();
     setupWell(g, 1);
     g.lines = 9;
-    g.cycCharge = 0.9; // tek satır şarjı doldurur → cycready
     dropVerticalI(g);
     finishClear(g);
     for (let i = 0; i < 2; i++) {
@@ -90,7 +84,7 @@ describe('olaylar', () => {
     setCell(g, 0, 0, PIECE.GARBAGE);
     g.update(CFG.reboundGarbageEvery); // en üst satır dolu → oyun sonu
     expect(g.state).toBe('over');
-    expect(new Set(log.names())).toEqual(new Set(ALL_EVENTS.filter((e) => !ADVENTURE_ONLY.includes(e))));
+    expect(new Set(log.names())).toEqual(new Set(ALL_EVENTS));
     for (const e of log.all) expect(e.args).toHaveLength(NO_PAYLOAD.includes(e.name) ? 0 : 1);
   });
 
