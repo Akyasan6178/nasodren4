@@ -57,3 +57,17 @@ Yalnızca development: `__fn.virus.setTime(ms)`, `almostWin()`, `level(n)`, `sta
 ## 8. Denge notu
 
 Renk şartı olmadığından ilk bölümler bilerek kolaydır. Ayar düğmeleri tek yerde: `levelParams` ve `VIRUS_CFG` (`src/virus/config.ts`). Gerekirse sonraki bölümlerde 5'li kural da eklenebilir. Kullanıcı denemesinden sonra birlikte ayarlanacak.
+
+## 9. Oyun denemesi sonrası (2026-11-11)
+
+Kullanıcı geri bildirimiyle (spec §11). Belli bir oyunun ilaç şişesi tahtası, hap fırlatan doktoru ve virüs dansı birebir kopyalanmadı; özgün karşılıkları yapıldı.
+
+- **Renkler:** yeşil (tek gözlü), kırmızı, sarı (canlı güneş sarısı). Kaynaklar `art/virusler/` (build'e girmez).
+- **Animasyonlu virüsler:** `tools/viruses/sheet.py` her türe kol, bacak, beyaz eldiven ve ayakkabı ekler; 6 karelik şerit (`virus-{n}-sheet.webp`): 4 dans, göz kırpma, irkilme. Tahtada her virüs kendi fazında dans eder, arada göz kırpar, silinirken irkilir; lenste aynı şerit CSS ile. Hareketi azaltta dans yok, göz kırpma var.
+- **Öğretici:** selam (4 sn) ve lens (5 sn) kendiliğinden geçer; "Devam" isteğe bağlı. Mola sayacı durdurur.
+- **Bir sıra indirme:** ↓ bir kez = tam bir sıra; basılı: 170 ms sonra her 70 ms'de bir sıra (`SOFT_DELAY_MS`, `SOFT_REPEAT_MS`).
+- **Yerleşim:** yatayda sol sütun: skor kartı üstte, lens altında. Portrede değişmedi.
+- **Laboratuvar beheri:** tahta ağzı açık, ölçü çizgili bir cam behere oturur (`src/virus/stage.ts`). Üst ortada damlalık; her yeni kapsülde sıkışır.
+- **Yan Elif:** yatayda sağ sütunda, portrede alt şeritte. Kapsül bırakırken basar (`goster`), bölüm sonunda alkışlar, son 15 sn'de telaşlanır (`oops` + titreme), aksi hâlde bekler (yeni `bekle` pozu). Öğretici açıkken gizli.
+- **Müzik:** `TRACKS.virus` (Sol majör, 126 bpm; zıplayan bas, 8'lik arpej, kick/şıklatma, seyrek melodi). Son 15 sn'de +14 bpm ve 16'lık shaker (`Sound.setHurry`). Bu modda boğuk ses süzgeci kapalı.
+- **Oyun sonu:** Elif kalır (kullanıcı kararı); sağlık bağlantısıyla eşleşmesi hukuk listesinde.
