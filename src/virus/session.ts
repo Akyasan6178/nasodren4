@@ -83,7 +83,7 @@ export function createVirusSession(deps: VirusSessionDeps): VirusSession {
     if (e.viruses.length) sound.virusPop(e.chain);
     else sound.clear(1, 0);
     buzz(HAPTIC.clear(Math.min(4, e.chain)));
-    for (const v of e.viruses) hud.react('flinch', v.type);
+    for (const type of new Set(e.viruses.map((v) => v.type))) hud.react('cry', type); // kendi türü patladı: ağlar
   });
   game.on('levelstart', (e) => {
     hud.react('back', 0);

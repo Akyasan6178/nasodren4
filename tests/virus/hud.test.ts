@@ -110,9 +110,8 @@ describe('sync', () => {
     h.sync(g, true);
     expect(dom.el('virus-time').textContent).toBe('0:09');
     expect(dom.el('virus-card').dataset['warn']).toBe('1');
-    expect(dom.el('virus-lens').classList.contains('is-giggle')).toBe(true);
   });
-  it('kalan sayılar ve biten tür is-gone', async () => {
+  it('kalan virüs toplamı; biten tür is-gone; lenste tür sayısı yazısı yok (NS4-44 ek)', async () => {
     const { hud, g, rules } = await load();
     rules.clearGrid(g.grid);
     g.grid.kind[19 * COLS + 1] = VIRUS;
@@ -124,22 +123,55 @@ describe('sync', () => {
     const h = hud.createVirusHud();
     h.sync(g, true);
     expect(dom.el('virus-left').textContent).toBe('3');
-    expect(dom.el('lens-n-1').textContent).toBe('2');
+    expect(html).not.toContain('lens-n-');
     expect(dom.el('lens-0').classList.contains('is-gone')).toBe(true);
     expect(dom.el('lens-1').classList.contains('is-gone')).toBe(false);
     expect(dom.el('virus-level').textContent).toBe('1');
   });
-  it('flinch kısa süre sonra kalkar, back hepsini geri getirir', async () => {
+  it('kendi türü patlayınca yere yatıp ağlar (CRY_MS), sonra kalkar; back hepsini geri getirir', async () => {
     const { hud } = await load();
     const h = hud.createVirusHud();
-    h.react('flinch', 2);
-    expect(dom.el('lens-2').classList.contains('is-flinch')).toBe(true);
-    vi.advanceTimersByTime(400);
-    expect(dom.el('lens-2').classList.contains('is-flinch')).toBe(false);
-    h.react('gone', 0);
-    expect(dom.el('lens-0').classList.contains('is-gone')).toBe(true);
+    h.react('cry', 2);
+    expect(dom.el('lens-2').classList.contains('is-cry')).toBe(true);
+    vi.advanceTimersByTime(hud.CRY_MS + 50);
+    expect(dom.el('lens-2').classList.contains('is-cry')).toBe(false);
+    h.react('cry', 0);
     h.react('back', 0);
+    expect(dom.el('lens-0').classList.contains('is-cry')).toBe(false);
+  });
+  it('türün sonuncusu patlarsa önce ağlar, ağlama bitince kaybolur', async () => {
+    const { hud, g, rules } = await load();
+    rules.clearGrid(g.grid);
+    g.grid.kind[19 * COLS + 1] = VIRUS;
+    g.grid.tint[19 * COLS + 1] = 1;
+    const h = hud.createVirusHud();
+    h.react('cry', 0);
+    h.sync(g, true);
     expect(dom.el('lens-0').classList.contains('is-gone')).toBe(false);
+    vi.advanceTimersByTime(hud.CRY_MS + 50);
+    h.sync(g, true);
+    expect(dom.el('lens-0').classList.contains('is-gone')).toBe(true);
+  });
+  it('arada dalga geçerler (is-taunt); son saniyelerde daha sık; ağlarken dalga geçmez', async () => {
+    const { hud, g } = await load();
+    const h = hud.createVirusHud();
+    const count = (warn: boolean) => {
+      g.timeLeftMs = warn ? 9000 : 60_000;
+      let n = 0;
+      for (let t = 0; t < 60_000; t += 100) {
+        vi.advanceTimersByTime(100);
+        h.sync(g, true);
+        if (dom.el('lens-1').classList.contains('is-taunt')) n++;
+      }
+      return n;
+    };
+    const calm = count(false);
+    const hurry = count(true);
+    expect(calm).toBeGreaterThan(0);
+    expect(hurry).toBeGreaterThan(calm);
+    h.react('cry', 1);
+    h.sync(g, true);
+    expect(dom.el('lens-1').classList.contains('is-taunt')).toBe(false);
   });
   it('portre → yatay yeniden yerleşim lensi taşır, mod korunur', async () => {
     const { hud } = await load();

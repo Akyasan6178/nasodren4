@@ -160,3 +160,10 @@ Kullanıcı modu denedikten sonra şunları istedi. Belli bir oyunun kendine öz
 - **Kapsülü indirme:** ↓ bir kez = tam bir sıra; basılı tutunca kısa bekleme sonrası sabit hızla sıra sıra. Klasik mod etkilenmez.
 - **Oyun sonu:** Elif oyun sonu ekranında kalır (kullanıcı kararı); sağlık bağlantısıyla eşleşmesi hukuk listesinde.
 - **Kaynak görseller** `art/virusler/` klasörüne taşınır ve commit edilir (build'e girmez).
+
+## 12. Ek: ikinci oyun denemesi (2026-11-11, kullanıcı)
+
+- **Elif sağ üstte**, "Sıradaki" paneli kalkar. Sıradaki kapsül Elif'in kaldırdığı parmağın ucunda durur (yeni poz `tut`). Yeni kapsül gerekince parmaktan yumuşak bir yay çizerek **damlalığa** zıplar, damlalık sıkışır, kapsül ucundan tahtaya girer (oyun zamanlaması değişmez; yalnızca görsel uçuş). Doktorun kapsülü doğrudan tahtaya fırlatması o oyunun imza sahnesi olduğu için kopyalanmaz; damlalık üzerinden geçiş bizim karşılığımızdır. Elif öğreticide de görünür (öğretici kartındaki küçük Elif kalkar, kart onun konuşma balonu olur).
+- **Lens virüsleri:** kendi türünden biri patlayınca **yere yatıp ağlar** (gözyaşı, sarsılma); arada **dalga geçer** (gözler kısılı gülme, eller başın yanında); son saniyelerde daha sık. Türün sonuncusu patlarsa önce ağlar, sonra kaybolur. Sayı rozetleri kalkar. Şeritte 8 kare: 4 dans, kırpma, irkilme, ağlama, dalga.
+- **Süre ve kalan virüs** yazıları büyür.
+- Müzik onaylandı.

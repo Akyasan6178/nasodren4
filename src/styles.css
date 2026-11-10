@@ -3172,7 +3172,7 @@ input:focus-visible {
   display: block;
   width: 100%;
   height: 100%;
-  background: url('/images/virus/virus-1-sheet.webp') 0 0 / 600% 100% no-repeat;
+  background: url('/images/virus/virus-1-sheet.webp') 0 0 / 800% 100% no-repeat;
   animation: lens-dance 0.72s steps(4) infinite;
 }
 .lens-v[data-type='1'] .lens-sprite {
@@ -3183,68 +3183,48 @@ input:focus-visible {
   background-image: url('/images/virus/virus-3-sheet.webp');
   animation-delay: -0.48s;
 }
-.lens-v.is-flinch .lens-sprite {
-  animation: none;
-  background-position-x: 100%;
+/* NS4-44 ek: kendi türü patlayınca yere yığılıp ağlar (kare 6), arada dalga geçer (kare 7) */
+.lens-v.is-cry .lens-sprite {
+  background-position-x: 85.714%;
+  animation: lens-sob 0.36s ease-in-out infinite;
 }
-.virus-lens.is-giggle .lens-sprite {
-  animation-duration: 0.36s;
+.lens-v.is-taunt .lens-sprite {
+  background-position-x: 100%;
+  animation: lens-taunt 0.28s ease-in-out infinite;
 }
 @keyframes lens-dance {
   from {
     background-position-x: 0%;
   }
   to {
-    background-position-x: 80%;
+    background-position-x: 57.143%;
   }
 }
-.lens-v b {
-  position: absolute;
-  right: 6%;
-  top: 4%;
-  min-width: 1.6em;
-  padding: 0 0.35em;
-  border-radius: var(--radius-pill);
-  background: var(--color-board);
-  color: var(--color-on-accent);
-  font: 700 calc(var(--fs-hud-sub) * var(--hud-scale)) var(--font-display);
-  text-align: center;
-  font-variant-numeric: tabular-nums;
+@keyframes lens-sob {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-3%) translateY(1%);
+  }
+  75% {
+    transform: translateX(3%) translateY(1%);
+  }
 }
-.virus-lens.compact .lens-v b {
-  font-size: 10px;
-}
-.lens-v.is-flinch {
-  transform: scale(0.78) rotate(-10deg);
-}
-.virus-lens.is-giggle .lens-v {
-  animation: lens-giggle 0.5s ease-in-out infinite;
+@keyframes lens-taunt {
+  0%,
+  100% {
+    transform: rotate(-5deg) translateY(0);
+  }
+  50% {
+    transform: rotate(5deg) translateY(-5%);
+  }
 }
 .lens-v.is-gone {
   transform: scale(0);
   opacity: 0;
   animation: none;
-}
-@keyframes lens-sway {
-  0%,
-  100% {
-    transform: rotate(-6deg) translateY(0);
-  }
-  50% {
-    transform: rotate(6deg) translateY(-4%);
-  }
-}
-@keyframes lens-giggle {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0);
-  }
-  25% {
-    transform: translateY(-8%) rotate(-5deg);
-  }
-  75% {
-    transform: translateY(-4%) rotate(5deg);
-  }
 }
 
 /* NS4-44 · Süre / kalan virüs kartı */
@@ -3259,15 +3239,16 @@ input:focus-visible {
   color: var(--color-text);
 }
 .vc-lbl {
-  font-weight: 600;
-  font-size: calc(var(--fs-hud-sub) * var(--hud-scale));
+  font-weight: 700;
+  font-size: calc(var(--fs-hud-sub) * 1.45 * var(--hud-scale));
   color: var(--color-text-muted);
   white-space: nowrap;
   align-self: center;
 }
 .vc-n {
   font-weight: 700;
-  font-size: calc(var(--fs-hud-value) * var(--hud-scale));
+  font-size: calc(var(--fs-hud-value) * 1.7 * var(--hud-scale));
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -3289,18 +3270,13 @@ input:focus-visible {
   background: url('/images/virus/virus-1.webp') center / contain no-repeat;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lens-v,
-  .virus-lens.is-giggle .lens-v,
   .lens-sprite,
-  .virus-lens.is-giggle .lens-sprite {
+  .lens-v.is-cry .lens-sprite,
+  .lens-v.is-taunt .lens-sprite {
     animation: none;
   }
   .lens-sprite {
-    background-position-x: 20%;
-  }
-  .lens-v.is-flinch {
-    transform: none;
-    opacity: 0.55;
+    background-position-x: 14.286%;
   }
   .virus-card[data-warn] .vc-time {
     animation: none;
