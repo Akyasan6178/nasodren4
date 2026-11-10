@@ -100,6 +100,11 @@ export class VirusView {
       if (e.chain >= 2 && !this.reducedMotion) this.shake = Math.min(1, 0.4 + e.chain * 0.15);
     });
     game.on('levelstart', () => this.resetFx());
+    // gözden geçirme: oyuncu kapsüle dokunduğu an uçuş biter (gerçek kapsül hemen görünür)
+    const land = () => (this.flyT = -1);
+    game.on('move', land);
+    game.on('rotate', land);
+    game.on('harddrop', land);
     // NS4-44 ek: yeni kapsül parmaktan damlalığa zıplar, ucundan tahtaya girer (hareketi azaltta yok)
     game.on('spawn', () => {
       const c = game.cap;
@@ -235,8 +240,10 @@ export class VirusView {
       alpha = 1;
     } else {
       const p = ease(Math.min(1, (this.flyT - FLIGHT_IN_MS) / FLIGHT_OUT_MS));
+      // uç hedefin altındaysa (yatayda tahtanın üstünde yer yok) hedef hizasından başlar: yukarı süzülmez
+      const startY = Math.min(a.dropperTip.y, target.y);
       x = lerp(a.dropperTip.x, target.x, p);
-      y = lerp(a.dropperTip.y, target.y, p);
+      y = lerp(startY, target.y, p);
       size = lerp(L.cell * 0.5, L.cell, p);
       alpha = Math.min(1, 0.4 + p);
     }
@@ -275,6 +282,7 @@ export class VirusView {
   }
 
   update(dt: number): void {
+    if (this.flyT >= 0 && this.game.softDrop) this.flyT = -1; // ↓ ile indirmeye başladı
     if (this.flyT >= 0) {
       this.flyT += dt;
       if (this.flyT >= FLIGHT_IN_MS + FLIGHT_OUT_MS || this.reducedMotion) this.flyT = -1;

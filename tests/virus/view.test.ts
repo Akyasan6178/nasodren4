@@ -134,3 +134,33 @@ describe('kapsül ve virüs aynı boyda (kullanıcı isteği)', () => {
     expect(CAPSULE_THICKNESS).toBeLessThan(0.85);
   });
 });
+
+describe('gözden geçirme düzeltmeleri: uçuş', () => {
+  const anchors = { finger: { x: 1000, y: 100 }, dropperTop: { x: 683, y: 0 }, dropperTip: { x: 683, y: 200 } };
+  async function flying() {
+    const r = await setup();
+    r.rules.clearGrid(r.game.grid);
+    r.game.grid.kind[19 * COLS + 9] = r.rules.VIRUS;
+    r.view.setAnchors(anchors);
+    r.game.hardDrop();
+    r.view.update(16);
+    return r;
+  }
+  it('oyuncu dokunduğu an uçuş biter, gerçek kapsül görünür', async () => {
+    const { view, game } = await flying();
+    expect(view.flight.some((s) => s.visible)).toBe(true);
+    game.move(-1);
+    view.update(16);
+    expect(view.flight.every((s) => !s.visible)).toBe(true);
+    expect(view.active.some((s) => s.visible && s.alpha === 1)).toBe(true);
+  });
+  it('damlalık ucundan iniş yukarı gitmez (uç hedefin altındaysa doğrudan hedefe)', async () => {
+    const { view } = await flying();
+    const { FLIGHT_IN_MS } = await import('../../src/virus/stage');
+    for (let t = 16; t < FLIGHT_IN_MS + 8; t += 8) view.update(8);
+    const y0 = view.flight[0].y;
+    view.update(40);
+    expect(view.flight[0].y).toBeGreaterThanOrEqual(y0 - 0.01); // yukarı süzülmez
+    expect(y0).toBeLessThan(150); // uçtan (y 200) değil, hedef hizasından iner
+  });
+});

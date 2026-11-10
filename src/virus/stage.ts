@@ -21,11 +21,17 @@ export const SQUEEZE_MS = 220;
 
 export interface SideElifInput {
   readonly state: VirusState;
+  readonly warn?: boolean;
 }
 
-/** Elif'in pozu: bölüm sonunda alkış, aksi hâlde sıradaki kapsülü parmağında tutar. */
+/**
+ * Elif'in pozu: bölüm sonunda alkış; oyun sonu/boşta bekler (boş parmak kaldırmaz); son saniyelerde kapsülü
+ * bırakmadan telaşlanır; aksi hâlde sıradaki kapsülü parmağında tutar.
+ */
 export function sideElifPose(i: SideElifInput): ElifPose {
-  return i.state === 'levelclear' ? 'alkis' : 'tut';
+  if (i.state === 'levelclear') return 'alkis';
+  if (i.state === 'over' || i.state === 'idle') return 'bekle';
+  return i.warn ? 'telas' : 'tut';
 }
 
 /** Sağ üst: yatayda Sıradaki panelinin yerinden süre kartının üstüne kadar; portrede Sıradaki karesi. */
@@ -95,7 +101,7 @@ function beakerSvg(w: number, h: number, m: number, cell: number): string {
 export interface VirusStage {
   layout(L: Layout): void;
   /** Her kare (Virüs Avı açıkken): Elif pozu ve son saniyelerde telaş. */
-  sync(i: SideElifInput & { readonly warn: boolean }): void;
+  sync(i: SideElifInput): void;
   /** Yeni kapsül doğdu: kapsül damlalığa varınca (hareketi azaltta hemen) damlalık sıkışır. */
   onSpawn(reducedMotion: boolean): void;
 }
@@ -123,7 +129,6 @@ export function createVirusStage(): VirusStage {
     sync(i) {
       const el = $('virus-elif-side');
       el.hidden = false;
-      el.classList.toggle('is-panic', i.warn && i.state !== 'levelclear');
       const p = sideElifPose(i);
       if (p === pose) return;
       pose = p;

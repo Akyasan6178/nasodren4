@@ -23,6 +23,15 @@ describe('sideElifPose', () => {
     expect(sideElifPose({ state: 'resolve' })).toBe('tut');
     expect(sideElifPose({ state: 'levelclear' })).toBe('alkis');
   });
+  it('son saniyelerde kapsülü bırakmadan telaşlanır (titreme yok); oyun sonunda boş parmak kaldırmaz', async () => {
+    const { sideElifPose } = await load();
+    expect(sideElifPose({ state: 'play', warn: true })).toBe('telas');
+    expect(sideElifPose({ state: 'over' })).toBe('bekle');
+    expect(sideElifPose({ state: 'idle' })).toBe('bekle');
+  });
+  it("Elif tahtanın (Pixi) altında: kapsül Elif'in önünde çizilir", () => {
+    expect(html.indexOf('id="virus-elif-side"')).toBeLessThan(html.indexOf('<div id="over-hud">'));
+  });
 });
 
 describe('yerleşim ve görünürlük', () => {
@@ -89,12 +98,13 @@ describe('damlalık ve Elif tepkileri', () => {
     st.onSpawn(true);
     expect(dom.el('virus-dropper').classList.contains('is-squeeze')).toBe(true);
   });
-  it('Elif hep görünür; son saniyelerde telaş sınıfı', async () => {
+  it('Elif hep görünür; son saniyelerde telaş pozu (titremez, kapsül parmakta kalır)', async () => {
     const { createVirusStage } = await load();
     const st = createVirusStage();
     st.sync({ state: 'play', warn: true });
     expect(dom.el('virus-elif-side').hidden).toBe(false);
-    expect(dom.el('virus-elif-side').classList.contains('is-panic')).toBe(true);
+    expect(dom.el('virus-elif-side').dataset['pose']).toBe('telas');
+    expect(dom.el('virus-elif-side').classList.contains('is-panic')).toBe(false);
   });
 });
 

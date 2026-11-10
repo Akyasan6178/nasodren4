@@ -7,7 +7,7 @@
    dokunmadan başka bir anlatıcıya geçilebilir.
    ===================================================================== */
 
-export const ELIF_POSES = ['selam', 'goster', 'alkis', 'oops', 'bekle', 'tut'] as const;
+export const ELIF_POSES = ['selam', 'goster', 'alkis', 'oops', 'bekle', 'tut', 'telas'] as const;
 /** NS4-44 ek: `tut` pozunda kaldırılmış işaret parmağının ucu (viewBox 200×240): sıradaki kapsül burada durur. */
 export const ELIF_FINGER = { x: 166.5, y: 74 } as const;
 export const ELIF_VIEW = { w: 200, h: 240 } as const;
@@ -22,7 +22,9 @@ const hand = (x: number, y: number, r = 9) =>
 
 const ARM_LEFT_DOWN = arm('M60 178 Q50 204 56 224', hand(57, 228));
 
-const ARMS: Readonly<Record<ElifPose, string>> = {
+/** Çizimi olan pozlar (telas = tut kolları + oops yüzü, aşağıda birleşir). */
+type DrawnPose = Exclude<ElifPose, 'telas'>;
+const ARMS: Readonly<Record<DrawnPose, string>> = {
   selam:
     ARM_LEFT_DOWN +
     arm(
@@ -54,7 +56,7 @@ const ARMS: Readonly<Record<ElifPose, string>> = {
     ),
 };
 
-const FACES: Readonly<Record<ElifPose, string>> = {
+const FACES: Readonly<Record<DrawnPose, string>> = {
   selam:
     `<ellipse class="elif-eye" cx="82" cy="100" rx="7" ry="9"/><circle class="elif-eye-shine" cx="84.6" cy="96.4" r="2.6"/>` +
     `<ellipse class="elif-eye" cx="118" cy="100" rx="7" ry="9"/><circle class="elif-eye-shine" cx="120.6" cy="96.4" r="2.6"/>` +
@@ -119,16 +121,19 @@ const NAZAR =
 
 /** Bir poz için tam SVG (200×240). */
 export function elifSvg(pose: ElifPose): string {
+  // NS4-44 ek: telas: son saniyelerde kapsülü bırakmadan telaşlanır (tut kolları + oops yüzü)
+  const arms = ARMS[pose === 'telas' ? 'tut' : pose];
+  const face = FACES[pose === 'telas' ? 'oops' : pose];
   const front = pose === 'oops' || pose === 'alkis';
   return (
     `<svg class="elif" data-pose="${pose}" viewBox="0 0 200 240" role="img" aria-label="Doktor Elif" focusable="false">` +
-    (front ? '' : ARMS[pose]) +
+    (front ? '' : arms) +
     BODY +
     STETH +
     NAZAR +
     HEAD +
-    FACES[pose] +
-    (front ? ARMS[pose] : '') +
+    face +
+    (front ? arms : '') +
     `</svg>`
   );
 }
