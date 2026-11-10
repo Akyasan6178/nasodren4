@@ -260,3 +260,38 @@ describe('kilit gecikmesi (klasikle aynı davranış)', () => {
     expect(g.cap).toMatchObject({ x: 7, y: 19 }); // hareket kilit süresini yeniden başlattı
   });
 });
+
+describe('bir sıra indirme (↓)', () => {
+  function fresh() {
+    const g = new VirusGame();
+    g.reset({ seed: 1 });
+    clearGrid(g.grid);
+    put(g.grid, 9, 19, VIRUS);
+    return g;
+  }
+  it('kısa basış tam bir sıra indirir', () => {
+    const g = fresh();
+    const y0 = g.cap!.y;
+    g.softDrop = true;
+    for (let t = 0; t < 90; t += 10) g.update(10);
+    g.softDrop = false;
+    expect(g.cap!.y).toBe(y0 + 1);
+  });
+  it('basılı tutunca 170 ms bekler, sonra her 70 ms bir sıra', () => {
+    const g = fresh();
+    const y0 = g.cap!.y;
+    g.softDrop = true;
+    for (let t = 0; t < 160; t += 10) g.update(10);
+    expect(g.cap!.y).toBe(y0 + 1);
+    for (let t = 160; t < 360; t += 10) g.update(10);
+    expect(g.cap!.y).toBe(y0 + 1 + 3);
+  });
+  it('tekrarlanan "basılı" bildirimi ek sıra indirmez', () => {
+    const g = fresh();
+    const y0 = g.cap!.y;
+    g.softDrop = true;
+    g.softDrop = true;
+    g.softDrop = true;
+    expect(g.cap!.y).toBe(y0 + 1);
+  });
+});

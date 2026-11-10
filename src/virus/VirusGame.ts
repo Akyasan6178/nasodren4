@@ -71,6 +71,9 @@ export const TUTORIAL_VIRUSES: readonly (readonly [number, number, number])[] = 
   [5, 19, 1],
   [7, 18, 2],
 ];
+/** Basılı ↓: ilk tekrar öncesi bekleme ve tekrar aralığı (ms). */
+export const SOFT_DELAY_MS = 170;
+export const SOFT_REPEAT_MS = 70;
 /** Kapsül yarıları için görünüş renkleri (0..3; kural değil). */
 export const CAPSULE_TINTS = 4;
 
@@ -100,7 +103,24 @@ export class VirusGame {
   timeLeftMs = 0;
   chain = 0;
   tutorial = false;
-  softDrop = false;
+  /**
+   * NS4-44 ek: ↓ bir kez = tam bir sıra; basılı tutunca SOFT_DELAY_MS sonra her SOFT_REPEAT_MS'te bir sıra
+   * (klasikteki hızlı kayma yok). Tekrarlanan "basılı" bildirimi ek sıra indirmez.
+   */
+  get softDrop(): boolean {
+    return this.soft;
+  }
+  set softDrop(v: boolean) {
+    if (v && !this.soft) {
+      this.soft = true;
+      this.softHeld = 0;
+      this.softNext = SOFT_DELAY_MS;
+      this.softStep();
+    } else if (!v) this.soft = false;
+  }
+  private soft = false;
+  private softHeld = 0;
+  private softNext = SOFT_DELAY_MS;
 
   private rnd: () => number = seeded(1);
   private gravT = 0;
@@ -264,7 +284,7 @@ export class VirusGame {
   }
   private gravityMs(): number {
     const g = this.tutorial ? VIRUS_CFG.tutorialGravityMs : levelParams(this.level).gravityMs;
-    return this.softDrop ? g / CFG.softDropFactor : g;
+    return g;
   }
   private fits(x: number, y: number, rot: Capsule['rot']): boolean {
     for (const [cx, cy] of capsuleCells({ x, y, rot })) {
@@ -313,6 +333,13 @@ export class VirusGame {
   private updatePlay(dt: number): void {
     const c = this.cap;
     if (!c) return;
+    if (this.soft) {
+      this.softHeld += dt;
+      while (this.softHeld >= this.softNext && this.cap === c) {
+        this.softNext += SOFT_REPEAT_MS;
+        if (!this.softStep()) break;
+      }
+    }
     if (this.grounded()) {
       this.lockT += dt;
       if (this.lockT >= CFG.lockDelay) this.lock();
