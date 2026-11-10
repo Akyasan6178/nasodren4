@@ -7,7 +7,10 @@
    dokunmadan başka bir anlatıcıya geçilebilir.
    ===================================================================== */
 
-export const ELIF_POSES = ['selam', 'goster', 'alkis', 'oops', 'bekle'] as const;
+export const ELIF_POSES = ['selam', 'goster', 'alkis', 'oops', 'bekle', 'tut'] as const;
+/** NS4-44 ek: `tut` pozunda kaldırılmış işaret parmağının ucu (viewBox 200×240): sıradaki kapsül burada durur. */
+export const ELIF_FINGER = { x: 166.5, y: 74 } as const;
+export const ELIF_VIEW = { w: 200, h: 240 } as const;
 export type ElifPose = (typeof ELIF_POSES)[number];
 
 /** Kol: omuzdan ele kalın, yuvarlak uçlu kol (önlük kolu) ve el. */
@@ -40,6 +43,15 @@ const ARMS: Readonly<Record<ElifPose, string>> = {
   oops: ARM_LEFT_DOWN + arm('M140 178 Q158 152 136 134', hand(130, 128, 9)),
   // NS4-44 ek: tahtanın yanında beklerken (iki kol aşağı)
   bekle: ARM_LEFT_DOWN + arm('M140 178 Q150 204 144 224', hand(143, 228)),
+  // NS4-44 ek: sıradaki kapsülü kaldırdığı işaret parmağının ucunda tutar
+  tut:
+    ARM_LEFT_DOWN +
+    arm(
+      'M140 176 Q160 156 164 116',
+      hand(165, 108, 10) +
+        `<rect class="elif-skin" x="162.5" y="74" width="8" height="30" rx="4"/>` +
+        `<rect class="elif-skin-shade" x="156" y="100" width="7" height="10" rx="3.5"/>`,
+    ),
 };
 
 const FACES: Readonly<Record<ElifPose, string>> = {
@@ -67,6 +79,11 @@ const FACES: Readonly<Record<ElifPose, string>> = {
     `<ellipse class="elif-eye" cx="118" cy="100" rx="7" ry="9"/><circle class="elif-eye-shine" cx="120.6" cy="96.4" r="2.6"/>` +
     `<path class="elif-brow" d="M74 86q8-4 16-1M110 85q8-3 16 1"/>` +
     `<path class="elif-line" d="M90 115q10 8 20 0"/>`,
+  tut:
+    `<ellipse class="elif-eye" cx="84" cy="99" rx="7" ry="9"/><circle class="elif-eye-shine" cx="86.8" cy="95" r="2.6"/>` +
+    `<ellipse class="elif-eye" cx="120" cy="99" rx="7" ry="9"/><circle class="elif-eye-shine" cx="122.8" cy="95" r="2.6"/>` +
+    `<path class="elif-brow" d="M75 85q8-5 16-1M111 83q8-4 16 1"/>` +
+    `<path class="elif-mouth" d="M89 115q11 13 22 0z"/>`,
 };
 
 const HEAD =

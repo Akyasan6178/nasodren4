@@ -11,7 +11,8 @@ import * as PIXI from 'pixi.js';
 import { COLS, VIS } from '../config/gameConfig';
 import { PETAL_TINTS } from '../rendering/effects';
 import { createDropCanvas } from '../rendering/textures';
-import type { Layout } from '../types/layout';
+import type { Layout, Pt } from '../types/layout';
+import { FLIGHT_IN_MS, FLIGHT_OUT_MS } from './stage';
 import { CAPSULE_COLORS, createCapsuleHalfCanvas, createVirusFallbackCanvas, loadVirusArt } from './art';
 import { VIRUS_CFG } from './config';
 import { CAPSULE, VIRUS } from './rules';
@@ -23,6 +24,16 @@ const SIDES = [-1, 0, 1, 2, 3] as const;
 type Side = (typeof SIDES)[number];
 /** a hücresinden b'ye yön (rot'a göre); VirusGame ile aynı kod. */
 const LINK_A: readonly Side[] = [1, 0, 3, 2];
+
+/** NS4-44 ek: sıradaki kapsülün parmak ucu ve damlalığın ağzı/ucu (ekran koordinatı; stage.ts hesaplar). */
+export interface VirusAnchors {
+  readonly finger: Pt;
+  readonly dropperTop: Pt;
+  readonly dropperTip: Pt;
+}
+
+const ease = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
+const lerp = (a: number, b: number, p: number) => a + (b - a) * p;
 
 interface Spark {
   readonly s: PIXI.Sprite;
@@ -37,6 +48,8 @@ export class VirusView {
   readonly cells: PIXI.Sprite[] = [];
   readonly active: PIXI.Sprite[] = [];
   readonly nextS: PIXI.Sprite[] = [];
+  /** Parmaktan damlalığa, oradan tahtaya uçan kapsülün iki yarısı (yalnızca görsel). */
+  readonly flight: PIXI.Sprite[] = [];
   reducedMotion = false;
   L: Layout | null = null;
 
@@ -52,6 +65,10 @@ export class VirusView {
   private readonly sparks: Spark[] = [];
   private shake = 0;
   private over = false;
+  private anchors: VirusAnchors | null = null;
+  /** Uçuş saati (ms; -1 uçuş yok) ve uçan kapsülün renkleri. */
+  private flyT = -1;
+  private flyTints: [number, number] = [0, 0];
 
   constructor(app: PIXI.Application<HTMLCanvasElement>, game: VirusGame) {
     this.app = app;
@@ -74,6 +91,7 @@ export class VirusView {
     for (let i = 0; i < COLS * VIS; i++) this.cells.push(mk(cellLayer));
     for (let i = 0; i < 2; i++) this.active.push(mk(activeLayer));
     for (let i = 0; i < 2; i++) this.nextS.push(mk(nextC));
+    for (let i = 0; i < 2; i++) this.flight.push(mk(nextC));
     for (let i = 0; i < 48; i++) {
       const s = mk(fxLayer);
       this.sparks.push({ s, vx: 0, vy: 0, life: 0 });
@@ -84,11 +102,27 @@ export class VirusView {
       if (e.chain >= 2 && !this.reducedMotion) this.shake = Math.min(1, 0.4 + e.chain * 0.15);
     });
     game.on('levelstart', () => this.resetFx());
+    // NS4-44 ek: yeni kapsül parmaktan damlalığa zıplar, ucundan tahtaya girer (hareketi azaltta yok)
+    game.on('spawn', () => {
+      const c = game.cap;
+      if (!c || this.reducedMotion || !this.anchors) {
+        this.flyT = -1;
+        return;
+      }
+      this.flyT = 0;
+      this.flyTints = [c.a, c.b];
+    });
     void loadVirusArt().then((art) => {
       if (!art) return;
       this.art = art;
       if (this.L) this.buildTextures(this.L.cell);
     });
+  }
+
+  /** Parmak ucu ve damlalık noktaları (her yerleşimde stage.ts'ten). */
+  setAnchors(a: VirusAnchors): void {
+    this.anchors = a;
+    this.syncAll();
   }
 
   layout(L: Layout): void {
@@ -156,19 +190,66 @@ export class VirusView {
         const tex = this.capsuleTex(tints[k] ?? 0, sides[k] ?? -1);
         if (tex) s.texture = tex;
         this.place(s, x, y, L.cell);
-        s.alpha = 1;
+        s.alpha = this.flyT >= 0 ? 0 : 1; // uçuş sürerken gerçek kapsül görünmez
       });
     } else for (const s of this.active) s.visible = false;
-    // sıradaki kapsül (yatay)
+    // sıradaki kapsül (yatay): Elif'in parmak ucunda (yoksa eski Sıradaki yuvası); yenisi küçükten büyür
     const n = this.game.next;
     const mini = L.miniBig;
+    const at = this.anchors ? { x: this.anchors.finger.x, y: this.anchors.finger.y - mini / 2 } : L.nextSlot;
+    const pop = this.flyT >= 0 ? Math.min(1, this.flyT / FLIGHT_IN_MS) : 1;
+    const show = this.game.state !== 'over' && this.game.state !== 'levelclear';
     [n.a, n.b].forEach((t, k) => {
       const s = this.nextS[k];
       const tex = this.capsuleTex(t, k === 0 ? 1 : 3);
       if (tex) s.texture = tex;
-      s.position.set(L.nextSlot.x + (k - 0.5) * mini, L.nextSlot.y);
-      s.width = s.height = mini;
-      s.visible = this.game.state !== 'over';
+      s.position.set(at.x + (k - 0.5) * mini * pop, at.y);
+      s.width = s.height = mini * pop;
+      s.visible = show;
+    });
+    this.syncFlight();
+  }
+
+  /** Uçan kapsül: parmak → damlalık ağzı (yay, küçülerek), damlalık ucu → tahtadaki yeri (büyüyerek). */
+  private syncFlight(): void {
+    const L = this.L,
+      a = this.anchors,
+      c = this.game.cap;
+    if (!L || !a || !c || this.flyT < 0) {
+      for (const s of this.flight) s.visible = false;
+      return;
+    }
+    const mini = L.miniBig;
+    const cells = capsuleCells(c);
+    const target = {
+      x: L.board.x + ((cells[0][0] + cells[1][0]) / 2 + 0.5) * L.cell,
+      y: L.board.y + (Math.max(cells[0][1], cells[1][1], 0) + 0.5) * L.cell,
+    };
+    let x: number, y: number, size: number, alpha: number;
+    if (this.flyT < FLIGHT_IN_MS) {
+      const p = ease(this.flyT / FLIGHT_IN_MS);
+      const from = { x: a.finger.x, y: a.finger.y - mini / 2 };
+      x = lerp(from.x, a.dropperTop.x, p);
+      // zıplama yayı: yukarıda yer kadar (ekranın üstünden taşmasın)
+      const arc = Math.max(0, Math.min(L.cell * 2.2, Math.min(from.y, a.dropperTop.y) - mini * 0.6));
+      y = lerp(from.y, a.dropperTop.y, p) - Math.sin(Math.PI * p) * arc;
+      size = lerp(mini, L.cell * 0.5, p);
+      alpha = 1;
+    } else {
+      const p = ease(Math.min(1, (this.flyT - FLIGHT_IN_MS) / FLIGHT_OUT_MS));
+      x = lerp(a.dropperTip.x, target.x, p);
+      y = lerp(a.dropperTip.y, target.y, p);
+      size = lerp(L.cell * 0.5, L.cell, p);
+      alpha = Math.min(1, 0.4 + p);
+    }
+    this.flyTints.forEach((t, k) => {
+      const s = this.flight[k];
+      const tex = this.capsuleTex(t, k === 0 ? 1 : 3);
+      if (tex) s.texture = tex;
+      s.position.set(x + (k - 0.5) * size, y);
+      s.width = s.height = size;
+      s.alpha = alpha;
+      s.visible = true;
     });
   }
 
@@ -196,6 +277,10 @@ export class VirusView {
   }
 
   update(dt: number): void {
+    if (this.flyT >= 0) {
+      this.flyT += dt;
+      if (this.flyT >= FLIGHT_IN_MS + FLIGHT_OUT_MS || this.reducedMotion) this.flyT = -1;
+    }
     for (const [i, t] of this.clearing) {
       const left = t - dt;
       if (left <= 0) this.clearing.delete(i);
@@ -218,6 +303,7 @@ export class VirusView {
   }
 
   resetFx(): void {
+    this.flyT = -1;
     this.clearing.clear();
     for (const p of this.sparks) {
       p.life = 0;

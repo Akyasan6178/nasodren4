@@ -86,3 +86,41 @@ describe('tahtadaki virüsler sade (kollu bacaklı olanlar yalnızca lenste)', (
     expect('virusFrame' in art).toBe(false);
   });
 });
+
+describe("sıradaki kapsül Elif'in parmağında; yeni kapsül damlalık üzerinden uçar", () => {
+  const anchors = { finger: { x: 1000, y: 100 }, dropperTop: { x: 683, y: 0 }, dropperTip: { x: 683, y: 40 } };
+  it('sıradaki kapsül parmak ucunun üstünde', async () => {
+    const { view, L } = await setup();
+    view.setAnchors(anchors);
+    view.syncAll();
+    const [a, b] = view.nextS;
+    expect((a.x + b.x) / 2).toBeCloseTo(1000, 0);
+    expect(a.y).toBeLessThan(100);
+    expect(a.width).toBeCloseTo(L.miniBig);
+  });
+  it('yeni kapsül uçarken gerçek kapsül gizli; uçuş bitince görünür (oyun zamanlaması değişmez)', async () => {
+    const { view, game, rules } = await setup();
+    const { FLIGHT_IN_MS, FLIGHT_OUT_MS } = await import('../../src/virus/stage');
+    rules.clearGrid(game.grid);
+    game.grid.kind[19 * COLS + 9] = rules.VIRUS;
+    view.setAnchors(anchors);
+    game.hardDrop(); // kilit → yeni kapsül doğar
+    view.update(16);
+    expect(view.active.every((s) => s.alpha === 0 || !s.visible)).toBe(true);
+    expect(view.flight.some((s) => s.visible)).toBe(true);
+    for (let t = 0; t < FLIGHT_IN_MS + FLIGHT_OUT_MS + 50; t += 16) view.update(16);
+    expect(view.active.some((s) => s.visible && s.alpha === 1)).toBe(true);
+    expect(view.flight.every((s) => !s.visible)).toBe(true);
+  });
+  it('hareketi azaltta uçuş yok', async () => {
+    const { view, game, rules } = await setup();
+    rules.clearGrid(game.grid);
+    game.grid.kind[19 * COLS + 9] = rules.VIRUS;
+    view.reducedMotion = true;
+    view.setAnchors(anchors);
+    game.hardDrop();
+    view.update(16);
+    expect(view.flight.every((s) => !s.visible)).toBe(true);
+    expect(view.active.some((s) => s.visible && s.alpha === 1)).toBe(true);
+  });
+});

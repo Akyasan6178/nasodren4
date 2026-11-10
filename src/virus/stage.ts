@@ -1,44 +1,66 @@
 /* =====================================================================
    NS4-44 ek · VİRÜS AVI sahnesi: laboratuvar beheri çerçevesi, tahtanın
-   üstündeki damlalık ve tahtanın yanındaki Doktor Elif.
-   - Her yeni kapsülde damlalık kısa süre sıkışır, Elif "bas" pozuna geçer.
+   üstündeki damlalık ve sağ üstteki Doktor Elif.
+   - Elif "Sıradaki" panelinin yerindedir; sıradaki kapsül kaldırdığı
+     işaret parmağının ucunda durur (çizim VirusView'de, konum burada).
+   - Yeni kapsül gerekince parmaktan damlalığa yay çizerek zıplar
+     (FLIGHT_IN_MS), damlalık sıkışır, kapsül ucundan tahtaya girer
+     (FLIGHT_OUT_MS). Yalnızca görsel: oyun zamanlaması değişmez.
    - Bölüm temizlenince Elif alkışlar, son 15 saniyede telaşlanır.
-   - Öğretici açıkken yan Elif gizlidir (kartta zaten görünür).
-   Hepsi DOM'da (#under / #over-hud); Pixi tahtası değişmez.
    ===================================================================== */
 import { $, place } from '../ui/dom';
-import type { Layout, Rect } from '../types/layout';
-import { NARRATOR, type ElifPose } from './elif';
+import type { Layout, Pt, Rect } from '../types/layout';
+import { ELIF_FINGER, ELIF_VIEW, NARRATOR, type ElifPose } from './elif';
 import type { VirusState } from './VirusGame';
 
-/** Kapsül bırakma pozu ve damlalık sıkışması süresi (ms). */
-export const PRESS_MS = 300;
+/** Parmak → damlalık ağzı uçuşu ve damlalık ucundan tahtadaki yerine iniş (ms). */
+export const FLIGHT_IN_MS = 260;
+export const FLIGHT_OUT_MS = 140;
+/** Damlalık sıkışması süresi (ms). */
 export const SQUEEZE_MS = 220;
 
 export interface SideElifInput {
-  readonly tutorial: boolean;
   readonly state: VirusState;
-  readonly warn: boolean;
-  readonly sinceSpawnMs: number;
 }
 
-/** Yan Elif'in pozu (öğretici açıkken null: gizli). */
-export function sideElifPose(i: SideElifInput): ElifPose | null {
-  if (i.tutorial) return null;
-  if (i.state === 'levelclear') return 'alkis';
-  if (i.sinceSpawnMs < PRESS_MS) return 'goster';
-  if (i.warn) return 'oops';
-  return 'bekle';
+/** Elif'in pozu: bölüm sonunda alkış, aksi hâlde sıradaki kapsülü parmağında tutar. */
+export function sideElifPose(i: SideElifInput): ElifPose {
+  return i.state === 'levelclear' ? 'alkis' : 'tut';
 }
 
-/** Yatayda sağ sütunda kartın altı (Duraklat'ın üstüne kadar); portrede alt şeritte solda. */
+/** Sağ üst: yatayda Sıradaki panelinin yerinden süre kartının üstüne kadar; portrede Sıradaki karesi. */
 export function elifSideRect(L: Layout): Rect {
-  if (L.portrait) {
-    const h = L.btnPause.h + 18;
-    return { x: 8, y: L.btnPause.y + L.btnPause.h - h + 4, w: Math.round(h * 0.84), h };
-  }
-  const y = L.cong.y + L.cong.h + 12;
-  return { x: L.next.x, y, w: L.next.w, h: Math.max(40, L.btnPause.y - 12 - y) };
+  if (L.portrait) return L.next;
+  return { x: L.next.x, y: L.next.y, w: L.next.w, h: L.cong.y - 12 - L.next.y };
+}
+
+/** Elif çiziminin kutudaki yeri (altta ortalı, en-boy oranı korunur; CSS `.virus-elif-side svg`). */
+function elifBox(L: Layout): { left: number; top: number; scale: number } {
+  const r = elifSideRect(L);
+  const scale = Math.min(r.h / ELIF_VIEW.h, r.w / ELIF_VIEW.w);
+  return { left: r.x + (r.w - ELIF_VIEW.w * scale) / 2, top: r.y + r.h - ELIF_VIEW.h * scale, scale };
+}
+
+/** Sıradaki kapsülün oturduğu parmak ucu (ekran koordinatı). */
+export function fingerPoint(L: Layout): Pt {
+  const b = elifBox(L);
+  return { x: b.left + ELIF_FINGER.x * b.scale, y: b.top + ELIF_FINGER.y * b.scale };
+}
+
+function dropperRect(L: Layout): Rect {
+  const w = Math.round(L.cell * 1.3),
+    h = Math.round(w * 1.5);
+  const y = L.portrait
+    ? Math.max(L.board.y - h * 0.55, L.cong.y + L.cong.h + 2) // portrede süre kartının altında kalmasın
+    : Math.max(0, L.board.y - h * 0.55);
+  return { x: L.board.x + L.board.w / 2 - w / 2, y, w, h };
+}
+
+/** Damlalığın ağzı (hazne üstü) ve ucu (viewBox 40×60: hazne üstü y≈4, uç y≈56). */
+export function dropperPoints(L: Layout): { readonly top: Pt; readonly tip: Pt } {
+  const d = dropperRect(L);
+  const cx = d.x + d.w / 2;
+  return { top: { x: cx, y: d.y + (d.h * 4) / 60 }, tip: { x: cx, y: d.y + (d.h * 56) / 60 } };
 }
 
 /** Beher: tahtanın çevresinde cam duvar, sol üstte ağız çıkıntısı, sağda ölçü çizgileri (px ölçülü SVG). */
@@ -72,16 +94,22 @@ function beakerSvg(w: number, h: number, m: number, cell: number): string {
 
 export interface VirusStage {
   layout(L: Layout): void;
-  /** Her kare (Virüs Avı açıkken): yan Elif pozu ve telaş. */
-  sync(i: Omit<SideElifInput, 'sinceSpawnMs'>): void;
-  /** Yeni kapsül doğdu: damlalık sıkışır, Elif basar. */
-  onSpawn(): void;
+  /** Her kare (Virüs Avı açıkken): Elif pozu ve son saniyelerde telaş. */
+  sync(i: SideElifInput & { readonly warn: boolean }): void;
+  /** Yeni kapsül doğdu: kapsül damlalığa varınca (hareketi azaltta hemen) damlalık sıkışır. */
+  onSpawn(reducedMotion: boolean): void;
 }
 
 export function createVirusStage(): VirusStage {
-  let spawnAt = -Infinity;
-  let pose: ElifPose | null | undefined;
+  let pose: ElifPose | undefined;
   let squeeze: ReturnType<typeof setTimeout> | undefined;
+  let arrive: ReturnType<typeof setTimeout> | undefined;
+  const squeezeNow = () => {
+    const d = $('virus-dropper');
+    d.classList.add('is-squeeze');
+    clearTimeout(squeeze);
+    squeeze = setTimeout(() => d.classList.remove('is-squeeze'), SQUEEZE_MS);
+  };
   return {
     layout(L) {
       const m = Math.round(L.cell * 0.55);
@@ -89,33 +117,23 @@ export function createVirusStage(): VirusStage {
       const bk = $('virus-beaker');
       place(bk, r);
       bk.innerHTML = beakerSvg(r.w, r.h, m, L.cell);
-      const dw = Math.round(L.cell * 1.3),
-        dh = Math.round(dw * 1.5);
-      place($('virus-dropper'), {
-        x: L.board.x + L.board.w / 2 - dw / 2,
-        // portrede üst şeritteki süre kartının altında kalmasın (sıkışma görünsün)
-        y: L.portrait ? Math.max(L.board.y - dh * 0.55, L.cong.y + L.cong.h + 2) : Math.max(0, L.board.y - dh * 0.55),
-        w: dw,
-        h: dh,
-      });
+      place($('virus-dropper'), dropperRect(L));
       place($('virus-elif-side'), elifSideRect(L));
     },
     sync(i) {
       const el = $('virus-elif-side');
-      const p = sideElifPose({ ...i, sinceSpawnMs: Date.now() - spawnAt });
-      el.hidden = p === null;
-      el.classList.toggle('is-panic', p === 'oops');
-      if (p === null || p === pose) return;
+      el.hidden = false;
+      el.classList.toggle('is-panic', i.warn && i.state !== 'levelclear');
+      const p = sideElifPose(i);
+      if (p === pose) return;
       pose = p;
       el.dataset['pose'] = p;
       el.innerHTML = NARRATOR.svg(p);
     },
-    onSpawn() {
-      spawnAt = Date.now();
-      const d = $('virus-dropper');
-      d.classList.add('is-squeeze');
-      clearTimeout(squeeze);
-      squeeze = setTimeout(() => d.classList.remove('is-squeeze'), SQUEEZE_MS);
+    onSpawn(reducedMotion) {
+      clearTimeout(arrive);
+      if (reducedMotion) squeezeNow();
+      else arrive = setTimeout(squeezeNow, FLIGHT_IN_MS);
     },
   };
 }

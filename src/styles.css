@@ -3094,6 +3094,9 @@ input:focus-visible {
 /* NS4-44 · Virüs Avı: mod görünürlüğü */
 #app[data-mode='virus']
   :is(
+    #next-bg,
+    #lbl-next,
+    #vt-elif,
     .classic-only,
     #submit-score,
     #o-badges,
@@ -3444,6 +3447,7 @@ input:focus-visible {
   height: 100%;
   max-width: 100%;
   width: auto;
+  overflow: visible;
 }
 .virus-elif-side.is-panic svg {
   animation: elif-panic 0.32s ease-in-out infinite;
@@ -3467,4 +3471,16 @@ input:focus-visible {
   .virus-dropper .dr-bulb {
     transition: none;
   }
+}
+
+/* NS4-44 ek · portrede süre kartı alçak: süre ve kalan virüs tek satırda (büyük yazı sığsın) */
+.virus-card:not(.wide) {
+  grid-template-columns: auto auto auto auto;
+  justify-content: space-around;
+}
+.virus-card:not(.wide) .vc-lbl {
+  font-size: calc(var(--fs-hud-sub) * 1.1 * var(--hud-scale));
+}
+.virus-card:not(.wide) .vc-n {
+  font-size: calc(var(--fs-hud-value) * 1.25 * var(--hud-scale));
 }

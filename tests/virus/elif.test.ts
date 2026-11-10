@@ -4,11 +4,11 @@ import css from '../../src/styles.css?raw';
 import { ELIF_POSES, NARRATOR, elifSvg } from '../../src/virus/elif';
 
 describe('Doktor Elif', () => {
-  it('beş poz: selam, goster, alkis, oops, bekle (NS4-44 ek)', () => {
-    expect([...ELIF_POSES]).toEqual(['selam', 'goster', 'alkis', 'oops', 'bekle']);
+  it('altı poz: selam, goster, alkis, oops, bekle, tut (NS4-44 ek)', () => {
+    expect([...ELIF_POSES]).toEqual(['selam', 'goster', 'alkis', 'oops', 'bekle', 'tut']);
   });
 
-  for (const pose of ['selam', 'goster', 'alkis', 'oops', 'bekle'] as const) {
+  for (const pose of ['selam', 'goster', 'alkis', 'oops', 'bekle', 'tut'] as const) {
     it(`${pose}: erişilebilir svg, hex renk yok, önlük sınıfı var`, () => {
       const svg = elifSvg(pose);
       expect(svg.startsWith('<svg')).toBe(true);
@@ -20,7 +20,7 @@ describe('Doktor Elif', () => {
   }
 
   it('pozlar birbirinden farklı', () => {
-    expect(new Set(ELIF_POSES.map(elifSvg)).size).toBe(5);
+    expect(new Set(ELIF_POSES.map(elifSvg)).size).toBe(6);
   });
 
   it('anlatıcı tek yerden: ad ve çizim', () => {

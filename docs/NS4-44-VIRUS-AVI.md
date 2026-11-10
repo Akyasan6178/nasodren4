@@ -71,3 +71,9 @@ Kullanıcı geri bildirimiyle (spec §11). Belli bir oyunun ilaç şişesi tahta
 - **Yan Elif:** yatayda sağ sütunda, portrede alt şeritte. Kapsül bırakırken basar (`goster`), bölüm sonunda alkışlar, son 15 sn'de telaşlanır (`oops` + titreme), aksi hâlde bekler (yeni `bekle` pozu). Öğretici açıkken gizli.
 - **Müzik:** `TRACKS.virus` (Sol majör, 126 bpm; zıplayan bas, 8'lik arpej, kick/şıklatma, seyrek melodi). Son 15 sn'de +14 bpm ve 16'lık shaker (`Sound.setHurry`). Bu modda boğuk ses süzgeci kapalı.
 - **Oyun sonu:** Elif kalır (kullanıcı kararı); sağlık bağlantısıyla eşleşmesi hukuk listesinde.
+
+## 10. İkinci oyun denemesi (2026-11-11)
+
+- **Elif sağ üstte**, "Sıradaki" paneli kalktı. Sıradaki kapsül Elif'in kaldırdığı işaret parmağının ucunda durur (yeni poz `tut`). Yeni kapsül gerekince parmaktan **damlalığa** yay çizerek zıplar (260 ms; yukarıda yer kadar yay), damlalık sıkışır, kapsül ucundan tahtadaki yerine iner (140 ms). Yalnızca görsel: oyun zamanlaması değişmez; uçuş sürerken gerçek kapsül görünmez. Hareketi azaltta uçuş yok. Doktorun kapsülü doğrudan tahtaya fırlatması kopyalanmadı (damlalık üzerinden özgün karşılık). Öğretici kartındaki küçük Elif kalktı; kart sağ üstteki Elif'in konuşma balonudur.
+- **Lens:** kendi türünden biri patlayınca o virüs **yere yığılıp ağlar** (kare 6, 1,6 sn, gözyaşı ve gölcük); arada **dalga geçer** (kare 7: gözler gülerek kısılı, eller başın yanında; ~6,5 sn'de bir, son saniyelerde ~2,4 sn'de bir). Türün sonuncusu önce ağlar, sonra kaybolur. Tür sayısı rozetleri kalktı.
+- **Süre / kalan virüs** yazıları büyüdü; portrede kart tek satır.

@@ -50,7 +50,7 @@ import { VirusTutorial, virusTutorialStore } from '../virus/tutorial';
 import { createVirusTutorialView } from '../virus/tutorialView';
 import { VIRUS_RULESET, createVirusSession, type VirusSession } from '../virus/session';
 import { createModeRouter } from '../virus/modeRouter';
-import { createVirusStage } from '../virus/stage';
+import { createVirusStage, dropperPoints, fingerPoint } from '../virus/stage';
 import { VIRUS_CFG } from '../virus/config';
 
 export function bootstrap(): void {
@@ -108,6 +108,9 @@ export function bootstrap(): void {
     tutorialView.layout(L);
     virusHud.layout(L);
     virusStage.layout(L);
+    // NS4-44 ek: sıradaki kapsül Elif'in parmağında; yeni kapsül damlalık üzerinden tahtaya uçar
+    const drop = dropperPoints(L);
+    vview.setAnchors({ finger: fingerPoint(L), dropperTop: drop.top, dropperTip: drop.tip });
     virusTutView.layout(L);
     vview.layout(L);
     // NS4-13: yeniden yerleşimde süren dokunmatik jest iptal edilir (hücre ve tahta konumu değişti)
@@ -172,7 +175,7 @@ export function bootstrap(): void {
   const virusHud = createVirusHud();
   // NS4-44 ek: beher, damlalık ve tahtanın yanındaki Elif
   const virusStage = createVirusStage();
-  vgame.on('spawn', () => virusStage.onSpawn());
+  vgame.on('spawn', () => virusStage.onSpawn(vview.reducedMotion));
   const virusTutView = createVirusTutorialView({ skip: () => virusTutorial.skip(), next: () => virusTutorial.next() });
   const virusTutorial = new VirusTutorial(vgame, virusTutView, virusTutorialStore, {
     mode: navigator.maxTouchPoints > 0 ? 'touch' : 'keyboard',
@@ -306,7 +309,7 @@ export function bootstrap(): void {
       session.update(dt);
       const playing = session.getState() === 'playing';
       const warn = playing && !vgame.tutorial && vgame.timeLeftMs < VIRUS_CFG.warnMs;
-      virusStage.sync({ tutorial: virusTutorial.isActive, state: vgame.state, warn });
+      virusStage.sync({ state: vgame.state, warn });
       // NS4-44 ek: bu modda boğuk ses süzgeci yok; son saniyelerde müzik hızlanır
       sound.setCongestion(0);
       sound.setHurry(warn);
