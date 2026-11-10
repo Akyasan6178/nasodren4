@@ -249,6 +249,9 @@ const ELEMENT_IDS = [
   'lens-n-0',
   'lens-n-1',
   'lens-n-2',
+  'vt-elif',
+  'vt-step',
+  'vt-text',
 ];
 /** Ekranların odaklanabilir çocukları (index.html sırasıyla; ilk buton ekran açılınca odak alır). */
 const SCREEN_BUTTONS: Record<string, readonly string[]> = {
@@ -284,6 +287,11 @@ export function installFakeDom(): FakeDom {
   byId.set('tutorial', tut);
   for (const id of ['tut-step', 'tut-title', 'tut-text']) byId.set(id, tut.appendChild(new FakeElement(id)));
   for (const id of ['tut-skip', 'tut-done']) byId.set(id, tut.appendChild(new FakeButton(id)));
+  // NS4-44: Virüs Avı öğretici kartı (Elif) ve butonları
+  const vtut = stage.appendChild(new FakeElement('virus-tut'));
+  vtut.hidden = true;
+  byId.set('virus-tut', vtut);
+  for (const id of ['vt-skip', 'vt-next']) byId.set(id, vtut.appendChild(new FakeButton(id)));
   const tutDone = byId.get('tut-done');
   if (tutDone) tutDone.hidden = true;
   for (const id of ELEMENT_IDS) byId.set(id, new FakeElement(id));

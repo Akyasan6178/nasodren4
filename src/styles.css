@@ -3115,7 +3115,7 @@ input:focus-visible {
   ) {
   display: none !important;
 }
-#app:not([data-mode='virus']) :is(#virus-lens, #virus-card, .virus-row) {
+#app:not([data-mode='virus']) :is(#virus-lens, #virus-card, .virus-row, #virus-tut) {
   display: none !important;
 }
 
@@ -3274,4 +3274,32 @@ input:focus-visible {
   .virus-card[data-warn] .vc-time {
     animation: none;
   }
+}
+
+/* NS4-44 · Virüs Avı öğreticisi: Elif solda, balon sağda (dar kartta Elif küçülür) */
+.virus-tut {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 10px 10px 6px;
+}
+.vt-elif {
+  flex: 0 0 auto;
+  width: clamp(56px, 28%, 96px);
+}
+.vt-elif svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.vt-bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.vt-name {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-fresh-strong);
 }
