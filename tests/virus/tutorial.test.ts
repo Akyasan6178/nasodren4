@@ -185,3 +185,39 @@ describe('öğretici kartı (DOM)', () => {
     expect(dom.el('virus-tut').hidden).toBe(true);
   });
 });
+
+describe('otomatik geçiş (Devam zorunlu değil)', () => {
+  it('selam 4 sn sonra kendiliğinden kapsül adımına geçer', async () => {
+    memStorage();
+    const { view, tut, mod } = await load();
+    tut.begin();
+    vi.advanceTimersByTime(mod.AUTO_MS.selam - 50);
+    expect(view.shown.at(-1)?.step).toBe('selam');
+    vi.advanceTimersByTime(100);
+    expect(view.shown.at(-1)?.step).toBe('kapsul');
+  });
+  it('lens 5 sn sonra öğreticiyi kendiliğinden bitirir', async () => {
+    const m = memStorage();
+    const { game, onFinish, tut, mod } = await load();
+    tut.begin();
+    tut.next();
+    game.emit('move', {});
+    game.emit('clear', clear(1));
+    vi.advanceTimersByTime(1300); // alkış → lens
+    vi.advanceTimersByTime(mod.AUTO_MS.lens + 50);
+    expect(onFinish).toHaveBeenCalledTimes(1);
+    expect(m.get('fn_virus_tutorial')).toBe('{"done":true}');
+  });
+  it('mola sırasında süre durur, devamda kalan süre kadar bekler', async () => {
+    memStorage();
+    const { view, tut, mod } = await load();
+    tut.begin();
+    vi.advanceTimersByTime(2000);
+    tut.onPause();
+    vi.advanceTimersByTime(10_000);
+    tut.onResume();
+    expect(view.shown.at(-1)?.step).toBe('selam');
+    vi.advanceTimersByTime(mod.AUTO_MS.selam - 2000 + 50);
+    expect(view.shown.at(-1)?.step).toBe('kapsul');
+  });
+});

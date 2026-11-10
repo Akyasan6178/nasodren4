@@ -19,6 +19,8 @@ export type VirusTutStep = (typeof VIRUS_TUT_STEPS)[number];
 export const VIRUS_TUTORIAL_KEY = 'virus_tutorial';
 /** Alkıştan sonra lens adımına geçiş (ms). */
 export const CHEER_MS = 1200;
+/** NS4-44 ek: okuma süresi sonunda kendiliğinden geçen adımlar (ms); "Devam" yalnızca hızlı geçmek için. */
+export const AUTO_MS = { selam: 4000, lens: 5000 } as const;
 
 const POSE: Readonly<Record<VirusTutStep, ElifPose>> = {
   selam: 'selam',
@@ -79,6 +81,10 @@ export class VirusTutorial {
   private forced = false;
   private cheering = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
+  /** Otomatik geçiş: zamanlayıcı, kalan süre ve başlama anı (mola/devamda korunur). */
+  private autoTimer: ReturnType<typeof setTimeout> | undefined;
+  private autoLeft = 0;
+  private autoAt = 0;
   private mode: InputMode;
 
   constructor(
@@ -131,16 +137,25 @@ export class VirusTutorial {
   setMode(m: InputMode): void {
     if (m === this.mode) return;
     this.mode = m;
-    if (this.active && !this.cheering) this.render();
+    if (this.active && !this.cheering) this.show(); // okuma sayacı baştan başlamaz
   }
   onPause(): void {
+    if (this.autoTimer !== undefined) {
+      clearTimeout(this.autoTimer);
+      this.autoTimer = undefined;
+      this.autoLeft = Math.max(0, this.autoLeft - (Date.now() - this.autoAt));
+    }
     this.view.hide();
   }
   onResume(): void {
-    if (this.active) this.render();
+    if (!this.active) return;
+    this.show();
+    const s = this.step;
+    if ((s === 'selam' || s === 'lens') && this.autoLeft > 0) this.armAuto(this.autoLeft);
   }
   /** Menüye dönüş / oyun sonu: kart kapanır, kayıt yazılmaz. */
   end(): void {
+    this.clearAuto();
     clearTimeout(this.timer);
     this.active = false;
     this.cheering = false;
@@ -150,7 +165,23 @@ export class VirusTutorial {
   private did(step: VirusTutStep): void {
     if (this.step === step) this.advance();
   }
+  private clearAuto(): void {
+    clearTimeout(this.autoTimer);
+    this.autoTimer = undefined;
+    this.autoLeft = 0;
+  }
+  private armAuto(ms: number): void {
+    clearTimeout(this.autoTimer);
+    this.autoLeft = ms;
+    this.autoAt = Date.now();
+    this.autoTimer = setTimeout(() => {
+      this.autoTimer = undefined;
+      this.autoLeft = 0;
+      this.next();
+    }, ms);
+  }
   private advance(): void {
+    this.clearAuto();
     this.opts.track?.('step', this.index + 1);
     this.index++;
     this.render();
@@ -176,6 +207,7 @@ export class VirusTutorial {
     this.finish();
   }
   private finish(): void {
+    this.clearAuto();
     clearTimeout(this.timer);
     this.active = false;
     this.cheering = false;
@@ -183,7 +215,13 @@ export class VirusTutorial {
     this.view.hide();
     this.opts.onFinish();
   }
+  /** Adımı gösterir; selam ve lens için okuma süresi sayacını kurar. */
   private render(): void {
+    this.show();
+    const s = this.step;
+    if (s === 'selam' || s === 'lens') this.armAuto(AUTO_MS[s]);
+  }
+  private show(): void {
     const step = this.step;
     if (!step) return;
     if (this.cheering) return;
