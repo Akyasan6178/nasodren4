@@ -16,7 +16,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
   <body>
-    <div id="app">
+    <div id="app" data-mode="classic">
       <!-- NS4-10: overlay açıkken inert (screens.ts); tabindex=-1: overlay kapanınca odak oyun alanına döner -->
       <div id="stage" inert tabindex="-1">
         <div id="under">
@@ -54,12 +54,34 @@
                 <b id="hud-level">1</b></span
               ><span>Satır <b id="hud-lines">0</b></span>
             </div>
+            <!-- NS4-44: Virüs Avı'nda Seviye/Satır yerine bölüm -->
+            <div class="row virus-row">
+              <span>Bölüm <b id="virus-level">1</b></span>
+            </div>
           </div>
           <!-- NS4-38: tıkanıklık kartı: yüzde, durum ve dolan çubuk (yan metre çevre görüşü için kalır) -->
           <div id="cong" class="abs cong" data-state="ferah" role="img" aria-label="Tıkanıklık yüzde 0">
             <span class="cong-lbl">Tıkanıklık <em id="cong-state">Ferah</em></span>
             <b id="cong-n" class="cong-n">%0</b>
             <span class="cong-bar"><i id="cong-fill"></i></span>
+          </div>
+          <!-- NS4-44: Virüs Avı lensi (üç tür, kalan sayıları) ve süre / kalan virüs kartı (yalnızca virüs modunda) -->
+          <div id="virus-lens" class="abs virus-lens" role="img" aria-label="Kalan virüsler">
+            <div class="lens-glass">
+              <span id="lens-0" class="lens-v" data-type="0"
+                ><img src="/images/virus/virus-1.webp" alt="" /><b id="lens-n-0">0</b></span
+              >
+              <span id="lens-1" class="lens-v" data-type="1"
+                ><img src="/images/virus/virus-2.webp" alt="" /><b id="lens-n-1">0</b></span
+              >
+              <span id="lens-2" class="lens-v" data-type="2"
+                ><img src="/images/virus/virus-3.webp" alt="" /><b id="lens-n-2">0</b></span
+              >
+            </div>
+          </div>
+          <div id="virus-card" class="abs panel virus-card">
+            <span class="vc-lbl">Süre</span><b id="virus-time" class="vc-n vc-time">0:00</b>
+            <span class="vc-lbl">Kalan virüs</span><b id="virus-left" class="vc-n">0</b>
           </div>
         </div>
         <div id="over-hud">
@@ -303,6 +325,10 @@
             >Oyna
           </button>
           <!-- çok oyunculu yalnızca Supabase yapılandırılmışsa görünür (bootstrap.ts) -->
+          <!-- NS4-44: Virüs Avı modu -->
+          <button class="btn ghost btn-virus" id="b-virus">
+            <span class="ico-virus" aria-hidden="true"></span>Virüs Avı
+          </button>
           <button class="btn ghost" id="b-multi" hidden>Çok oyunculu</button>
           <!-- NS4-41: üç ikincil eylem eşit karolar (ikon + kısa ad); NS4-18 Skorlar artık ayrı satırda değil -->
           <div class="start-actions">

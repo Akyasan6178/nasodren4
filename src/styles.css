@@ -2985,29 +2985,293 @@ input:focus-visible {
 }
 
 /* NS4-44 · Doktor Elif çizimi (src/virus/elif.ts) */
-.elif .elif-skin { fill: var(--color-elif-skin); }
-.elif .elif-skin-shade { fill: var(--color-elif-skin-shade); }
-.elif .elif-hair { fill: var(--color-elif-hair); }
-.elif .elif-hair-shine { fill: none; stroke: var(--color-elif-coat); stroke-width: 3; stroke-linecap: round; opacity: 0.28; }
-.elif-coat { fill: var(--color-elif-coat); stroke: var(--color-elif-coat-line); stroke-width: 2; }
-.elif .elif-coat-line { fill: none; stroke: var(--color-elif-coat-line); stroke-width: 2; stroke-linecap: round; }
-.elif .elif-sleeve { fill: none; stroke: var(--color-elif-coat); stroke-width: 18; stroke-linecap: round; }
-.elif .elif-sleeve-line { fill: none; stroke: var(--color-elif-coat-line); stroke-width: 22; stroke-linecap: round; }
-.elif .elif-scrub { fill: var(--color-fresh); }
-.elif .elif-scrub-dark { fill: var(--color-fresh-strong); }
-.elif .elif-steth { fill: none; stroke: var(--color-fresh-strong); stroke-width: 4; stroke-linecap: round; }
-.elif .elif-steth-ring { fill: none; stroke: var(--color-fresh-strong); stroke-width: 2; }
-.elif .elif-cheek { fill: var(--color-cyclamen); opacity: 0.3; }
-.elif .elif-eye { fill: var(--color-elif-hair); }
-.elif .elif-eye-white { fill: var(--color-elif-coat); stroke: var(--color-elif-hair); stroke-width: 1.5; }
-.elif .elif-eye-shine { fill: var(--color-elif-coat); }
+.elif .elif-skin {
+  fill: var(--color-elif-skin);
+}
+.elif .elif-skin-shade {
+  fill: var(--color-elif-skin-shade);
+}
+.elif .elif-hair {
+  fill: var(--color-elif-hair);
+}
+.elif .elif-hair-shine {
+  fill: none;
+  stroke: var(--color-elif-coat);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.28;
+}
+.elif-coat {
+  fill: var(--color-elif-coat);
+  stroke: var(--color-elif-coat-line);
+  stroke-width: 2;
+}
+.elif .elif-coat-line {
+  fill: none;
+  stroke: var(--color-elif-coat-line);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.elif .elif-sleeve {
+  fill: none;
+  stroke: var(--color-elif-coat);
+  stroke-width: 18;
+  stroke-linecap: round;
+}
+.elif .elif-sleeve-line {
+  fill: none;
+  stroke: var(--color-elif-coat-line);
+  stroke-width: 22;
+  stroke-linecap: round;
+}
+.elif .elif-scrub {
+  fill: var(--color-fresh);
+}
+.elif .elif-scrub-dark {
+  fill: var(--color-fresh-strong);
+}
+.elif .elif-steth {
+  fill: none;
+  stroke: var(--color-fresh-strong);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.elif .elif-steth-ring {
+  fill: none;
+  stroke: var(--color-fresh-strong);
+  stroke-width: 2;
+}
+.elif .elif-cheek {
+  fill: var(--color-cyclamen);
+  opacity: 0.3;
+}
+.elif .elif-eye {
+  fill: var(--color-elif-hair);
+}
+.elif .elif-eye-white {
+  fill: var(--color-elif-coat);
+  stroke: var(--color-elif-hair);
+  stroke-width: 1.5;
+}
+.elif .elif-eye-shine {
+  fill: var(--color-elif-coat);
+}
 .elif .elif-brow,
-.elif .elif-line { fill: none; stroke: var(--color-elif-hair); stroke-width: 3; stroke-linecap: round; }
-.elif .elif-line-bold { stroke-width: 3.6; }
-.elif .elif-mouth { fill: var(--color-cyclamen-strong); }
-.elif .elif-tongue { fill: var(--color-cyclamen-soft); }
-.elif .elif-spark { fill: none; stroke: var(--color-warning); stroke-width: 3; stroke-linecap: round; }
-.elif .elif-nazar-b { fill: var(--color-nazar-blue); }
-.elif .elif-nazar-w { fill: var(--color-elif-coat); }
-.elif .elif-nazar-l { fill: var(--color-nazar-light); }
-.elif .elif-nazar-d { fill: var(--color-nazar-dark); }
+.elif .elif-line {
+  fill: none;
+  stroke: var(--color-elif-hair);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.elif .elif-line-bold {
+  stroke-width: 3.6;
+}
+.elif .elif-mouth {
+  fill: var(--color-cyclamen-strong);
+}
+.elif .elif-tongue {
+  fill: var(--color-cyclamen-soft);
+}
+.elif .elif-spark {
+  fill: none;
+  stroke: var(--color-warning);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.elif .elif-nazar-b {
+  fill: var(--color-nazar-blue);
+}
+.elif .elif-nazar-w {
+  fill: var(--color-elif-coat);
+}
+.elif .elif-nazar-l {
+  fill: var(--color-nazar-light);
+}
+.elif .elif-nazar-d {
+  fill: var(--color-nazar-dark);
+}
+
+/* NS4-44 · Virüs Avı: mod görünürlüğü */
+#app[data-mode='virus']
+  :is(
+    #meter,
+    #hold-bg,
+    #lbl-hold,
+    #next-mystery,
+    #cong,
+    #fx-badges,
+    #room-hud,
+    #room-map,
+    #btn-hold,
+    #btn-cyc,
+    #btn-sneeze,
+    #btn-spray,
+    #attack-bar,
+    #tutorial,
+    #sinus-walls,
+    #pressure,
+    #danger,
+    #stats .row:not(.virus-row)
+  ) {
+  display: none !important;
+}
+#app:not([data-mode='virus']) :is(#virus-lens, #virus-card, .virus-row) {
+  display: none !important;
+}
+
+/* NS4-44 · Virüs Avı lensi */
+.virus-lens {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.lens-glass {
+  position: relative;
+  height: 100%;
+  max-width: 100%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 35% 30%,
+    var(--color-surface-strong) 0%,
+    var(--color-fresh-soft) 55%,
+    var(--color-rim) 100%
+  );
+  border: 3px solid var(--color-rim-inner);
+  box-shadow:
+    0 0 0 2px var(--color-rim),
+    inset 0 6px 14px color-mix(in srgb, var(--color-on-accent) 70%, transparent),
+    0 12px 26px -16px color-mix(in srgb, var(--color-board) 60%, transparent);
+}
+.lens-v {
+  position: absolute;
+  width: 40%;
+  aspect-ratio: 1;
+  transition:
+    transform 260ms ease,
+    opacity 260ms ease;
+  animation: lens-sway 2.4s ease-in-out infinite;
+}
+.lens-v:nth-child(1) {
+  left: 9%;
+  top: 14%;
+}
+.lens-v:nth-child(2) {
+  right: 9%;
+  top: 14%;
+  animation-delay: -0.8s;
+}
+.lens-v:nth-child(3) {
+  left: 30%;
+  bottom: 7%;
+  animation-delay: -1.6s;
+}
+.lens-v img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lens-v b {
+  position: absolute;
+  right: -6%;
+  bottom: -4%;
+  min-width: 1.6em;
+  padding: 0 0.35em;
+  border-radius: var(--radius-pill);
+  background: var(--color-board);
+  color: var(--color-on-accent);
+  font: 700 calc(var(--fs-hud-sub) * var(--hud-scale)) var(--font-display);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.virus-lens.compact .lens-v b {
+  font-size: 10px;
+}
+.lens-v.is-flinch {
+  transform: scale(0.78) rotate(-10deg);
+}
+.virus-lens.is-giggle .lens-v {
+  animation: lens-giggle 0.5s ease-in-out infinite;
+}
+.lens-v.is-gone {
+  transform: scale(0);
+  opacity: 0;
+  animation: none;
+}
+@keyframes lens-sway {
+  0%,
+  100% {
+    transform: rotate(-6deg) translateY(0);
+  }
+  50% {
+    transform: rotate(6deg) translateY(-4%);
+  }
+}
+@keyframes lens-giggle {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  25% {
+    transform: translateY(-8%) rotate(-5deg);
+  }
+  75% {
+    transform: translateY(-4%) rotate(5deg);
+  }
+}
+
+/* NS4-44 · Süre / kalan virüs kartı */
+.virus-card {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-content: center;
+  justify-content: space-between;
+  column-gap: 8px;
+  padding: 4px 10px;
+  font-family: var(--font-display);
+  color: var(--color-text);
+}
+.vc-lbl {
+  font-weight: 600;
+  font-size: calc(var(--fs-hud-sub) * var(--hud-scale));
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  align-self: center;
+}
+.vc-n {
+  font-weight: 700;
+  font-size: calc(var(--fs-hud-value) * var(--hud-scale));
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.virus-card[data-warn] .vc-time {
+  color: var(--color-danger);
+  animation: vc-pulse 1s ease-in-out infinite;
+}
+@keyframes vc-pulse {
+  50% {
+    transform: scale(1.12);
+  }
+}
+.btn-virus .ico-virus {
+  display: inline-block;
+  width: 1.4em;
+  height: 1.4em;
+  margin-right: 0.4em;
+  vertical-align: -0.35em;
+  background: url('/images/virus/virus-1.webp') center / contain no-repeat;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lens-v,
+  .virus-lens.is-giggle .lens-v {
+    animation: none;
+  }
+  .lens-v.is-flinch {
+    transform: none;
+    opacity: 0.55;
+  }
+  .virus-card[data-warn] .vc-time {
+    animation: none;
+  }
+}

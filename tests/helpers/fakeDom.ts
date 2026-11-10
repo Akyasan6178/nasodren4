@@ -236,10 +236,23 @@ const ELEMENT_IDS = [
   // NS4-19: CTA bağlantıları (analitik dinleyicileri)
   'cta-over',
   'cta-pause',
+  // NS4-44: Virüs Avı (mod kökü, lens, süre/kalan kartı, bölüm)
+  'app',
+  'virus-lens',
+  'virus-card',
+  'virus-time',
+  'virus-left',
+  'virus-level',
+  'lens-0',
+  'lens-1',
+  'lens-2',
+  'lens-n-0',
+  'lens-n-1',
+  'lens-n-2',
 ];
 /** Ekranların odaklanabilir çocukları (index.html sırasıyla; ilk buton ekran açılınca odak alır). */
 const SCREEN_BUTTONS: Record<string, readonly string[]> = {
-  'scr-start': ['b-play', 'b-how', 'b-set1', 'b-scores'],
+  'scr-start': ['b-play', 'b-virus', 'b-how', 'b-set1', 'b-scores'],
   'scr-pause': ['b-resume', 'b-set2', 'b-quit'],
   'scr-over': ['b-again', 'b-menu'],
   'scr-final': ['b-free', 'b-finish'],
