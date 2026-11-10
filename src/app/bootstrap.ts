@@ -305,15 +305,15 @@ export function bootstrap(): void {
       if (session.getState() === 'playing') input.update(dt);
       session.update(dt);
       const playing = session.getState() === 'playing';
-      virusStage.sync({
-        tutorial: virusTutorial.isActive,
-        state: vgame.state,
-        warn: playing && !vgame.tutorial && vgame.timeLeftMs < VIRUS_CFG.warnMs,
-      });
-      sound.setCongestion(playing ? vgame.fill() : 0);
+      const warn = playing && !vgame.tutorial && vgame.timeLeftMs < VIRUS_CFG.warnMs;
+      virusStage.sync({ tutorial: virusTutorial.isActive, state: vgame.state, warn });
+      // NS4-44 ek: bu modda boğuk ses süzgeci yok; son saniyelerde müzik hızlanır
+      sound.setCongestion(0);
+      sound.setHurry(warn);
       if (playing) sound.setMusicContext(Math.max(1, vgame.level), 0);
       return;
     }
+    sound.setHurry(false);
     if (lifecycle.getState() === 'playing') {
       input.update(dt);
       game.update(dt);

@@ -155,6 +155,8 @@ export class Sound {
   private phase: GamePhase = 'ferah';
   private musicLevel = 1;
   private musicRoom = 0;
+  /** NS4-44 ek: Virüs Avı'nda son saniyeler (müzik hızlanır). */
+  private hurry = false;
   /** Sekme gizlenince bu sınıf context'i askıya aldıysa true (görünür olunca devam ettirilir). */
   private suspendedByHide = false;
   private lastMove = -1;
@@ -650,7 +652,7 @@ export class Sound {
         step = s.step % STEPS,
         bar = Math.floor(s.step / STEPS);
       if (step === 0 || !s.plan) {
-        const phase = s.kind === 'game' ? this.phase : 'ferah';
+        const phase = s.kind === 'game' ? this.phase : s.kind === 'virus' && this.hurry ? 'orta' : 'ferah';
         if (s.phase === 'tikali' && phase !== 'tikali') s.cycleStart = bar - 8; // rahatlama: doğrudan nakarat
         s.plan = planBar(
           {
@@ -840,6 +842,13 @@ export class Sound {
    * `delay` (sn): yeni parçanın girişi gecikir (ör. oyun sonu sesi önce duyulsun). Ayar kapalıysa çalmaz.
    */
   /** NS4-40: oyun müziği bağlamı (her karede çağrılabilir; ölçü başında okunur). */
+  /** NS4-44 ek: Virüs Avı müziğinde acele (son 15 sn); ölçü başında okunur. */
+  setHurry(on: boolean): void {
+    this.hurry = on;
+  }
+  get musicHurry(): boolean {
+    return this.hurry;
+  }
   setMusicContext(level: number, room: number): void {
     this.musicLevel = level;
     this.musicRoom = room;

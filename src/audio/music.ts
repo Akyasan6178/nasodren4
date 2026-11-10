@@ -19,7 +19,7 @@
      · her sinüs odasında ton değişir, seviye arttıkça tempo hafifçe artar.
    ===================================================================== */
 
-export type MusicKind = 'menu' | 'game';
+export type MusicKind = 'menu' | 'game' | 'virus';
 /** NS4-40: oyun müziğinin fazı (tıkanıklığa göre, eşiklerde gecikmeli geçiş). */
 export type GamePhase = 'ferah' | 'orta' | 'tikali';
 /** NS4-40: 24 ölçülük döngünün bölümü (ferah/orta). Gergin fazda bölüm yoktur ('tense'). */
@@ -64,6 +64,16 @@ export const TRACKS: Readonly<Record<MusicKind, Track>> = {
     padCutoff: 1400,
     wind: true,
   },
+  // NS4-44 ek · Virüs Avı: Sol majör, hareketli ve oyuncu (zıplayan bas, 8'lik arpej, sık melodi); süzgeçsiz
+  virus: {
+    bpm: 126,
+    level: 0.24,
+    scale: [293.7, 329.6, 392, 440, 493.9, 587.3, 659.3, 784, 880],
+    density: 0.48,
+    padGain: 0.012,
+    padCutoff: 1700,
+    wind: false,
+  },
 };
 
 /** Akorlar (Hz, pesten tize; ilk nota kök). Her akor 2 ölçü sürer. */
@@ -78,6 +88,13 @@ const BRIGHT_CHORDS = [
   [196, 246.9, 293.7, 329.6], // Sol6
   [220, 261.6, 329.6, 392], // Lam7
   [174.6, 220, 261.6, 329.6], // Famaj7
+] as const;
+/** NS4-44 ek: Virüs Avı akorları (Sol · Mim · Do · Re; I–vi–IV–V, neşeli). */
+const VIRUS_CHORDS = [
+  [196, 246.9, 293.7, 392], // Sol
+  [164.8, 196, 246.9, 329.6], // Mim
+  [130.8, 164.8, 196, 261.6], // Do
+  [146.8, 185, 220, 293.7], // Re
 ] as const;
 const TENSE_CHORDS = [
   [220, 261.6, 329.6], // Lam
@@ -107,6 +124,8 @@ export function gamePhase(congestion: number, prev: GamePhase): GamePhase {
 export function tempoFor(kind: MusicKind, level: number, phase: GamePhase): number {
   const t = TRACKS[kind];
   if (kind === 'menu') return t.bpm;
+  // NS4-44 ek: Virüs Avı: bölümle hafifçe hızlanır; son saniyelerde ('orta' = acele) +14
+  if (kind === 'virus') return t.bpm + Math.min(Math.max(level, 1) - 1, 10) * 1.2 + (phase === 'ferah' ? 0 : 14);
   return t.bpm + Math.min(Math.max(level, 1) - 1, 10) * 1.5 + (phase === 'tikali' ? 6 : 0);
 }
 
@@ -212,6 +231,7 @@ export function planBar(inp: PlanInput, melody: Melody): BarPlan {
       .filter((x) => x.n >= 0)
       .map(({ n, i }) => ({ step: i * 2, f: semi(melody.freq(n), tr), len: 4, gain: g }));
 
+  if (kind === 'virus') return planVirusBar(inp, melody, bpm);
   if (kind === 'menu')
     return {
       bpm,
@@ -298,6 +318,45 @@ export function planBar(inp: PlanInput, melody: Melody): BarPlan {
     snap,
     hat,
     fill,
+  };
+}
+
+/**
+ * NS4-44 ek · Virüs Avı ölçüsü: her ölçüde zıplayan bas, 8'lik staccato akor arpeji, kick (1 ve 3) + şıklatma
+ * (2 ve 4), 8'lik shaker; 8 ölçüde bir nefes (melodisiz). Acele ('orta'): 16'lık shaker ve ek kick.
+ */
+function planVirusBar(inp: PlanInput, melody: Melody, bpm: number): BarPlan {
+  const { bar } = inp;
+  const hurry = inp.phase !== 'ferah';
+  const chord = VIRUS_CHORDS[Math.floor(bar / BARS_PER_CHORD) % VIRUS_CHORDS.length] ?? VIRUS_CHORDS[0];
+  const pad = bar % BARS_PER_CHORD === 0 ? { chord: [...chord], bars: BARS_PER_CHORD } : null;
+  const root = chord[0] / 2;
+  const breath = bar % 8 === 7;
+  const tones = [chord[1], chord[2], chord[3], chord[2]].map((f) => f * 2);
+  return {
+    bpm,
+    section: breath ? 'break' : 'chorus',
+    pad,
+    bass: BASS.bounce.map(([step, n, len]) => ({ step, f: semi(root, n), len, gain: 0.1 })),
+    melody: breath
+      ? []
+      : melody
+          .bar(bar)
+          .map((n, i) => ({ n, i }))
+          .filter((x) => x.n >= 0)
+          .map(({ n, i }) => ({ step: i * 2, f: melody.freq(n), len: 2, gain: 0.07 })),
+    arp: [0, 2, 4, 6, 8, 10, 12, 14].map((step, i) => ({
+      step,
+      f: tones[i % tones.length] ?? tones[0],
+      len: 1,
+      gain: i % 2 === 0 ? 0.026 : 0.018,
+    })),
+    kick: (hurry ? [0, 6, 8, 14] : [0, 8]).map((step) => ({ step, gain: step % 8 === 0 ? 0.42 : 0.24 })),
+    snap: [4, 12].map((step) => ({ step, gain: 0.085 })),
+    hat: hurry
+      ? Array.from({ length: STEPS }, (_, step) => ({ step, gain: step % 2 === 0 ? 0.05 : 0.03 }))
+      : [2, 6, 10, 14, 0, 4, 8, 12].map((step) => ({ step, gain: step % 4 === 2 ? 0.055 : 0.03 })),
+    fill: null,
   };
 }
 

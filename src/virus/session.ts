@@ -118,7 +118,7 @@ export function createVirusSession(deps: VirusSessionDeps): VirusSession {
     app.ticker.start();
     state = 'playing';
     show(null);
-    sound.setMusic('game');
+    sound.setMusic('virus'); // NS4-44 ek: moda özel parça
     if (tut) tutorial.begin();
     else tutorial.end();
     track('virus_start', { tutorial: tut });
@@ -146,7 +146,7 @@ export function createVirusSession(deps: VirusSessionDeps): VirusSession {
     app.ticker.start();
     state = 'playing';
     show(null);
-    sound.setMusic('game');
+    sound.setMusic('virus'); // NS4-44 ek: moda özel parça
     tutorial.onResume();
   }
   function toMenu() {
