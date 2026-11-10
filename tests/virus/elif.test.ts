@@ -29,7 +29,16 @@ describe('Doktor Elif', () => {
   });
 
   it('Elif renk tokenları :root içinde, sınıflar bu tokenları kullanır', () => {
-    for (const t of ['--color-elif-skin', '--color-elif-skin-shade', '--color-elif-hair', '--color-elif-coat', '--color-elif-coat-line', '--color-nazar-blue', '--color-nazar-light', '--color-nazar-dark'])
+    for (const t of [
+      '--color-elif-skin',
+      '--color-elif-skin-shade',
+      '--color-elif-hair',
+      '--color-elif-coat',
+      '--color-elif-coat-line',
+      '--color-nazar-blue',
+      '--color-nazar-light',
+      '--color-nazar-dark',
+    ])
       expect(css).toMatch(new RegExp(`${t}\\s*:\\s*#[0-9a-f]{6}`, 'i'));
     expect(css).toMatch(/\.elif-coat\s*\{[^}]*var\(--color-elif-coat\)/);
   });

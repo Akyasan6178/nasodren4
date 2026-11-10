@@ -126,7 +126,8 @@ export function fallStep(g: Grid): boolean {
 
 /** (x, y) hücresinden geçen sıra ya da sütunda kesintisiz dolu uzunluk ≥ 4 mü? */
 function makesRun(g: Grid, x: number, y: number): boolean {
-  const filled = (cx: number, cy: number) => cx >= 0 && cx < COLS && cy >= 0 && cy < VIS && g.kind[cy * COLS + cx] !== EMPTY;
+  const filled = (cx: number, cy: number) =>
+    cx >= 0 && cx < COLS && cy >= 0 && cy < VIS && g.kind[cy * COLS + cx] !== EMPTY;
   for (const [dx, dy] of [
     [1, 0],
     [0, 1],

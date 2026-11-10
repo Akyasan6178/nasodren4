@@ -12,17 +12,12 @@ export type ElifPose = (typeof ELIF_POSES)[number];
 
 /** Kol: omuzdan ele kalın, yuvarlak uçlu kol (önlük kolu) ve el. */
 function arm(d: string, hand: string): string {
-  return (
-    `<path class="elif-sleeve-line" d="${d}"/>` +
-    `<path class="elif-sleeve" d="${d}"/>` +
-    hand
-  );
+  return `<path class="elif-sleeve-line" d="${d}"/>` + `<path class="elif-sleeve" d="${d}"/>` + hand;
 }
 const hand = (x: number, y: number, r = 9) =>
   `<circle class="elif-skin" cx="${x}" cy="${y}" r="${r}"/><path class="elif-skin-shade" d="M${x - r * 0.7} ${y + r * 0.3}a${r} ${r} 0 0 0 ${r * 1.4} 0z"/>`;
 
 const ARM_LEFT_DOWN = arm('M60 178 Q50 204 56 224', hand(57, 228));
-const ARM_RIGHT_DOWN = arm('M140 178 Q150 204 144 224', hand(143, 228));
 
 const ARMS: Readonly<Record<ElifPose, string>> = {
   selam:

@@ -3,7 +3,17 @@ import { describe, expect, it } from 'vitest';
 import { COLS, VIS } from '../../src/config/gameConfig';
 import { seeded } from '../../src/game/Game';
 import { levelParams } from '../../src/virus/config';
-import { CAPSULE, EMPTY, VIRUS, fallStep, findRuns, newGrid, placeViruses, removeCells, type Grid } from '../../src/virus/rules';
+import {
+  CAPSULE,
+  EMPTY,
+  VIRUS,
+  fallStep,
+  findRuns,
+  newGrid,
+  placeViruses,
+  removeCells,
+  type Grid,
+} from '../../src/virus/rules';
 
 const at = (x: number, y: number) => y * COLS + x;
 function put(g: Grid, x: number, y: number, kind: number, tint = 0, link = -1) {
@@ -128,7 +138,7 @@ describe('placeViruses', () => {
       for (let i = 0; i < g.kind.length; i++) {
         if (g.kind[i] !== VIRUS) continue;
         expect(Math.floor(i / COLS)).toBeGreaterThanOrEqual(VIS - p.maxHeight);
-        types[g.tint[i] ?? 0]!++;
+        types[g.tint[i] ?? 0] = (types[g.tint[i] ?? 0] ?? 0) + 1;
       }
       expect(Math.max(...types) - Math.min(...types)).toBeLessThanOrEqual(1);
     });
