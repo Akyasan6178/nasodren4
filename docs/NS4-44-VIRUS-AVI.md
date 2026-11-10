@@ -78,3 +78,36 @@ Kullanıcı geri bildirimiyle (spec §11). Belli bir oyunun ilaç şişesi tahta
 - **Lens:** kendi türünden biri patlayınca o virüs **yere yığılıp ağlar** (kare 6, 1,6 sn, gözyaşı ve gölcük); arada **dalga geçer** (kare 7: gözler gülerek kısılı, eller başın yanında; ~6,5 sn'de bir, son saniyelerde ~2,4 sn'de bir). Türün sonuncusu önce ağlar, sonra kaybolur. Tür sayısı rozetleri kalktı.
 - **Süre / kalan virüs** yazıları büyüdü; portrede kart tek satır.
 - **Uzuvlar yeniden (kullanıcı):** kollar ve bacaklar gövdenin dilinden: gövde renginde, kıvrımlı, uca doğru incelen parlak tüpler; eller dikenlerin topuzu gibi yuvarlak avuç + üç topuz parmak (beyaz eldiven yok), ayaklar gövde renginde yuvarlak taban (koyu ayakkabı yok). Dalga karesinde **dil dışarıda** (ağız genişliğine oranlı, kontur + orta çizgi + parlama), eller başın iki yanında.
+
+## 11. Açık küçük konular (bir sonraki oturumda ele alınacak)
+
+Bağımsız kod incelemelerinde "küçük" diye ertelenen, 2026-11-11 itibarıyla hâlâ geçerli maddeler. Hepsi Virüs Avı'na özgü; klasik modu etkilemez.
+
+**Oynanış / his**
+
+1. **↓ basılıyken kapsül kilitlenince tutarsızlık:** `VirusGame.lock()` `softDrop`'u kapatır; işletim sisteminin tuş tekrarı başlamışsa yeni kapsül hemen bir sıra iner, başlamamışsa inmez, araya silme girerse 170 ms bekler. Tek kural seçilmeli: ya ↓ yeniden basılmalı ya da basılı tutma kilitten sonra da sürmeli (`spawn()`'da `softHeld/softNext` sıfırlanır). Dosyalar: `src/virus/VirusGame.ts`, `src/input/InputController.ts`.
+2. **Bölüm kutlamasında müzik "acele"de kalıyor:** `levelclear` sırasında süre donar; son 15 sn'de bitirilen bölümde kutlama boyunca müzik hızlı tempoda çalar. Çözüm: `bootstrap.ts`'teki `warn`'a `&& vgame.state !== 'levelclear'`.
+3. **Öğretici adımı nadiren "Devam"ı bekleyebilir:** okuma süresi dolduğu anda (zamanlayıcı daha çalışmadan) mola verilirse `autoLeft` 0 kalır, devamda yeniden kurulmaz. Çözüm: `onResume`'da `autoLeft` 0 ise hemen ilerlet. Dosya: `src/virus/tutorial.ts`.
+4. **Damlalık sıkışması duvar saatiyle:** `stage.ts` `onSpawn` `setTimeout(FLIGHT_IN_MS)` kullanır; uçuş sırasında mola verilirse sıkışma mola ekranının arkasında olur. Çözüm: sıkışmayı `VirusView` uçuşu `FLIGHT_IN_MS`'i geçtiğinde tetiklesin.
+5. **Dalga geçme temposu geç hızlanıyor:** son 15 sn başlayınca ilk hızlı dalga 6–9 sn sonra gelebilir; moladan dönünce gecikmiş türler aynı anda dalga geçer. Çözüm: tempo değişince `nextTaunt` en geç `now + hurry aralığı`na çekilsin. Dosya: `src/virus/hud.ts`.
+
+**Kayıt / analitik**
+
+6. **Kaydedilen süreye öğretici süresi ekleniyor:** `session.onTutorialFinish` `startLevel(1)` öncesi `game.elapsedMs`'i sıfırlamıyor; yerel skordaki `durationSeconds` ve `virus_game_over.dur_s` öğreticiyi de sayıyor.
+
+**Görünüm (cihazda doğrulanmalı)**
+
+7. **Küçük telefonda süre kartı sıkışık olabilir:** 360×640'ta portre tek satırlık kart ~196×26 px; "Süre 0:00 Kalan virüs NN" sığmayabilir (hesap, cihazda görülmedi).
+
+**Temizlik**
+
+8. Kullanılmayan `VirusGame.fill()` (ve açıklamasındaki eski "lens gülmesi" notu).
+9. `tutorialView.ts` gizlenen `#vt-elif`'e hâlâ Elif çiziyor (gereksiz iş).
+10. `tutorial.ts` başlık yorumu hâlâ "selam ve lens Devam ister" diyor (artık kendiliğinden geçiyor).
+11. Bu raporun §9'undaki "yan Elif … öğreticide gizli, goster/oops" anlatımı §10 ile geçersiz; §9 güncellenmeli.
+
+**Ortam ve karar bekleyenler**
+
+- `npm run check`'in `format:check` adımı Windows'ta (`core.autocrlf=true`) 50 dosyada yalnızca satır sonu (CRLF) uyarısı verir; `npx prettier --check --end-of-line auto .` temizdir. İstenirse `.gitattributes` ile `eol=lf` sabitlenebilir.
+- Hukuk: Elif oyun sonu ekranında sağlık bağlantısıyla aynı kartta (kullanıcı kararıyla kalıyor; YOL-HARITASI §3.4).
+- Dal: `feat/ns4-44-virus-avi` birleştirme / PR kararı bekliyor.

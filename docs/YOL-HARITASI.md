@@ -42,6 +42,8 @@ Kullanıcı geri bildirimi (2026-10-26): "Bulut mantığını herkes anlayabilir
 
 ## 3. Şimdi yapılacaklar (sırayla)
 
+0. **NS4-44 Virüs Avı açık küçük konular:** 11 madde, `docs/NS4-44-VIRUS-AVI.md` §11 (oynanış hissi, kayıt süresi, küçük ekran kartı, temizlik). Kullanıcı bir sonraki oturumda bunların üzerinden geçmek istiyor (2026-11-11).
+
 1. **Commit:** kullanıcı onayıyla `feat(ns4-22)`, `feat(ns4-30)`, `feat(ns4-31)`. Dosyalar iç içe (events.ts, hud.ts, styles.css, index.html, testler): ayırmak zorsa tek commit, her göreve bir paragraf. Önceki dört görev commit edildi (bkz. 2. bölüm).
 
 2. **Cihaz testi (kullanıcı):** telefonda kulaklık/hoparlörle bir oyun.
