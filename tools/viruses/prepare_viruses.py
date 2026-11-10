@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+from scipy.spatial import Delaunay
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "public" / "images" / "virüsler"
@@ -24,14 +25,16 @@ SIZE = 256
 
 # kaynak → hedef ton (derece), doygunluk sınırı, parlaklık çarpanı, kaş yumuşatma
 VIRUSES = [
-    {"src": "bacteria.png", "hue": 262.0, "sat": 0.55, "val": 1.0, "brows": False},  # leylak
-    {"src": "bacteria2.png", "hue": 328.0, "sat": 0.62, "val": 1.0, "brows": True},  # pembe
+    # tek gözlü virüs: kullanıcı isteğiyle (2026-11-10) yeşil kalır; limon/sarı-yeşil değil, temiz yaprak yeşili
+    {"src": "bacteria.png", "hue": 128.0, "sat": 0.58, "val": 0.92, "brows": False, "green": True, "fill_mouth": True},
+    {"src": "bacteria2.png", "hue": 328.0, "sat": 0.62, "val": 1.0, "brows": True, "fill_mouth": True},  # pembe
     {"src": "bacteria3.png", "hue": 336.0, "sat": 0.66, "val": 0.74, "brows": False},  # bordo
 ]
 
 GREEN = (50.0, 175.0)  # yeşil-sarı ton aralığı (boyanacak gövde)
 SHINE_KEEP = 0.45  # parlak beneklerin korunan oranı
-BUMP_SMOOTH = 0.35  # kabarcık kontrastı: değer kanalının yumuşatılmış hâline karışım
+BUMP_SMOOTH = 0.35
+MOUTH_HUE = 345.0  # ağız içi: koyu bordo (her virüste aynı; yeşil ya da kahverengi değil)  # kabarcık kontrastı: değer kanalının yumuşatılmış hâline karışım
 
 
 def rgb_to_hsv(rgb: np.ndarray) -> np.ndarray:
@@ -125,13 +128,17 @@ def process(cfg: dict) -> Image.Image:
         box = (ys >= y0) & (ys <= y1) & (xs >= x0) & (xs <= x1)
         teeth = vis & (sat < 0.38) & (val > 0.42) & box & ~eyes & ~green
         teeth = ndimage.binary_dilation(teeth, iterations=2) & vis & ~eyes & box & ~green & ~mouth
-        if cfg["brows"]:
-            # sivri dişli geniş sırıtış: dil dışındaki bütün ağız içi koyulaşır (diş konturları da kalmaz)
+        if cfg.get("fill_mouth"):
+            # sivri dişli ağız: kırmızı ağız bölgesinin dışbükey zarfı içinde dil dışındaki her şey koyulaşır
+            # (diş konturları ve gölgeleri de kalmaz)
+            pts = np.argwhere(ndimage.binary_dilation(mouth, iterations=2))
+            hull = Delaunay(pts)
+            inside = (hull.find_simplex(np.stack([ys.ravel(), xs.ravel()], -1)) >= 0).reshape(H, W)
             light = vis & (val > 0.55) & (sat < 0.5)
-            teeth = box & vis & ~eyes & ~tongue & ((~green & ~outline) | light)
+            teeth = (inside & vis & ~eyes & ~tongue) | (box & vis & ~eyes & ~tongue & ((~green & ~outline) | light))
         # ağız içi koyu mürdüm (kahverengi değil): dişler ağzın gölgesine karışır
-        out[..., 0] = np.where(teeth, cfg["hue"], out[..., 0])
-        out[..., 1] = np.where(teeth, 0.58, out[..., 1])
+        out[..., 0] = np.where(teeth, MOUTH_HUE, out[..., 0])
+        out[..., 1] = np.where(teeth, 0.62, out[..., 1])
         out[..., 2] = np.where(teeth, 0.3, out[..., 2])
     else:
         teeth = np.zeros_like(vis)
@@ -233,7 +240,7 @@ def main() -> None:
     outs = []
     for i, cfg in enumerate(VIRUSES, start=1):
         img = process(cfg)
-        assert not mean_hue_is_green(img), f"virus-{i} hâlâ yeşil"
+        assert cfg.get("green") or not mean_hue_is_green(img), f"virus-{i} hâlâ yeşil"
         img.save(OUT / f"virus-{i}.webp", "WEBP", quality=82, method=6)
         outs.append(img)
         print(f"virus-{i}.webp", (OUT / f"virus-{i}.webp").stat().st_size, "bayt")

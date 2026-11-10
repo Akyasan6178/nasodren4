@@ -74,6 +74,7 @@ Mekanik için de üç seçenek konuşuldu: **A) kapsül + renksiz 4'lü (seçild
 ### 7.3 Virüs görselleri
 
 - Üç görsel, yeniden çizilmeden, oyunun **leylak, pembe ve bordo** tonlarına boyanır (`--color-pressure`, `--color-pressure-soft`, `--color-cyclamen`, `--color-cyclamen-strong` ailesi). Yeşil kalmaz.
+- **Güncelleme (2026-11-10, kullanıcı onayı 1):** tek gözlü virüs (`virus-1`) kullanıcı isteğiyle **yeşil** kalır ("tatlı dursun, virüs olduğu belli olsun"). Limon/sarı-yeşil değil, temiz yaprak yeşili (ton 128°); diğer ikisi pembe ve bordo. Ağız içleri her üçünde koyu bordo. Doktor Elif dört pozuyla onaylandı (onay 2).
 - `bacteria2`'nin kızgın kaşları ve sivri dişleri yumuşatılır; sevimli ya da şaşkın bir ifadeye çevrilir.
 - Aynı görseller hem lenste hem tahta hücrelerinde kullanılır.
 
