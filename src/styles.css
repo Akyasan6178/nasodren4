@@ -64,6 +64,15 @@
   /* NS4-38: "Sıradaki" gizem kartı (bulunmamış eşya kartı: siyah zemin, beyaz soru işareti) */
   --color-mystery: #121519;
   --color-mystery-top: #2a2f36;
+  /* NS4-44: Doktor Elif (Virüs Avı anlatıcısı) */
+  --color-elif-skin: #f6cdaa;
+  --color-elif-skin-shade: #e9b48d;
+  --color-elif-hair: #3b2420;
+  --color-elif-coat: #ffffff;
+  --color-elif-coat-line: #bfe3df;
+  --color-nazar-blue: #1f4fa3;
+  --color-nazar-light: #4fa8e0;
+  --color-nazar-dark: #0d1b3a;
   --color-mystery-mark: #ffffff;
   --color-mystery-edge: rgba(255, 255, 255, 0.16);
   --color-mystery-shine: rgba(255, 255, 255, 0.22);
@@ -2974,3 +2983,31 @@ input:focus-visible {
     transparent 4px 7px
   );
 }
+
+/* NS4-44 · Doktor Elif çizimi (src/virus/elif.ts) */
+.elif .elif-skin { fill: var(--color-elif-skin); }
+.elif .elif-skin-shade { fill: var(--color-elif-skin-shade); }
+.elif .elif-hair { fill: var(--color-elif-hair); }
+.elif .elif-hair-shine { fill: none; stroke: var(--color-elif-coat); stroke-width: 3; stroke-linecap: round; opacity: 0.28; }
+.elif-coat { fill: var(--color-elif-coat); stroke: var(--color-elif-coat-line); stroke-width: 2; }
+.elif .elif-coat-line { fill: none; stroke: var(--color-elif-coat-line); stroke-width: 2; stroke-linecap: round; }
+.elif .elif-sleeve { fill: none; stroke: var(--color-elif-coat); stroke-width: 18; stroke-linecap: round; }
+.elif .elif-sleeve-line { fill: none; stroke: var(--color-elif-coat-line); stroke-width: 22; stroke-linecap: round; }
+.elif .elif-scrub { fill: var(--color-fresh); }
+.elif .elif-scrub-dark { fill: var(--color-fresh-strong); }
+.elif .elif-steth { fill: none; stroke: var(--color-fresh-strong); stroke-width: 4; stroke-linecap: round; }
+.elif .elif-steth-ring { fill: none; stroke: var(--color-fresh-strong); stroke-width: 2; }
+.elif .elif-cheek { fill: var(--color-cyclamen); opacity: 0.3; }
+.elif .elif-eye { fill: var(--color-elif-hair); }
+.elif .elif-eye-white { fill: var(--color-elif-coat); stroke: var(--color-elif-hair); stroke-width: 1.5; }
+.elif .elif-eye-shine { fill: var(--color-elif-coat); }
+.elif .elif-brow,
+.elif .elif-line { fill: none; stroke: var(--color-elif-hair); stroke-width: 3; stroke-linecap: round; }
+.elif .elif-line-bold { stroke-width: 3.6; }
+.elif .elif-mouth { fill: var(--color-cyclamen-strong); }
+.elif .elif-tongue { fill: var(--color-cyclamen-soft); }
+.elif .elif-spark { fill: none; stroke: var(--color-warning); stroke-width: 3; stroke-linecap: round; }
+.elif .elif-nazar-b { fill: var(--color-nazar-blue); }
+.elif .elif-nazar-w { fill: var(--color-elif-coat); }
+.elif .elif-nazar-l { fill: var(--color-nazar-light); }
+.elif .elif-nazar-d { fill: var(--color-nazar-dark); }
