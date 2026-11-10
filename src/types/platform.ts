@@ -8,6 +8,7 @@ import type { AudioDemo } from '../dev/audioDemo';
 import type { CoreDemo } from '../dev/coreDemo';
 import type { CollisionDemo } from '../dev/collisionDemo';
 import type { SinusDemo } from '../dev/sinusDemo';
+import type { VirusDemo } from '../dev/virusDemo';
 
 declare global {
   interface Window {
@@ -25,6 +26,8 @@ declare global {
       collisionDemo?: CollisionDemo;
       /** Sinüzit Atağı ve Spray: atağı tetikle, Spray'i doldur, kaynak katmanını incele. */
       sinus?: SinusDemo;
+      /** NS4-44: Virüs Avı: süre, bölüm sonu, bölüme atla, durum. */
+      virus?: VirusDemo;
     };
     /**
      * Etiket yöneticisi (ör. GTM) kuyruğu. Sayfaya dışarıdan eklenir; öğeleri bu kodun kontrolünde

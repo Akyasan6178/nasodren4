@@ -99,6 +99,17 @@ export interface AnalyticsPayloads {
   mp_room: { action: 'create' | 'join' };
   mp_round_start: { players: number; round: number };
   mp_round_end: { players: number; round: number; rank: number };
+  // NS4-44: Virüs Avı (yerel; global skor yok)
+  virus_start: { tutorial: boolean };
+  virus_level_clear: { level: number; dur_s: number; bonus: number };
+  virus_game_over: {
+    reason: 'blockout' | 'lockout' | 'time' | 'complete';
+    score: number;
+    level: number;
+    viruses: number;
+    dur_s: number;
+  };
+  virus_tutorial: { action: 'started' | 'step' | 'completed' | 'skipped'; step: number };
 }
 
 export type AnalyticsEvent = keyof AnalyticsPayloads;

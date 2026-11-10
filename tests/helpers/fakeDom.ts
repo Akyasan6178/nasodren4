@@ -252,6 +252,8 @@ const ELEMENT_IDS = [
   'vt-elif',
   'vt-step',
   'vt-text',
+  'o-level',
+  'over-elif',
 ];
 /** Ekranların odaklanabilir çocukları (index.html sırasıyla; ilk buton ekran açılınca odak alır). */
 const SCREEN_BUTTONS: Record<string, readonly string[]> = {
@@ -339,6 +341,8 @@ export function installFakeDom(): FakeDom {
   const howTut = new FakeButton('b-tutorial');
   byId.set('b-tutorial', howTut);
   byId.get('scr-how')?.appendChild(howTut);
+  // NS4-44: "Nasıl oynanır" içindeki Virüs Avı öğreticisi butonu (odak sırasını etkilemesin diye ekrana eklenmez)
+  byId.set('b-virus-tutorial', new FakeButton('b-virus-tutorial'));
   byId.get('scr-start')?.classList.add('on'); // index.html: başlangıç ekranı açık gelir
   const screens = () => SCREEN_IDS.map((id) => byId.get(id)).filter((s): s is FakeElement => !!s);
 

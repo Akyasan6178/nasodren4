@@ -438,6 +438,18 @@
               </li>
               <li><b>Hapşırık</b> tıkanıklığın en üstteki 3 sırasını savurur. 20 blok yerleştirince yeniden dolar.</li>
             </ul>
+            <!-- NS4-44: Virüs Avı modu -->
+            <h3>Virüs Avı</h3>
+            <ul class="map">
+              <li>
+                Yukarıdan iki parçalı kapsüller düşer. Renk fark etmez: yan yana ya da üst üste 4 dolu kare dizince
+                patlar.
+              </li>
+              <li>
+                Virüsleri bu dörtlülerin içine al. Hepsi gidince bölüm biter; süre bitmeden yetiş. Toplam 20 bölüm var.
+              </li>
+            </ul>
+            <button class="btn ghost" id="b-virus-tutorial" type="button">Virüs Avı öğreticisini izle</button>
           </div>
           <!-- geri dönüş (Tamam) ve oyun başlatan eylem (Öğreticiyle oyna) ayrı ağırlıkta -->
           <div class="sheet-actions row2">
@@ -470,11 +482,16 @@
         <!-- NS4-16 hiyerarşi: yeni rekor → skor/drenaj/rekor → rozetler → sağlık yönlendirmesi → Tekrar oyna → Ana menü -->
         <div class="sheet sheet-over" tabindex="-1" data-focus style="outline: none">
           <div class="over-summary">
+            <!-- NS4-44: Virüs Avı oyun sonunda Doktor Elif (oops / alkış) -->
+            <div id="over-elif" class="over-elif virus-only" aria-hidden="true"></div>
             <div class="newbest" id="newbest">Yeni rekor</div>
             <h2 id="o-title">Sinüslerin tamamen tıkandı</h2>
             <div class="stat-grid">
               <div class="stat-main"><b id="o-score">0</b><span>Puan</span></div>
-              <div><b id="o-lines">0</b><span>Satır</span></div>
+              <div>
+                <b id="o-lines">0</b><span class="classic-only">Satır</span><span class="virus-only">Virüs</span>
+              </div>
+              <div class="virus-only"><b id="o-level">1</b><span>Bölüm</span></div>
               <div><b id="o-best">0</b><span>Rekor</span></div>
             </div>
             <div class="badges" id="o-badges" role="list"></div>

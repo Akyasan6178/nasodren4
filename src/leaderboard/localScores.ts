@@ -104,6 +104,11 @@ export function normalizeLocalScores(raw: unknown, ruleset: string = RULESET): L
 }
 
 /** Güncel kural setinin listesi (Skorlar ekranı ve oyun sonu). */
+/** NS4-44: verilen kural setinin yerel listesi (ör. Virüs Avı: 'virus-avi-v1'). */
+export function loadLocalScoresFor(ruleset: string): LocalScore[] {
+  return normalizeLocalScores(store.get(LOCAL_SCORES_KEY, null), ruleset);
+}
+
 export function loadLocalScores(): LocalScore[] {
   return normalizeLocalScores(store.get(LOCAL_SCORES_KEY, null));
 }

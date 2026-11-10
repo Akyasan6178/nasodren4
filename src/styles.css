@@ -3094,6 +3094,9 @@ input:focus-visible {
 /* NS4-44 · Virüs Avı: mod görünürlüğü */
 #app[data-mode='virus']
   :is(
+    .classic-only,
+    #submit-score,
+    #o-badges,
     #meter,
     #hold-bg,
     #lbl-hold,
@@ -3115,7 +3118,7 @@ input:focus-visible {
   ) {
   display: none !important;
 }
-#app:not([data-mode='virus']) :is(#virus-lens, #virus-card, .virus-row, #virus-tut) {
+#app:not([data-mode='virus']) :is(#virus-lens, #virus-card, .virus-row, #virus-tut, .virus-only) {
   display: none !important;
 }
 
@@ -3302,4 +3305,15 @@ input:focus-visible {
   font-weight: 700;
   font-size: 15px;
   color: var(--color-fresh-strong);
+}
+
+/* NS4-44 · Virüs Avı oyun sonu: Elif özetin üstünde */
+.over-elif {
+  width: 88px;
+  margin: 0 auto 4px;
+}
+.over-elif svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }

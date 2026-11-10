@@ -462,6 +462,17 @@ export class Sound {
       this.duck(0.45, 0.9);
     }
   }
+  /**
+   * NS4-44 · Virüs Avı: virüs patlaması. Kısa, tatlı "pop" (yukarı kayan sinüs) + parlak tık; zincir büyüdükçe
+   * pentatonik basamakla yükselen ek notalar (en çok 4). Toplam < 0,6 sn.
+   */
+  virusPop(chain: number) {
+    const n = Math.max(1, Math.min(4, Math.floor(chain)));
+    this.tone(380, 0.09, 'sine', 0.09, 900);
+    this.tone(1900, 0.03, 'triangle', 0.03, 0, 0.01);
+    const steps = [659, 784, 880, 1047];
+    for (let i = 0; i < n; i++) this.tone(steps[i] ?? 1047, 0.12, 'triangle', 0.04, 0, 0.06 + i * 0.07);
+  }
   /** Sıklamen: en yumuşak ve ferah an — uzun, düşük kazançlı nefes, seyrek damlalar, yavaş açılan akor. */
   cyc() {
     this.breath(1.4, 220, 1800, 0.07, 0.7);

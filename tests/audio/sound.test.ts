@@ -402,3 +402,26 @@ describe('NS4-22: büyük açılma anı', () => {
     expect(span(() => s.relief('allclear'))).toBeGreaterThan(span(() => s.relief('tetris')));
   });
 });
+
+describe('NS4-44: virüs patlaması', () => {
+  it('kısa (< 0,6 sn) ve zincirle zenginleşir; ses kapalıyken çalmaz', () => {
+    const { ctx } = installFakeAudio();
+    const s = new Sound(settings());
+    s.unlock();
+    const c = ctx();
+    const take = (f: () => void) => {
+      const n = c.sources().length;
+      f();
+      return c.sources().slice(n);
+    };
+    const one = take(() => s.virusPop(1));
+    const four = take(() => s.virusPop(4));
+    expect(one.length).toBeGreaterThan(0);
+    expect(four.length).toBeGreaterThan(one.length);
+    const span = Math.max(...one.map((x) => x.stopped!)) - Math.min(...one.map((x) => x.started!));
+    expect(span).toBeLessThan(0.6);
+    const off = new Sound({ sound: false, music: false });
+    off.unlock();
+    expect(() => off.virusPop(2)).not.toThrow();
+  });
+});
