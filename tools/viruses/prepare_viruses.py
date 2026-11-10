@@ -18,6 +18,8 @@ from PIL import Image
 from scipy import ndimage
 from scipy.spatial import Delaunay
 
+from sheet import make_sheet
+
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "art" / "virusler"  # kullanıcının kaynak görselleri (build'e girmez)
 OUT = ROOT / "public" / "images" / "virus"
@@ -245,6 +247,10 @@ def main() -> None:
         img.save(OUT / f"virus-{i}.webp", "WEBP", quality=82, method=6)
         outs.append(img)
         print(f"virus-{i}.webp", (OUT / f"virus-{i}.webp").stat().st_size, "bayt")
+        # NS4-44 ek: kollu bacaklı 6 karelik animasyon şeridi
+        sheet = make_sheet(img)
+        sheet.save(OUT / f"virus-{i}-sheet.webp", "WEBP", quality=80, method=6)
+        print(f"virus-{i}-sheet.webp", (OUT / f"virus-{i}-sheet.webp").stat().st_size, "bayt")
     if args.preview:
         preview(outs, args.preview)
         print("önizleme:", args.preview)

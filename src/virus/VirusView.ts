@@ -12,13 +12,25 @@ import { COLS, VIS } from '../config/gameConfig';
 import { PETAL_TINTS } from '../rendering/effects';
 import { createDropCanvas } from '../rendering/textures';
 import type { Layout } from '../types/layout';
-import { CAPSULE_COLORS, createCapsuleHalfCanvas, createVirusFallbackCanvas, loadVirusArt } from './art';
+import {
+  CAPSULE_COLORS,
+  VIRUS_BODY_RATIO,
+  VIRUS_FLINCH,
+  VIRUS_FRAME_PX,
+  VIRUS_FRAMES,
+  createCapsuleHalfCanvas,
+  createVirusFallbackCanvas,
+  loadVirusArt,
+  virusFrame,
+} from './art';
 import { VIRUS_CFG } from './config';
 import { CAPSULE, VIRUS } from './rules';
 import { capsuleCells, type VirusGame } from './VirusGame';
 
-/** Virüs görseli dikenleriyle birlikte hücreden biraz taşar (gövde hücreyi doldursun). */
-const VIRUS_SCALE = 1.18;
+/** Virüs gövdesi dikenleriyle birlikte hücreden biraz taşar; kollu bacaklı karede gövde oranı VIRUS_BODY_RATIO. */
+const VIRUS_SCALE = 1.08;
+/** Şeritte gövde merkezinin kare içindeki dikey konumu (kalanı bacaklar). */
+const VIRUS_ANCHOR_Y = (0.03 * 192 + 64) / 192;
 const SIDES = [-1, 0, 1, 2, 3] as const;
 type Side = (typeof SIDES)[number];
 /** a hücresinden b'ye yön (rot'a göre); VirusGame ile aynı kod. */
@@ -43,7 +55,9 @@ export class VirusView {
   private readonly game: VirusGame;
   private readonly app: PIXI.Application<HTMLCanvasElement>;
   private capTex: PIXI.Texture[][] = [];
-  private virusTex: PIXI.Texture[] = [];
+  /** [tür][kare]: kollu bacaklı animasyon kareleri (yedek çizimde tek kare). */
+  private virusTex: PIXI.Texture[][] = [];
+  private animT = 0;
   private dotTex: PIXI.Texture | null = null;
   private art: HTMLImageElement[] | null = null;
   private cellPx = 0;
@@ -102,11 +116,20 @@ export class VirusView {
     const px = Math.max(8, Math.round(cell * res));
     this.cellPx = cell;
     for (const row of this.capTex) for (const t of row) t.destroy(true);
-    for (const t of this.virusTex) t.destroy(true);
+    for (const row of this.virusTex) for (const t of row) t.destroy(false);
     this.capTex = CAPSULE_COLORS.map((c) =>
       SIDES.map((side) => PIXI.Texture.from(createCapsuleHalfCanvas(px, c, side))),
     );
-    this.virusTex = [0, 1, 2].map((t) => PIXI.Texture.from(this.art?.[t] ?? createVirusFallbackCanvas(px, t)));
+    const art = this.art;
+    this.virusTex = [0, 1, 2].map((t) => {
+      const img = art?.[t];
+      if (!img) return [PIXI.Texture.from(createVirusFallbackCanvas(px, t))];
+      const base = PIXI.BaseTexture.from(img);
+      return Array.from(
+        { length: VIRUS_FRAMES },
+        (_, k) => new PIXI.Texture(base, new PIXI.Rectangle(k * VIRUS_FRAME_PX, 0, VIRUS_FRAME_PX, VIRUS_FRAME_PX)),
+      );
+    });
     this.dotTex ??= PIXI.Texture.from(createDropCanvas(cell, res));
   }
 
@@ -132,13 +155,17 @@ export class VirusView {
         const tex = this.capsuleTex(g.tint[i] ?? 0, (g.link[i] ?? -1) as Side);
         if (tex) s.texture = tex;
       } else if (kind === VIRUS) {
-        const tex = this.virusTex[g.tint[i] ?? 0];
+        const frames = this.virusTex[g.tint[i] ?? 0] ?? [];
+        const f = fading !== undefined ? VIRUS_FLINCH : virusFrame(this.animT, (i * 7) % 13, this.reducedMotion);
+        const tex = frames[f] ?? frames[0];
         if (tex) s.texture = tex;
-      }
+        s.anchor.set(0.5, frames.length > 1 ? VIRUS_ANCHOR_Y : 0.5);
+      } else s.anchor.set(0.5);
       s.visible = kind === CAPSULE || kind === VIRUS;
       if (!s.visible) continue;
       const k = fading === undefined ? 0 : 1 - fading / VIRUS_CFG.clearMs;
-      const size = L.cell * (kind === VIRUS ? VIRUS_SCALE : 1) * (1 + k * 0.25);
+      const animated = kind === VIRUS && (this.virusTex[g.tint[i] ?? 0]?.length ?? 0) > 1;
+      const size = L.cell * (kind === VIRUS ? VIRUS_SCALE / (animated ? VIRUS_BODY_RATIO : 1) : 1) * (1 + k * 0.25);
       this.place(s, i % COLS, Math.floor(i / COLS), size);
       s.alpha = (1 - k) * (this.over ? 0.55 : 1);
     }
@@ -196,6 +223,7 @@ export class VirusView {
   }
 
   update(dt: number): void {
+    this.animT += dt;
     for (const [i, t] of this.clearing) {
       const left = t - dt;
       if (left <= 0) this.clearing.delete(i);
