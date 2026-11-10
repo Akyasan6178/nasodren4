@@ -34,7 +34,7 @@ import { createNet } from '../multiplayer/net';
 import { createVersus, type Versus } from '../multiplayer/versus';
 import { createSinusHud } from '../ui/sinusHud';
 import { computeLayout, versusLayout } from '../rendering/layout';
-import { loadLocalScores, updateLocalScore } from '../leaderboard/localScores';
+import { loadLocalScores, loadLocalScoresFor, updateLocalScore } from '../leaderboard/localScores';
 import { loadNickname, saveNickname } from '../leaderboard/nickname';
 import { createScoresView } from '../ui/scoresView';
 import { createSubmitPanel } from '../ui/submitScore';
@@ -48,7 +48,7 @@ import { VirusView } from '../virus/VirusView';
 import { createVirusHud } from '../virus/hud';
 import { VirusTutorial, virusTutorialStore } from '../virus/tutorial';
 import { createVirusTutorialView } from '../virus/tutorialView';
-import { createVirusSession, type VirusSession } from '../virus/session';
+import { VIRUS_RULESET, createVirusSession, type VirusSession } from '../virus/session';
 import { createModeRouter } from '../virus/modeRouter';
 
 export function bootstrap(): void {
@@ -150,6 +150,7 @@ export function bootstrap(): void {
   const scoresView = createScoresView({
     client: leaderboard,
     loadLocal: loadLocalScores,
+    loadLocalVirus: () => loadLocalScoresFor(VIRUS_RULESET),
     mine: () => lastSubmitted,
   });
   const lifecycle = createLifecycle({

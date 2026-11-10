@@ -588,6 +588,11 @@
               </button>
             </div>
             <div class="tab-panel" role="tabpanel" id="panel-local" aria-labelledby="tab-local" tabindex="0">
+              <!-- NS4-44: Klasik / Virüs Avı yerel listeleri (Global yalnızca klasik) -->
+              <div class="seg" role="group" aria-label="Oyun modu">
+                <button class="seg-btn" id="seg-classic" type="button" aria-pressed="true">Klasik</button>
+                <button class="seg-btn" id="seg-virus" type="button" aria-pressed="false">Virüs Avı</button>
+              </div>
               <table class="score-table" id="table-local">
                 <thead>
                   <tr>
@@ -600,6 +605,18 @@
                 <tbody></tbody>
               </table>
               <p class="score-empty" id="local-empty" hidden>Henüz kayıtlı oyun yok</p>
+              <table class="score-table" id="table-virus" hidden>
+                <thead>
+                  <tr>
+                    <th scope="col">Sıra</th>
+                    <th scope="col">Takma ad</th>
+                    <th scope="col">Skor</th>
+                    <th scope="col">Virüs</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+              <p class="score-empty" id="virus-empty" hidden>Henüz Virüs Avı oyunu yok</p>
             </div>
             <div class="tab-panel" role="tabpanel" id="panel-global" aria-labelledby="tab-global" tabindex="0" hidden>
               <table class="score-table" id="table-global" hidden>

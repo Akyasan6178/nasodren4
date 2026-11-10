@@ -3317,3 +3317,32 @@ input:focus-visible {
   width: 100%;
   height: auto;
 }
+
+/* NS4-44 · Skorlar: Klasik / Virüs Avı seçici (Yerel panel) */
+.seg {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+.seg-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text-muted);
+  font: 600 14px var(--font-display);
+  cursor: pointer;
+}
+.seg-btn[aria-pressed='true'] {
+  background: var(--color-surface-strong);
+  color: var(--color-text);
+  box-shadow: 0 2px 6px -3px color-mix(in srgb, var(--color-board) 50%, transparent);
+}
+.seg-btn:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}

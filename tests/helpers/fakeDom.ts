@@ -322,7 +322,10 @@ export function installFakeDom(): FakeDom {
     byId.set(id, t);
     scores?.appendChild(t);
   }
-  for (const id of ['table-local', 'table-global']) {
+  // NS4-44: Yerel panelde Klasik / Virüs Avı seçici ve Virüs Avı tablosu
+  for (const id of ['seg-classic', 'seg-virus']) byId.set(id, new FakeButton(id));
+  byId.set('virus-empty', new FakeElement('virus-empty'));
+  for (const id of ['table-local', 'table-global', 'table-virus']) {
     const t = new FakeElement(id);
     const body = new FakeElement();
     body.tag = 'tbody';

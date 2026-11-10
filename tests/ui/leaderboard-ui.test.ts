@@ -45,10 +45,43 @@ const rows = (id: string) =>
 const flush = () => vi.advanceTimersByTimeAsync(0);
 
 describe('Skorlar ekranı', () => {
-  async function view(local: LocalScore[], client = fakeClient().c, mine: GlobalEntry | null = null) {
+  async function view(
+    local: LocalScore[],
+    client = fakeClient().c,
+    mine: GlobalEntry | null = null,
+    virus: LocalScore[] = [],
+  ) {
     const { createScoresView } = await import('../../src/ui/scoresView');
-    return createScoresView({ client, loadLocal: () => local, mine: () => mine });
+    return createScoresView({ client, loadLocal: () => local, loadLocalVirus: () => virus, mine: () => mine });
   }
+  it('NS4-44 Yerel: Klasik / Virüs Avı seçici; Virüs Avı listesi ayrı tabloda, Global sekmesi değişmez', async () => {
+    const v = await view([entry(1, 5000, 'Klasik')], fakeClient().c, null, [entry(2, 777, 'Avcı')]);
+    v.open();
+    expect(dom.el('table-local').hidden).toBe(false);
+    expect(dom.el('table-virus').hidden).toBe(true);
+    expect(dom.el('seg-classic').getAttribute('aria-pressed')).toBe('true');
+    dom.el('seg-virus').click();
+    expect(dom.el('seg-virus').getAttribute('aria-pressed')).toBe('true');
+    expect(dom.el('seg-classic').getAttribute('aria-pressed')).toBe('false');
+    expect(dom.el('table-local').hidden).toBe(true);
+    expect(dom.el('table-virus').hidden).toBe(false);
+    expect(rows('table-virus')).toEqual([['1', 'Avcı', '777', '12']]);
+    dom.el('seg-classic').click();
+    expect(dom.el('table-local').hidden).toBe(false);
+    // ekran yeniden açılınca Klasik'e döner
+    dom.el('seg-virus').click();
+    v.open();
+    expect(dom.el('table-virus').hidden).toBe(true);
+    expect(v.selected()).toBe('local');
+  });
+  it('NS4-44 Virüs Avı listesi boşsa boş durum metni', async () => {
+    const v = await view([entry(1, 5000)], fakeClient().c, null, []);
+    v.open();
+    dom.el('seg-virus').click();
+    expect(dom.el('table-virus').hidden).toBe(true);
+    expect(dom.el('virus-empty').hidden).toBe(false);
+    expect(dom.el('local-empty').hidden).toBe(true);
+  });
   it('Yerel: sıra, takma ad (yoksa —), skor, drenaj; en çok 10 satır; boş liste durumu', async () => {
     const v = await view([entry(1, 12345, 'Ferah'), entry(2, 900)]);
     v.open();
@@ -409,11 +442,16 @@ describe('Skorlar işaretlemesi ve responsive tablo (statik)', () => {
     expect(s).toMatch(/role="tab"\s+id="tab-global"\s+aria-controls="panel-global"\s+aria-selected="false"/);
     expect(s).toMatch(/role="tabpanel" id="panel-local" aria-labelledby="tab-local"/);
     expect(s).toMatch(/role="tabpanel" id="panel-global" aria-labelledby="tab-global"/);
+    // NS4-44: Yerel panelde Virüs Avı tablosu (son sütun "Virüs")
     expect([...s.matchAll(/<th scope="col">([^<]+)<\/th>/g)].map((m) => m[1])).toEqual([
       'Sıra',
       'Takma ad',
       'Skor',
       'Satır',
+      'Sıra',
+      'Takma ad',
+      'Skor',
+      'Virüs',
       'Sıra',
       'Takma ad',
       'Skor',
