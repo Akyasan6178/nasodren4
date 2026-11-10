@@ -72,12 +72,12 @@ function hexToRgb(h: string) {
   const n = parseInt(h.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
-function shade(h: string, amt: number) {
+export function shade(h: string, amt: number) {
   const [r, g, b] = hexToRgb(h);
   const f = (c: number) => Math.round(amt >= 0 ? c + (255 - c) * amt : c * (1 + amt));
   return `rgb(${f(r)},${f(g)},${f(b)})`;
 }
-function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+export function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.arcTo(x + w, y, x + w, y + h, r);
@@ -88,7 +88,7 @@ function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: n
 }
 
 /** Yeni canvas için 2D bağlam. Tarayıcı vermezse açık hata (orijinalde ilk kullanımda TypeError oluşurdu). */
-function context2d(cv: HTMLCanvasElement): CanvasRenderingContext2D {
+export function context2d(cv: HTMLCanvasElement): CanvasRenderingContext2D {
   const ctx = cv.getContext('2d');
   if (!ctx) throw new Error('Canvas 2D bağlamı oluşturulamadı');
   return ctx;
