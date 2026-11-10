@@ -46,6 +46,7 @@ Yalnızca development: `__fn.virus.setTime(ms)`, `almostWin()`, `level(n)`, `sta
 ## 6. Hukuk / içerik inceleme listesine eklenenler
 
 - **Doktor figürü** (Doktor Elif) ve bütün cümleleri (`VIRUS_TUT_COPY`, `VIRUS_TUT_CHEER`): ilaç tanıtımında sağlık mesleği mensubu kullanımı riski. Elif ürün, tedavi ya da iyileşmeden söz etmez; itiraz olursa `NARRATOR` başka bir anlatıcıyla değiştirilir.
+- **Oyun sonu eşleşmesi:** Elif (oops/alkış) oyun sonu ekranında sinüzit sağlık metni ve "Rahat nefes rehberini aç" bağlantısıyla aynı kartta. Doktorun portala yönlendirdiği izlenimi verebilir; karar kullanıcıda (Elif kaldırılır ya da sağlık kutusu bu modda gizlenir).
 - "Virüs Avı" adı, lens ve kart metinleri, "Bölüm temiz!", "Süre doldu", "Tahta doldu", "Bütün virüsler temiz!", "Nasıl oynanır"daki Virüs Avı maddeleri.
 
 ## 7. Doğrulama

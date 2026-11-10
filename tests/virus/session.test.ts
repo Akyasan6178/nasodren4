@@ -180,3 +180,30 @@ describe('mod yönlendirme', () => {
     expect(session.getState()).toBe('playing');
   });
 });
+
+describe('gözden geçirme düzeltmeleri', () => {
+  it('final (complete) zaferinde tahta soluklaşmaz; süre bitiminde soluklaşır', async () => {
+    mem.set('fn_virus_tutorial', '{"done":true}');
+    const { router, game, rules, step, vview } = await load();
+    router.startVirus();
+    game.startLevel(20);
+    lastVirus(game, rules);
+    game.hardDrop();
+    step(2200);
+    expect(vview.onGameOver).not.toHaveBeenCalled();
+    router.again();
+    game.timeLeftMs = 10;
+    step(32);
+    expect(vview.onGameOver).toHaveBeenCalledTimes(1);
+  });
+  it('Virüs Avı → Ana menü: görünüm klasiğe döner (çok oyunculu geri sayımında eski tahta görünmez)', async () => {
+    mem.set('fn_virus_tutorial', '{"done":true}');
+    const { router, vview, cview } = await load();
+    router.startVirus();
+    router.toMenu();
+    expect(router.mode()).toBe('classic');
+    expect(dom.el('app').dataset['mode']).toBe('classic');
+    expect(vview.root.visible).toBe(false);
+    expect(cview.root.visible).toBe(true);
+  });
+});

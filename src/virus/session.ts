@@ -185,9 +185,10 @@ export function createVirusSession(deps: VirusSessionDeps): VirusSession {
   function onGameOver(reason: VirusOverReason) {
     if (state !== 'playing' && state !== 'paused') return;
     state = 'over';
-    view.onGameOver();
+    // final zaferi yenilgi değildir: tahta soluklaşmaz (klasik final ile aynı)
     if (reason === 'complete') sound.level();
     else {
+      view.onGameOver();
       sound.over();
       buzz(HAPTIC.over);
     }

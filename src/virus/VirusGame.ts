@@ -106,6 +106,8 @@ export class VirusGame {
   private gravT = 0;
   private lockT = 0;
   private lockResets = 0;
+  /** Kapsülün ulaştığı en alt sıra: yeni bir alt sıraya inince kilit süresi ve sıfırlama hakkı yenilenir (klasikle aynı). */
+  private lowestY = 0;
   private phase: 'clearing' | 'falling' = 'clearing';
   private phaseT = 0;
   private pending: number[] = [];
@@ -210,6 +212,7 @@ export class VirusGame {
     if (this.state !== 'play' || !c || !this.fits(c.x, c.y + 1, c.rot)) return false;
     c.y++;
     this.gravT = 0;
+    this.descended();
     return true;
   }
   hardDrop(): void {
@@ -274,7 +277,17 @@ export class VirusGame {
     const c = this.cap;
     return !!c && !this.fits(c.x, c.y + 1, c.rot);
   }
+  /** Kapsül bir sıra indi: yeni en alt sıraysa kilit sayacı ve sıfırlama hakkı baştan. */
+  private descended(): void {
+    const c = this.cap;
+    if (c && c.y > this.lowestY) {
+      this.lowestY = c.y;
+      this.lockT = 0;
+      this.lockResets = 0;
+    }
+  }
   private onMoved(): void {
+    this.descended();
     if (this.grounded() && this.lockResets < CFG.maxLockResets) {
       this.lockT = 0;
       this.lockResets++;
@@ -286,6 +299,7 @@ export class VirusGame {
     this.gravT = 0;
     this.lockT = 0;
     this.lockResets = 0;
+    this.lowestY = 0;
     if (!this.fits(4, 0, 0)) {
       if (this.tutorial) {
         this.clearCapsules();
@@ -304,12 +318,14 @@ export class VirusGame {
       if (this.lockT >= CFG.lockDelay) this.lock();
       return;
     }
+    this.lockT = 0; // zeminden ayrıldı (klasikle aynı)
     this.gravT += dt;
     const g = this.gravityMs();
     while (this.gravT >= g) {
       this.gravT -= g;
       if (!this.fits(c.x, c.y + 1, c.rot)) break;
       c.y++;
+      this.descended();
     }
   }
   private lock(): void {

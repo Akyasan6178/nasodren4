@@ -57,7 +57,12 @@ export function createModeRouter(d: ModeRouterDeps): ModeRouter {
     prepareClassic: () => apply('classic'),
     startVirus,
     again: () => (mode === 'virus' ? startVirus() : startClassic()),
-    toMenu: () => (mode === 'virus' ? d.session.toMenu() : d.lifecycle.toMenu()),
+    toMenu: () => {
+      if (mode !== 'virus') return d.lifecycle.toMenu();
+      d.session.toMenu();
+      // menü = klasik görünüm (çok oyunculu geri sayımında eski virüs tahtası görünmesin)
+      apply('classic');
+    },
     pause: () => (mode === 'virus' ? d.session.pause() : d.lifecycle.pause()),
     resume: () => (mode === 'virus' ? d.session.resume() : d.lifecycle.resume()),
   };

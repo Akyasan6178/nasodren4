@@ -67,7 +67,7 @@ Kullanıcı geri bildirimi (2026-10-26): "Bulut mantığını herkes anlayabilir
    - "Parlayan boşlukları doldur, bulutçukları uçur", "Bulutçuk uçtu! Hepsini uçur, sinüs açılsın.", "%… açık" (NS4-30);
    - harita kartı ("Sıradaki: …", "Sırada: final"), final ekranı ve "Bitir" sonrası oyun sonu başlığı "Bütün sinüsler açık!" (NS4-31).
 
-   - NS4-44: **Doktor Elif figürü** (ilaç tanıtımında sağlık mesleği mensubu kullanımı) ve bütün cümleleri; "Virüs Avı" adı; lens/kart metinleri; "Bölüm temiz!", "Süre doldu", "Tahta doldu", "Bütün virüsler temiz!"; Nasıl oynanır'daki Virüs Avı maddeleri (`src/virus/copy.ts`). İtiraz olursa anlatıcı `NARRATOR` (`src/virus/elif.ts`) üzerinden değiştirilir.
+   - NS4-44: **Doktor Elif figürü** (ilaç tanıtımında sağlık mesleği mensubu kullanımı) ve bütün cümleleri; "Virüs Avı" adı; lens/kart metinleri; "Bölüm temiz!", "Süre doldu", "Tahta doldu", "Bütün virüsler temiz!"; Nasıl oynanır'daki Virüs Avı maddeleri (`src/virus/copy.ts`). İtiraz olursa anlatıcı `NARRATOR` (`src/virus/elif.ts`) üzerinden değiştirilir. **Ayrıca:** Virüs Avı oyun sonu ekranında Elif, sinüzit sağlık metni ve "Rahat nefes rehberini aç" bağlantısıyla aynı kartta görünüyor; doktorun portala yönlendirdiği izlenimi verebilir. Gerekirse Elif bu ekrandan kaldırılır ya da sağlık kutusu bu modda gizlenir (kullanıcı kararı bekliyor).
 
    Kayıt: `src/content/health.ts`; denetim: `docs/NS4-19-CONTENT-SAFETY-AUDIT.md`.
 

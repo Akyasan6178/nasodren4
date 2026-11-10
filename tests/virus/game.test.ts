@@ -224,3 +224,39 @@ describe('öğretici tahtası', () => {
     expect(g.grid.kind[at(7, 18)]).toBe(VIRUS);
   });
 });
+
+describe('kilit gecikmesi (klasikle aynı davranış)', () => {
+  it('çıkıntıda beklerken biriken kilit süresi, kayıp düşünce yeni zeminde sıfırdan başlar', () => {
+    const g = new VirusGame();
+    g.reset({ seed: 1 });
+    clearGrid(g.grid);
+    put(g.grid, 9, 10, VIRUS);
+    put(g.grid, 4, 5, VIRUS);
+    g.cap = { x: 4, y: 4, rot: 0, a: 0, b: 1 };
+    g.update(400); // çıkıntıda (virüsün üstünde) 400 ms bekledi
+    expect(g.cap).not.toBeNull();
+    expect(g.move(1)).toBe(true);
+    expect(g.move(1)).toBe(true); // boş sütunların üstüne kaydı
+    while (g.softStep());
+    expect(g.cap?.y).toBe(19);
+    g.update(450);
+    expect(g.cap).toMatchObject({ x: 6, y: 19 }); // hâlâ aynı kapsül, ayarlanabilir
+    g.update(100);
+    expect(g.cap).toMatchObject({ x: 4, y: 0 }); // 500 ms dolunca kilitlendi, yenisi doğdu
+  });
+  it('yeni bir alt sıraya inince hareket sıfırlama hakkı yenilenir', () => {
+    const g = new VirusGame();
+    g.reset({ seed: 1 });
+    clearGrid(g.grid);
+    put(g.grid, 9, 10, VIRUS);
+    put(g.grid, 4, 5, VIRUS);
+    g.cap = { x: 3, y: 4, rot: 0, a: 0, b: 1 };
+    for (let i = 0; i < 20; i++) g.move(i % 2 === 0 ? 1 : -1); // çıkıntıda sıfırlama hakkını tüketti
+    g.cap.x = 6;
+    while (g.softStep());
+    g.update(400);
+    expect(g.move(1)).toBe(true);
+    g.update(400);
+    expect(g.cap).toMatchObject({ x: 7, y: 19 }); // hareket kilit süresini yeniden başlattı
+  });
+});
