@@ -254,6 +254,11 @@ const ELEMENT_IDS = [
   'vt-text',
   'o-level',
   'over-elif',
+  // NS4-44 ek: beher, damlalık, yan Elif
+  'virus-beaker',
+  'virus-dropper',
+  'virus-elif-side',
+  'stats',
 ];
 /** Ekranların odaklanabilir çocukları (index.html sırasıyla; ilk buton ekran açılınca odak alır). */
 const SCREEN_BUTTONS: Record<string, readonly string[]> = {

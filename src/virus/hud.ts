@@ -14,7 +14,14 @@ export type GameMode = 'classic' | 'virus';
 /** Lens: portrede Beklet paneli yeri (üst şerit, sol); yatayda sol sütunun üstü, skor kartına kadar. */
 export function lensRect(L: Layout): Rect {
   if (L.portrait) return L.hold;
-  return { x: L.hold.x, y: L.hold.y, w: L.hold.w, h: L.stats.y - L.hold.y - 8 };
+  // NS4-44 ek: yatayda sol sütun: üstte skor kartı, altında lens
+  const y = L.hold.y + L.stats.h + 12;
+  return { x: L.stats.x, y, w: L.stats.w, h: Math.min(L.stats.w, L.board.y + L.board.h - y) };
+}
+
+/** NS4-44 ek: Virüs Avı'nda skor kartı yatayda sol sütunun en üstüne çıkar (Beklet paneli bu modda yok). */
+export function statsRect(L: Layout): Rect {
+  return L.portrait ? L.stats : { x: L.stats.x, y: L.hold.y, w: L.stats.w, h: L.stats.h };
 }
 
 export function setMode(mode: GameMode): void {
@@ -44,6 +51,8 @@ export function createVirusHud(): VirusHud {
   let last = '';
   return {
     layout(L) {
+      // klasik yerleşimi (applyHudLayout) yalnızca Virüs Avı açıkken ezer; mod değişince yeniden yerleşim yapılır
+      if ($('app').dataset['mode'] === 'virus') place($('stats'), statsRect(L));
       place($('virus-lens'), lensRect(L));
       $('virus-lens').classList.toggle('compact', L.portrait);
       place($('virus-card'), L.cong);

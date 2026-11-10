@@ -3118,7 +3118,8 @@ input:focus-visible {
   ) {
   display: none !important;
 }
-#app:not([data-mode='virus']) :is(#virus-lens, #virus-card, .virus-row, #virus-tut, .virus-only) {
+#app:not([data-mode='virus'])
+  :is(#virus-lens, #virus-card, .virus-row, #virus-tut, .virus-only, #virus-beaker, #virus-dropper, #virus-elif-side) {
   display: none !important;
 }
 
@@ -3199,8 +3200,8 @@ input:focus-visible {
 }
 .lens-v b {
   position: absolute;
-  right: -6%;
-  bottom: -4%;
+  right: 6%;
+  top: 4%;
   min-width: 1.6em;
   padding: 0 0.35em;
   border-radius: var(--radius-pill);
@@ -3372,4 +3373,122 @@ input:focus-visible {
 .seg-btn:focus-visible {
   outline: 3px solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+/* NS4-44 ek · Laboratuvar beheri: tahta camın içinde; sinüs ağzı ve yumuşak hale yerine cam duvar */
+#app[data-mode='virus'] #board-bg {
+  border-radius: 6px 6px calc(var(--radius-board) * 1.6) calc(var(--radius-board) * 1.6);
+  box-shadow:
+    inset 0 0 28px 4px color-mix(in srgb, var(--color-board-deep) 70%, transparent),
+    var(--shadow-board);
+}
+#app[data-mode='virus'] #board-bg::after {
+  display: none;
+}
+.virus-beaker {
+  pointer-events: none;
+}
+.virus-beaker svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.virus-beaker .bk-glass {
+  fill: none;
+  stroke: var(--color-rim-inner);
+  stroke-width: 5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.virus-beaker .bk-edge {
+  fill: none;
+  stroke: var(--color-rim);
+  stroke-width: 11;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+.virus-beaker .bk-shine {
+  fill: none;
+  stroke: var(--color-on-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0.55;
+}
+.virus-beaker .bk-mark {
+  stroke: var(--color-rim-inner);
+  stroke-width: 2;
+  opacity: 0.75;
+}
+.virus-dropper {
+  pointer-events: none;
+  transform-origin: 50% 0%;
+}
+.virus-dropper svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.virus-dropper .dr-bulb {
+  fill: var(--color-cyclamen);
+  stroke: var(--color-cyclamen-strong);
+  stroke-width: 1.5;
+  transform-origin: 50% 85%;
+  transition: transform 120ms ease-out;
+}
+.virus-dropper .dr-collar {
+  fill: var(--color-cyclamen-strong);
+}
+.virus-dropper .dr-glass {
+  fill: color-mix(in srgb, var(--color-on-accent) 55%, transparent);
+  stroke: var(--color-rim-inner);
+  stroke-width: 1.5;
+}
+.virus-dropper .dr-shine {
+  stroke: var(--color-on-accent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  opacity: 0.8;
+}
+.virus-dropper.is-squeeze .dr-bulb {
+  transform: scale(1.12, 0.72);
+}
+.virus-elif-side {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+}
+.virus-elif-side[hidden] {
+  display: none;
+}
+.virus-elif-side svg {
+  display: block;
+  height: 100%;
+  max-width: 100%;
+  width: auto;
+}
+.virus-elif-side.is-panic svg {
+  animation: elif-panic 0.32s ease-in-out infinite;
+}
+@keyframes elif-panic {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  25% {
+    transform: translateX(-3%) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(3%) rotate(2deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .virus-elif-side.is-panic svg {
+    animation: none;
+  }
+  .virus-dropper .dr-bulb {
+    transition: none;
+  }
 }

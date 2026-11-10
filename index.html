@@ -65,6 +65,16 @@
             <b id="cong-n" class="cong-n">%0</b>
             <span class="cong-bar"><i id="cong-fill"></i></span>
           </div>
+          <!-- NS4-44 ek: laboratuvar beheri çerçevesi ve tahtanın üstündeki damlalık (yalnızca virüs modunda) -->
+          <div id="virus-beaker" class="abs virus-beaker" aria-hidden="true"></div>
+          <div id="virus-dropper" class="abs virus-dropper" aria-hidden="true">
+            <svg viewBox="0 0 40 60" focusable="false">
+              <path class="dr-bulb" d="M8 20C6 8 13 2 20 2s14 6 12 18Z" />
+              <rect class="dr-collar" x="7" y="18" width="26" height="7" rx="3" />
+              <path class="dr-glass" d="M13 25h14l-3 26q-4 7-8 0Z" />
+              <path class="dr-shine" d="M16 28l-1 18" />
+            </svg>
+          </div>
           <!-- NS4-44: Virüs Avı lensi (üç tür, kalan sayıları) ve süre / kalan virüs kartı (yalnızca virüs modunda) -->
           <div id="virus-lens" class="abs virus-lens" role="img" aria-label="Kalan virüsler">
             <div class="lens-glass">
@@ -209,6 +219,8 @@
               <rect x="14" y="5" width="4" height="14" rx="1.5" />
             </svg>
           </button>
+          <!-- NS4-44 ek: tahtanın yanındaki Doktor Elif (kapsül bırakır, sevinir, telaşlanır; öğreticide gizli) -->
+          <div id="virus-elif-side" class="abs virus-elif-side" aria-hidden="true" hidden></div>
           <!-- NS4-12: ilk oyun öğreticisi (oyun alanını kapatmayan kart; yalnızca butonlar tıklanabilir) -->
           <div id="tutorial" class="tutorial" hidden>
             <div class="tut-head">

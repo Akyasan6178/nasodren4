@@ -38,10 +38,22 @@ describe('lensRect', () => {
     const L = computeLayout(390, 844);
     expect(hud.lensRect(L)).toEqual(L.hold);
   });
-  it('yatayda sol sütunun üstü, skor kartına kadar', async () => {
+  it('NS4-44 ek: yatayda sol sütunda skor kartının altında', async () => {
     const { hud } = await load();
     const L = computeLayout(1366, 768);
-    expect(hud.lensRect(L)).toEqual({ x: L.hold.x, y: L.hold.y, w: L.hold.w, h: L.stats.y - L.hold.y - 8 });
+    const y = L.hold.y + L.stats.h + 12;
+    expect(hud.statsRect(L)).toEqual({ x: L.stats.x, y: L.hold.y, w: L.stats.w, h: L.stats.h });
+    expect(hud.lensRect(L)).toEqual({
+      x: L.stats.x,
+      y,
+      w: L.stats.w,
+      h: Math.min(L.stats.w, L.board.y + L.board.h - y),
+    });
+  });
+  it('portrede skor kartı yerinde kalır', async () => {
+    const { hud } = await load();
+    const L = computeLayout(390, 844);
+    expect(hud.statsRect(L)).toEqual(L.stats);
   });
 });
 

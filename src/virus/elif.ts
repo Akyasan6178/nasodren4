@@ -7,7 +7,7 @@
    dokunmadan başka bir anlatıcıya geçilebilir.
    ===================================================================== */
 
-export const ELIF_POSES = ['selam', 'goster', 'alkis', 'oops'] as const;
+export const ELIF_POSES = ['selam', 'goster', 'alkis', 'oops', 'bekle'] as const;
 export type ElifPose = (typeof ELIF_POSES)[number];
 
 /** Kol: omuzdan ele kalın, yuvarlak uçlu kol (önlük kolu) ve el. */
@@ -38,6 +38,8 @@ const ARMS: Readonly<Record<ElifPose, string>> = {
     arm('M140 178 Q134 200 108 198', hand(106, 194, 9)) +
     `<g class="elif-spark"><path d="M74 194h-9M126 194h9M77 182l-7-5M123 182l7-5"/></g>`,
   oops: ARM_LEFT_DOWN + arm('M140 178 Q158 152 136 134', hand(130, 128, 9)),
+  // NS4-44 ek: tahtanın yanında beklerken (iki kol aşağı)
+  bekle: ARM_LEFT_DOWN + arm('M140 178 Q150 204 144 224', hand(143, 228)),
 };
 
 const FACES: Readonly<Record<ElifPose, string>> = {
@@ -60,6 +62,11 @@ const FACES: Readonly<Record<ElifPose, string>> = {
     `<ellipse class="elif-eye-white" cx="118" cy="99" rx="9" ry="10"/><circle class="elif-eye" cx="118" cy="100" r="4.5"/><circle class="elif-eye-shine" cx="119.6" cy="98" r="1.6"/>` +
     `<path class="elif-brow" d="M73 80q9-7 18-2M109 78q9-5 18 2"/>` +
     `<ellipse class="elif-mouth" cx="100" cy="119" rx="5" ry="6"/>`,
+  bekle:
+    `<ellipse class="elif-eye" cx="82" cy="100" rx="7" ry="9"/><circle class="elif-eye-shine" cx="84.6" cy="96.4" r="2.6"/>` +
+    `<ellipse class="elif-eye" cx="118" cy="100" rx="7" ry="9"/><circle class="elif-eye-shine" cx="120.6" cy="96.4" r="2.6"/>` +
+    `<path class="elif-brow" d="M74 86q8-4 16-1M110 85q8-3 16 1"/>` +
+    `<path class="elif-line" d="M90 115q10 8 20 0"/>`,
 };
 
 const HEAD =

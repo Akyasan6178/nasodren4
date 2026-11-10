@@ -16,6 +16,8 @@ export interface ModeRouterDeps {
   readonly classicGame: Controls;
   readonly classicView: { readonly root: { visible: boolean } };
   readonly virusView: { readonly root: { visible: boolean } };
+  /** NS4-44 ek: mod değişti (HUD yeniden yerleşsin: Virüs Avı'nda skor kartı ve lens yer değiştirir). */
+  readonly onModeChange?: () => void;
 }
 
 export interface ModeRouter {
@@ -36,10 +38,12 @@ export interface ModeRouter {
 export function createModeRouter(d: ModeRouterDeps): ModeRouter {
   let mode: GameMode = 'classic';
   const apply = (m: GameMode) => {
+    const changed = m !== mode;
     mode = m;
     setMode(m);
     d.classicView.root.visible = m === 'classic';
     d.virusView.root.visible = m === 'virus';
+    if (changed) d.onModeChange?.();
   };
   const startClassic = () => {
     apply('classic');

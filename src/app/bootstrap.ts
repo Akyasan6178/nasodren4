@@ -50,6 +50,8 @@ import { VirusTutorial, virusTutorialStore } from '../virus/tutorial';
 import { createVirusTutorialView } from '../virus/tutorialView';
 import { VIRUS_RULESET, createVirusSession, type VirusSession } from '../virus/session';
 import { createModeRouter } from '../virus/modeRouter';
+import { createVirusStage } from '../virus/stage';
+import { VIRUS_CFG } from '../virus/config';
 
 export function bootstrap(): void {
   const stageEl = $('stage');
@@ -105,6 +107,7 @@ export function bootstrap(): void {
     applyHudLayout(L);
     tutorialView.layout(L);
     virusHud.layout(L);
+    virusStage.layout(L);
     virusTutView.layout(L);
     vview.layout(L);
     // NS4-13: yeniden yerleşimde süren dokunmatik jest iptal edilir (hücre ve tahta konumu değişti)
@@ -167,6 +170,9 @@ export function bootstrap(): void {
   // çok oyunculu: oda kodu ile 2–3 oyuncu (Supabase Realtime; tablo gerekmez)
   // NS4-44: Virüs Avı oturumu, Elif öğreticisi ve mod yönlendirici (ortak düğmeler ve girişler aktif moda gider)
   const virusHud = createVirusHud();
+  // NS4-44 ek: beher, damlalık ve tahtanın yanındaki Elif
+  const virusStage = createVirusStage();
+  vgame.on('spawn', () => virusStage.onSpawn());
   const virusTutView = createVirusTutorialView({ skip: () => virusTutorial.skip(), next: () => virusTutorial.next() });
   const virusTutorial = new VirusTutorial(vgame, virusTutView, virusTutorialStore, {
     mode: navigator.maxTouchPoints > 0 ? 'touch' : 'keyboard',
@@ -183,7 +189,14 @@ export function bootstrap(): void {
     hud: virusHud,
     tutorial: virusTutorial,
   });
-  const router = createModeRouter({ lifecycle, session, classicGame: game, classicView: view, virusView: vview });
+  const router = createModeRouter({
+    lifecycle,
+    session,
+    classicGame: game,
+    classicView: view,
+    virusView: vview,
+    onModeChange: queueLayout,
+  });
   // çok oyunculu tur her zaman klasik modda başlar
   const routedLifecycle = {
     ...lifecycle,
@@ -292,6 +305,11 @@ export function bootstrap(): void {
       if (session.getState() === 'playing') input.update(dt);
       session.update(dt);
       const playing = session.getState() === 'playing';
+      virusStage.sync({
+        tutorial: virusTutorial.isActive,
+        state: vgame.state,
+        warn: playing && !vgame.tutorial && vgame.timeLeftMs < VIRUS_CFG.warnMs,
+      });
       sound.setCongestion(playing ? vgame.fill() : 0);
       if (playing) sound.setMusicContext(Math.max(1, vgame.level), 0);
       return;
