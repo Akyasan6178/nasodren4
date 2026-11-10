@@ -16,6 +16,15 @@ export const VIRUS_ART_URLS = [1, 2, 3].map((n) => `${import.meta.env.BASE_URL}i
  * CSS ile kullanılır; tahtadaki virüsler sade görsellerdir (kullanıcı kararı, 2026-11-11).
  */
 
+/**
+ * NS4-44 ek (kullanıcı: "kapsülleri virüslerle aynı boyda yapalım"): virüs görseli hücrenin VIRUS_SCALE katı
+ * çizilir (dikenler komşulara biraz taşar); gövdesi görselin VIRUS_BODY_FRAC'ı kadardır. Kapsül kalınlığı
+ * (hücreye oranı) gövde çapıyla eşlenir; uzunlamasına yarılar eşine kadar uzanır.
+ */
+export const VIRUS_SCALE = 1.25;
+export const VIRUS_BODY_FRAC = 0.6;
+export const CAPSULE_THICKNESS = 0.74;
+
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
 /**
@@ -27,10 +36,11 @@ export function createCapsuleHalfCanvas(px: number, color: number, side: -1 | 0 
   cv.width = cv.height = px;
   const x = context2d(cv);
   const c = hex(color);
-  const ins = px * 0.06,
+  // kalınlık ekseninde (eşe dik) hücrenin CAPSULE_THICKNESS'i; uzun eksende yalnızca dış uçta aynı pay
+  const ins = (px * (1 - CAPSULE_THICKNESS)) / 2,
     w = px - ins * 2,
     R = w * 0.5,
-    r = px * 0.08;
+    r = px * 0.06;
   // köşeler: sol üst, sağ üst, sağ alt, sol alt
   const flat: readonly (readonly number[])[] = [
     [0, 1],

@@ -69,7 +69,7 @@ describe('VirusView', () => {
 });
 
 describe('tahtadaki virüsler sade (kollu bacaklı olanlar yalnızca lenste)', () => {
-  it('virüs hücresi tek kare, ortadan hizalı, hücrenin 1,18 katı', async () => {
+  it('virüs hücresi tek kare, ortadan hizalı, VIRUS_SCALE kadar', async () => {
     const { view, game, rules, L } = await setup();
     rules.clearGrid(game.grid);
     const i = 19 * COLS + 3;
@@ -78,7 +78,8 @@ describe('tahtadaki virüsler sade (kollu bacaklı olanlar yalnızca lenste)', (
     const s = view.cells[i];
     expect(s.anchor.x).toBe(0.5);
     expect(s.anchor.y).toBe(0.5);
-    expect(s.width).toBeCloseTo(L.cell * 1.18);
+    const { VIRUS_SCALE } = await import('../../src/virus/art');
+    expect(s.width).toBeCloseTo(L.cell * VIRUS_SCALE);
   });
   it('tahta görselleri sade virüs dosyalarından yüklenir', async () => {
     const art = await import('../../src/virus/art');
@@ -122,5 +123,14 @@ describe("sıradaki kapsül Elif'in parmağında; yeni kapsül damlalık üzerin
     view.update(16);
     expect(view.flight.every((s) => !s.visible)).toBe(true);
     expect(view.active.some((s) => s.visible && s.alpha === 1)).toBe(true);
+  });
+});
+
+describe('kapsül ve virüs aynı boyda (kullanıcı isteği)', () => {
+  it('kapsül kalınlığı virüs gövdesinin çapıyla neredeyse aynı (±%8)', async () => {
+    const { CAPSULE_THICKNESS, VIRUS_BODY_FRAC, VIRUS_SCALE } = await import('../../src/virus/art');
+    const body = VIRUS_BODY_FRAC * VIRUS_SCALE;
+    expect(Math.abs(CAPSULE_THICKNESS - body) / body).toBeLessThan(0.08);
+    expect(CAPSULE_THICKNESS).toBeLessThan(0.85);
   });
 });

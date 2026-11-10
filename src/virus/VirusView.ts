@@ -13,13 +13,11 @@ import { PETAL_TINTS } from '../rendering/effects';
 import { createDropCanvas } from '../rendering/textures';
 import type { Layout, Pt } from '../types/layout';
 import { FLIGHT_IN_MS, FLIGHT_OUT_MS } from './stage';
-import { CAPSULE_COLORS, createCapsuleHalfCanvas, createVirusFallbackCanvas, loadVirusArt } from './art';
+import { CAPSULE_COLORS, VIRUS_SCALE, createCapsuleHalfCanvas, createVirusFallbackCanvas, loadVirusArt } from './art';
 import { VIRUS_CFG } from './config';
 import { CAPSULE, VIRUS } from './rules';
 import { capsuleCells, type VirusGame } from './VirusGame';
 
-/** Virüs görseli dikenleriyle birlikte hücreden biraz taşar (gövde hücreyi doldursun). Tahtada kol/bacak yok. */
-const VIRUS_SCALE = 1.18;
 const SIDES = [-1, 0, 1, 2, 3] as const;
 type Side = (typeof SIDES)[number];
 /** a hücresinden b'ye yön (rot'a göre); VirusGame ile aynı kod. */
