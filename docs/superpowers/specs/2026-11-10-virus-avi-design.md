@@ -44,11 +44,11 @@ Kullanıcı, kendi virüs görsellerini `public/images/virüsler/` klasörüne e
 
 ## 6. Yaklaşımlar
 
-| Yaklaşım | Özet | Artı | Eksi |
-| --- | --- | --- | --- |
-| **1. Ayrı motor ve ayrı çizim (seçildi)** | `src/virus/` altında yeni kural motoru (`VirusGame`) ve tahta çizimi (`VirusView`). Menü, ayarlar, ses, yerleşim, kontroller, arka plan ve efektler ortak. | Klasik moda ve çok oyunculuya dokunmaz; kurallar tek başına test edilir. | Daha çok yeni kod. |
-| 2. Mevcut motora mod bayrağı | Kapsül yeni parça tipi, virüs yeni hücre türü; `Game.ts` içine eklenir. | Daha az dosya. | Oda, atak, Spray, sıklamen kurallarının hepsine mod kontrolü; ana oyunda ve çok oyunculu eşitlikte gerileme riski yüksek. |
-| 3. Ayrı sayfa | Kendi HTML girişi olan bağımsız mini oyun. | Tam yalıtım. | Menü, ayar ve sesin kopyası; tutarsız deneyim. Elendi. |
+| Yaklaşım                                  | Özet                                                                                                                                                       | Artı                                                                     | Eksi                                                                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| **1. Ayrı motor ve ayrı çizim (seçildi)** | `src/virus/` altında yeni kural motoru (`VirusGame`) ve tahta çizimi (`VirusView`). Menü, ayarlar, ses, yerleşim, kontroller, arka plan ve efektler ortak. | Klasik moda ve çok oyunculuya dokunmaz; kurallar tek başına test edilir. | Daha çok yeni kod.                                                                                                        |
+| 2. Mevcut motora mod bayrağı              | Kapsül yeni parça tipi, virüs yeni hücre türü; `Game.ts` içine eklenir.                                                                                    | Daha az dosya.                                                           | Oda, atak, Spray, sıklamen kurallarının hepsine mod kontrolü; ana oyunda ve çok oyunculu eşitlikte gerileme riski yüksek. |
+| 3. Ayrı sayfa                             | Kendi HTML girişi olan bağımsız mini oyun.                                                                                                                 | Tam yalıtım.                                                             | Menü, ayar ve sesin kopyası; tutarsız deneyim. Elendi.                                                                    |
 
 Kullanıcı 1'i seçti: ana oyun yeni bitti ve yayına hazırlanıyor, yeni mod onu riske atmamalı.
 

@@ -27,6 +27,8 @@ import { SUBMIT_TEXT } from '../../src/ui/submitScore';
 import { ROTATE_O_NOTE, STEP_COPY, TUTORIAL_DONE_TEXT } from '../../src/tutorial/steps';
 import { MP_TEXT } from '../../src/multiplayer/versus';
 import { NET_TEXT } from '../../src/multiplayer/net';
+import { VIRUS_TEXT, VIRUS_TUT_CHEER, VIRUS_TUT_COPY, VIRUS_TUT_LABELS } from '../../src/virus/copy';
+import { NARRATOR } from '../../src/virus/elif';
 
 export type Area =
   | 'ana_menu'
@@ -44,7 +46,8 @@ export type Area =
   | 'cta'
   | 'bildirimler'
   | 'rozetler'
-  | 'cok_oyunculu';
+  | 'cok_oyunculu'
+  | 'virus_avi';
 
 /** Görünür metin: yorum/SVG/etiket atılır, boşluk tekleşir. */
 export function visibleText(s: string): string {
@@ -197,6 +200,15 @@ export const INVENTORY: Readonly<Record<Area, readonly string[]>> = {
     `${FULL_RELIEF_SUB} · +<bonus>`,
   ],
   rozetler: Object.values(BADGES).flatMap((b) => [b.name, b.desc]),
+  // NS4-44: Virüs Avı (HUD, lens, oyun sonu başlıkları, bölüm bildirimleri, Doktor Elif'in öğretici cümleleri)
+  virus_avi: [
+    ...Object.values(VIRUS_TEXT).map((v) => (typeof v === 'function' ? v(2) : v)),
+    `${VIRUS_TEXT.level} 2`,
+    NARRATOR.name,
+    ...Object.values(VIRUS_TUT_COPY).flatMap((c) => [c.keyboard, c.touch]),
+    VIRUS_TUT_CHEER,
+    ...Object.values(VIRUS_TUT_LABELS),
+  ],
 };
 
 /** Bütün görünür metinler (tekrarsız). */
