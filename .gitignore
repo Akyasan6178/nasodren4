@@ -30,3 +30,5 @@ desktop.ini
 
 # Edge Function panel paketleri (tools/bundle-functions.mjs)
 supabase/.dashboard/
+
+.superpowers/
