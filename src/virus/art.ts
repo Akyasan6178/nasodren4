@@ -7,8 +7,8 @@
 import { context2d, loadImage, shade } from '../rendering/textures';
 
 export const CAPSULE_COLORS = [0xe05a9c, 0x9b7fd0, 0x2fb8ad, 0xf2a07b] as const;
-/** Görüntü yüklenmeden önce virüs hücresinin yedek rengi (tür 0 yeşil, 1 pembe, 2 bordo). */
-export const VIRUS_FALLBACK = [0x3fae5f, 0xd85597, 0xa8326e] as const;
+/** Görüntü yüklenmeden önce virüs hücresinin yedek rengi (tür 0 yeşil, 1 kırmızı, 2 sarı). */
+export const VIRUS_FALLBACK = [0x3fae5f, 0xd93a3a, 0xf2c230] as const;
 export const VIRUS_ART_URLS = [1, 2, 3].map((n) => `${import.meta.env.BASE_URL}images/virus/virus-${n}.webp`);
 
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');

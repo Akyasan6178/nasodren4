@@ -19,7 +19,7 @@ from scipy import ndimage
 from scipy.spatial import Delaunay
 
 ROOT = Path(__file__).resolve().parents[2]
-SRC = ROOT / "public" / "images" / "virüsler"
+SRC = ROOT / "art" / "virusler"  # kullanıcının kaynak görselleri (build'e girmez)
 OUT = ROOT / "public" / "images" / "virus"
 SIZE = 256
 
@@ -27,8 +27,9 @@ SIZE = 256
 VIRUSES = [
     # tek gözlü virüs: kullanıcı isteğiyle (2026-11-10) yeşil kalır; limon/sarı-yeşil değil, temiz yaprak yeşili
     {"src": "bacteria.png", "hue": 128.0, "sat": 0.58, "val": 0.92, "brows": False, "green": True, "fill_mouth": True},
-    {"src": "bacteria2.png", "hue": 328.0, "sat": 0.62, "val": 1.0, "brows": True, "fill_mouth": True},  # pembe
-    {"src": "bacteria3.png", "hue": 336.0, "sat": 0.66, "val": 0.74, "brows": False},  # bordo
+    # NS4-44 ek (2026-11-11): kırmızı ve sarı (kullanıcı isteği); sarı canlı güneş sarısı, yeşilimsi değil
+    {"src": "bacteria2.png", "hue": 2.0, "sat": 0.74, "val": 1.0, "brows": True, "fill_mouth": True},  # kırmızı
+    {"src": "bacteria3.png", "hue": 46.0, "sat": 0.8, "val": 1.08, "brows": False},  # sarı
 ]
 
 GREEN = (50.0, 175.0)  # yeşil-sarı ton aralığı (boyanacak gövde)

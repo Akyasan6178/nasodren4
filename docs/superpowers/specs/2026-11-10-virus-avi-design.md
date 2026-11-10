@@ -145,3 +145,18 @@ Aşağıdaki sayılar başlangıç değeridir; oyun denemesinden sonra kullanıc
 - Arayüz: menü butonu, HUD gizleme/gösterme, skor ayrımı, global panelin gizlenmesi, içerik güvenliği ve envanter.
 - Klasik mod: bütün mevcut testler değişmeden geçer.
 - Tarayıcı: 390×844, 844×390, 1366×768, 1920×1080; klavye ve dokunma; mola/devam; yeniden boyutlandırma; hareketi azalt; konsol hatası yok.
+
+## 11. Ek: oyun denemesi sonrası değişiklikler (2026-11-11, kullanıcı onayı)
+
+Kullanıcı modu denedikten sonra şunları istedi. Belli bir oyunun kendine özgü görüntüsü (ilaç şişesi tahta, doktorun kenardan hap fırlatması, o oyunun virüs dansı) birebir kopyalanmaz; aşağıdaki özgün karşılıklar kullanıcıyla kararlaştırıldı.
+
+- **Virüs renkleri:** yeşil (tek gözlü, aynı), **kırmızı** (`virus-2`), **sarı** (`virus-3`). Sarı canlı güneş sarısı; sümüğü çağrıştıran yeşilimsi-sarı değil. Ağız içleri koyu bordo.
+- **Animasyonlu virüsler:** kullanıcının görsellerine küçük kollar ve bacaklar eklenir (`tools/viruses` betiği, kare kare çizim). Sağa sola sallanır, kol/bacak sallar; bazı karelerde yüz tepkisi (göz kırpma, irkilme). Tahtada ve lenste aynı kareler. **Onay noktası 4.**
+- **Öğretici:** "Devam" zorunlu değil. Selam ve lens adımları okuma süresinden sonra kendiliğinden geçer (selam 4 sn, lens 5 sn); buton hızlı geçmek için durur.
+- **Yerleşim:** bilgisayar/yatayda sol sütun: üstte skor kartı, altında lens. Portrede lens üst şeritte kalır.
+- **Tahta çerçevesi (A):** ağzı açık, ölçü çizgili **laboratuvar beheri**. Oyun alanı (10 × 20) aynı; yalnızca çerçeve/süs değişir. **Onay noktası 5.**
+- **Doktor Elif ve damlalık:** Elif tahtanın yanında durur (yatayda sağ sütunun altında, portrede alt şeritte). Tahtanın üst ortasında bir damlalık vardır; her yeni kapsülde Elif düğmeye basar (poz + damlalık sıkışır), kapsül oradan düşer. Bölüm temizlenince sevinir (alkış), son 15 saniyede telaşlanır (oops + titreme). Öğretici açıkken yan Elif gizlenir (kartta zaten var). Onay noktası 5'te birlikte gösterilir.
+- **Müzik:** bu moda özel özgün, hareketli bir parça (sentez, oyunun tarzında). Son 15 saniyede hızlanır. Bu modda tıkanıklık süzgeci (boğuk ses) uygulanmaz.
+- **Kapsülü indirme:** ↓ bir kez = tam bir sıra; basılı tutunca kısa bekleme sonrası sabit hızla sıra sıra. Klasik mod etkilenmez.
+- **Oyun sonu:** Elif oyun sonu ekranında kalır (kullanıcı kararı); sağlık bağlantısıyla eşleşmesi hukuk listesinde.
+- **Kaynak görseller** `art/virusler/` klasörüne taşınır ve commit edilir (build'e girmez).

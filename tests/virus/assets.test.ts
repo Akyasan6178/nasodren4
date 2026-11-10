@@ -20,3 +20,12 @@ describe('virüs görselleri', () => {
     });
   }
 });
+
+describe('kaynak görseller', () => {
+  it("public/ altında değil (build'e girmez); art/virusler içinde", () => {
+    const pub = import.meta.glob('../../public/images/virüsler/*');
+    const src = import.meta.glob('../../art/virusler/*.png');
+    expect(Object.keys(pub)).toEqual([]);
+    expect(Object.keys(src)).toHaveLength(3);
+  });
+});
