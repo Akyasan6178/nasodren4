@@ -151,7 +151,7 @@ Aşağıdaki sayılar başlangıç değeridir; oyun denemesinden sonra kullanıc
 Kullanıcı modu denedikten sonra şunları istedi. Belli bir oyunun kendine özgü görüntüsü (ilaç şişesi tahta, doktorun kenardan hap fırlatması, o oyunun virüs dansı) birebir kopyalanmaz; aşağıdaki özgün karşılıklar kullanıcıyla kararlaştırıldı.
 
 - **Virüs renkleri:** yeşil (tek gözlü, aynı), **kırmızı** (`virus-2`), **sarı** (`virus-3`). Sarı canlı güneş sarısı; sümüğü çağrıştıran yeşilimsi-sarı değil. Ağız içleri koyu bordo.
-- **Animasyonlu virüsler:** kullanıcının görsellerine küçük kollar ve bacaklar eklenir (`tools/viruses` betiği, kare kare çizim). Sağa sola sallanır, kol/bacak sallar; bazı karelerde yüz tepkisi (göz kırpma, irkilme). Tahtada ve lenste aynı kareler. **Onay noktası 4.**
+- **Animasyonlu virüsler:** kullanıcının görsellerine küçük kollar ve bacaklar eklenir (`tools/viruses` betiği, kare kare çizim). Sağa sola sallanır, kol/bacak sallar; bazı karelerde yüz tepkisi (göz kırpma, irkilme). **Güncelleme (kullanıcı, 2026-11-11):** kollu bacaklı dans eden virüsler yalnızca soldaki lenste; tahtadaki virüsler sade görsellerdir. **Onay noktası 4.**
 - **Öğretici:** "Devam" zorunlu değil. Selam ve lens adımları okuma süresinden sonra kendiliğinden geçer (selam 4 sn, lens 5 sn); buton hızlı geçmek için durur.
 - **Yerleşim:** bilgisayar/yatayda sol sütun: üstte skor kartı, altında lens. Portrede lens üst şeritte kalır.
 - **Tahta çerçevesi (A):** ağzı açık, ölçü çizgili **laboratuvar beheri**. Oyun alanı (10 × 20) aynı; yalnızca çerçeve/süs değişir. **Onay noktası 5.**

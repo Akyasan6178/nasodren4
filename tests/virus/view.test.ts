@@ -67,3 +67,22 @@ describe('VirusView', () => {
     }
   });
 });
+
+describe('tahtadaki virüsler sade (kollu bacaklı olanlar yalnızca lenste)', () => {
+  it('virüs hücresi tek kare, ortadan hizalı, hücrenin 1,18 katı', async () => {
+    const { view, game, rules, L } = await setup();
+    rules.clearGrid(game.grid);
+    const i = 19 * COLS + 3;
+    game.grid.kind[i] = rules.VIRUS;
+    view.syncAll();
+    const s = view.cells[i];
+    expect(s.anchor.x).toBe(0.5);
+    expect(s.anchor.y).toBe(0.5);
+    expect(s.width).toBeCloseTo(L.cell * 1.18);
+  });
+  it('tahta görselleri sade virüs dosyalarından yüklenir', async () => {
+    const art = await import('../../src/virus/art');
+    expect(art.VIRUS_ART_URLS.every((u) => /virus-\d\.webp$/.test(u))).toBe(true);
+    expect('virusFrame' in art).toBe(false);
+  });
+});

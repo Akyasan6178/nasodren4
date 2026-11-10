@@ -63,7 +63,7 @@ Renk şartı olmadığından ilk bölümler bilerek kolaydır. Ayar düğmeleri 
 Kullanıcı geri bildirimiyle (spec §11). Belli bir oyunun ilaç şişesi tahtası, hap fırlatan doktoru ve virüs dansı birebir kopyalanmadı; özgün karşılıkları yapıldı.
 
 - **Renkler:** yeşil (tek gözlü), kırmızı, sarı (canlı güneş sarısı). Kaynaklar `art/virusler/` (build'e girmez).
-- **Animasyonlu virüsler:** `tools/viruses/sheet.py` her türe kol, bacak, beyaz eldiven ve ayakkabı ekler; 6 karelik şerit (`virus-{n}-sheet.webp`): 4 dans, göz kırpma, irkilme. Tahtada her virüs kendi fazında dans eder, arada göz kırpar, silinirken irkilir; lenste aynı şerit CSS ile. Hareketi azaltta dans yok, göz kırpma var.
+- **Animasyonlu virüsler:** `tools/viruses/sheet.py` her türe kol, bacak, beyaz eldiven ve ayakkabı ekler; 6 karelik şerit (`virus-{n}-sheet.webp`): 4 dans, göz kırpma, irkilme. Kollu bacaklı dans **yalnızca soldaki lenste** (CSS şerit; hareketi azaltta dans yok); tahtadaki virüsler sade görsellerdir (kullanıcı kararı).
 - **Öğretici:** selam (4 sn) ve lens (5 sn) kendiliğinden geçer; "Devam" isteğe bağlı. Mola sayacı durdurur.
 - **Bir sıra indirme:** ↓ bir kez = tam bir sıra; basılı: 170 ms sonra her 70 ms'de bir sıra (`SOFT_DELAY_MS`, `SOFT_REPEAT_MS`).
 - **Yerleşim:** yatayda sol sütun: skor kartı üstte, lens altında. Portrede değişmedi.

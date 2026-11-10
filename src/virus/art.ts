@@ -11,29 +11,10 @@ export const CAPSULE_COLORS = [0xe05a9c, 0x9b7fd0, 0x2fb8ad, 0xf2a07b] as const;
 export const VIRUS_FALLBACK = [0x3fae5f, 0xd93a3a, 0xf2c230] as const;
 export const VIRUS_ART_URLS = [1, 2, 3].map((n) => `${import.meta.env.BASE_URL}images/virus/virus-${n}.webp`);
 
-/** NS4-44 ek: kollu bacaklı animasyon şeridi (tools/viruses/sheet.py): 6 kare, kare boyu 192 px. */
-export const VIRUS_SHEET_URLS = [1, 2, 3].map((n) => `${import.meta.env.BASE_URL}images/virus/virus-${n}-sheet.webp`);
-export const VIRUS_FRAMES = 6;
-export const VIRUS_FRAME_PX = 192;
-/** Şeritte gövdenin kare içindeki oranı (gövde 128 / kare 192): hücrede gövde aynı boyda kalsın diye. */
-export const VIRUS_BODY_RATIO = 128 / 192;
-export const VIRUS_DANCE = [0, 1, 2, 3] as const;
-export const VIRUS_BLINK = 4;
-export const VIRUS_FLINCH = 5;
-/** Dans karesinin süresi (ms). */
-export const VIRUS_DANCE_MS = 180;
-const BLINK_MS = 130;
-
 /**
- * O anki kare: her virüs kendi fazında dans eder (0-3) ve kendi aralığıyla göz kırpar (4).
- * Hareketi azaltta dans yok (kare 1), göz kırpma kalır.
+ * NS4-44 ek: kollu bacaklı dans şeritleri (`virus-{n}-sheet.webp`, tools/viruses/sheet.py) yalnızca soldaki lenste
+ * CSS ile kullanılır; tahtadaki virüsler sade görsellerdir (kullanıcı kararı, 2026-11-11).
  */
-export function virusFrame(tMs: number, phase: number, reduced: boolean): number {
-  const cycle = 2600 + (phase % 5) * 390;
-  if ((tMs + phase * 977) % cycle < BLINK_MS) return VIRUS_BLINK;
-  if (reduced) return 1;
-  return VIRUS_DANCE[(Math.floor(tMs / VIRUS_DANCE_MS) + phase) % 4] ?? 1;
-}
 
 const hex = (c: number) => '#' + c.toString(16).padStart(6, '0');
 
@@ -123,11 +104,11 @@ export function createVirusFallbackCanvas(px: number, type: number): HTMLCanvasE
   return cv;
 }
 
-/** Üç virüsün animasyon şeridi; biri bile yüklenemezse null (yedek çizim kullanılır). */
+/** Tahtadaki üç virüs görseli (sade); biri bile yüklenemezse null (yedek çizim kullanılır). */
 export async function loadVirusArt(): Promise<HTMLImageElement[] | null> {
   if (typeof Image === 'undefined') return null;
   try {
-    return await Promise.all(VIRUS_SHEET_URLS.map((u) => loadImage(u)));
+    return await Promise.all(VIRUS_ART_URLS.map((u) => loadImage(u)));
   } catch {
     return null;
   }
