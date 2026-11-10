@@ -93,7 +93,8 @@ export function createVirusStage(): VirusStage {
         dh = Math.round(dw * 1.5);
       place($('virus-dropper'), {
         x: L.board.x + L.board.w / 2 - dw / 2,
-        y: Math.max(0, L.board.y - dh * 0.55),
+        // portrede üst şeritteki süre kartının altında kalmasın (sıkışma görünsün)
+        y: L.portrait ? Math.max(L.board.y - dh * 0.55, L.cong.y + L.cong.h + 2) : Math.max(0, L.board.y - dh * 0.55),
         w: dw,
         h: dh,
       });

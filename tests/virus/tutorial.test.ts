@@ -221,3 +221,22 @@ describe('otomatik geçiş (Devam zorunlu değil)', () => {
     expect(view.shown.at(-1)?.step).toBe('kapsul');
   });
 });
+
+describe('gözden geçirme düzeltmesi: alkış sırasında mola', () => {
+  it('mola sırasında alkış zamanlayıcısı ilerlemez; öğretici molada bitmez, devamda lens gelir', async () => {
+    memStorage();
+    const { game, view, onFinish, tut } = await load();
+    tut.begin();
+    tut.next();
+    game.emit('move', {});
+    game.emit('clear', clear(1)); // alkış
+    tut.onPause();
+    vi.advanceTimersByTime(10_000);
+    expect(onFinish).not.toHaveBeenCalled();
+    expect(view.visible).toBe(false);
+    tut.onResume();
+    vi.advanceTimersByTime(1300);
+    expect(view.shown.at(-1)?.step).toBe('lens');
+    expect(onFinish).not.toHaveBeenCalled();
+  });
+});

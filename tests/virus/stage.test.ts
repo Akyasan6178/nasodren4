@@ -83,3 +83,14 @@ describe('damlalık ve Elif tepkileri', () => {
     expect(dom.el('virus-elif-side').classList.contains('is-panic')).toBe(true);
   });
 });
+
+describe('gözden geçirme düzeltmesi: portrede damlalık', () => {
+  it('telefonda damlalık süre kartıyla çakışmaz (sıkışma görünür)', async () => {
+    const { createVirusStage } = await load();
+    const st = createVirusStage();
+    const L = computeLayout(390, 844);
+    st.layout(L);
+    const top = parseFloat(dom.el('virus-dropper').style['top'] ?? 'NaN');
+    expect(top).toBeGreaterThanOrEqual(L.cong.y + L.cong.h);
+  });
+});

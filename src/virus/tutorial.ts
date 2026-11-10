@@ -140,6 +140,8 @@ export class VirusTutorial {
     if (this.active && !this.cheering) this.show(); // okuma sayacı baştan başlamaz
   }
   onPause(): void {
+    // alkış sürerken mola: zamanlayıcı durur, devamda yeniden başlar (öğretici molada ilerleyip bitmesin)
+    if (this.cheering) clearTimeout(this.timer);
     if (this.autoTimer !== undefined) {
       clearTimeout(this.autoTimer);
       this.autoTimer = undefined;
@@ -149,6 +151,7 @@ export class VirusTutorial {
   }
   onResume(): void {
     if (!this.active) return;
+    if (this.cheering) return this.cheer();
     this.show();
     const s = this.step;
     if ((s === 'selam' || s === 'lens') && this.autoLeft > 0) this.armAuto(this.autoLeft);
