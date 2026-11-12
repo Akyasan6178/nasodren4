@@ -8,32 +8,13 @@
 import { $, listen, type Off } from '../ui/dom';
 import type { Game } from '../game/Game';
 import type { AppState } from '../types/app';
-import type { RotationDirection, Step } from '../types/game';
+import type { Step } from '../types/game';
 import type { Rect } from '../types/layout';
 import type { Settings } from '../types/settings';
 import { GestureTracker } from './gestures';
 
-/**
- * NS4-44: girişlerin hedefi. Klasik Game ve Virüs Avı motoru (VirusGame) bu arayüzü yapısal olarak sağlar;
- * Virüs Avı'nda Beklet ve güçler hiçbir şey yapmaz.
- */
-export interface Controls {
-  readonly state: string;
-  softDrop: boolean;
-  move(d: Step): boolean;
-  softStep(): boolean;
-  rotate(dir: RotationDirection): unknown;
-  hardDrop(): unknown;
-  doHold(): unknown;
-  useCyc(): unknown;
-  useSneeze(): unknown;
-  useSpray(): unknown;
-}
-
 export interface InputDeps {
   readonly game: Game;
-  /** NS4-44: aktif modun motoru (her olayda güncel değer). Verilmezse `game`. */
-  readonly getControls?: () => Controls;
   /** Pixi canvas'ı (jestler yalnızca bunun üzerinde dinlenir). */
   readonly canvas: HTMLCanvasElement;
   readonly settings: Readonly<Pick<Settings, 'das' | 'arr'>>;
@@ -75,12 +56,13 @@ export class InputController {
 
   constructor(deps: InputDeps) {
     this.deps = deps;
+    const game = deps.game;
     this.gestures = new GestureTracker({
-      move: (d) => this.ctl().move(d),
-      softStep: () => this.ctl().softStep(),
-      rotate: (dir) => void this.ctl().rotate(dir),
-      hardDrop: () => void this.ctl().hardDrop(),
-      hold: () => void this.ctl().doHold(),
+      move: (d) => game.move(d),
+      softStep: () => game.softStep(),
+      rotate: (dir) => void game.rotate(dir),
+      hardDrop: () => game.hardDrop(),
+      hold: () => void game.doHold(),
       onSoftDrop: () => deps.onSoftDrop?.(),
     });
     this.bindKeyboard();
@@ -89,15 +71,10 @@ export class InputController {
     this.bindAutoPause();
   }
 
-  /** NS4-44: girişlerin güncel hedefi (klasik Game ya da VirusGame). */
-  private ctl(): Controls {
-    return this.deps.getControls?.() ?? this.deps.game;
-  }
-
   reset(): void {
     this.dir = 0;
     this.left = this.right = false;
-    this.ctl().softDrop = false;
+    this.deps.game.softDrop = false;
     this.gestures.cancel();
   }
   /** NS4-13: süren dokunmatik jesti sonuçsuz iptal eder (resize, ekran değişimi). */
@@ -108,10 +85,10 @@ export class InputController {
     this.dir = d;
     this.dasT = 0;
     this.arrT = 0;
-    this.ctl().move(d);
+    this.deps.game.move(d);
   }
   update(dt: number): void {
-    const game = this.ctl(),
+    const game = this.deps.game,
       settings = this.deps.settings;
     if (!this.dir || game.state !== 'play') return;
     const dir = this.dir; // NS4-04: 0 dışı yön (yukarıdaki kontrol); döngü boyunca değişmez
@@ -137,6 +114,7 @@ export class InputController {
   }
 
   private bindKeyboard(): void {
+    const game = this.deps.game;
     this.offs.push(
       listen(window, 'keydown', (e) => {
         const appState = this.deps.getState(); // işleyici içinde durum değiştiren çağrılardan önce okunur
@@ -152,7 +130,6 @@ export class InputController {
         this.deps.onInputMode?.('keyboard');
         if (e.repeat && e.key !== 'ArrowDown') return;
         this.deps.unlockAudio();
-        const game = this.ctl();
         switch (e.key) {
           case 'ArrowLeft':
             this.left = true;
@@ -211,7 +188,7 @@ export class InputController {
           this.right = false;
           this.dir = this.left ? -1 : 0;
           this.dasT = 0;
-        } else if (e.key === 'ArrowDown') this.ctl().softDrop = false;
+        } else if (e.key === 'ArrowDown') game.softDrop = false;
       }),
     );
   }
@@ -304,18 +281,19 @@ export class InputController {
   }
 
   private bindButtons(): void {
-    const playing = () => this.deps.getState() === 'playing';
+    const game = this.deps.game,
+      playing = () => this.deps.getState() === 'playing';
     this.bindBtn('btn-hold', () => {
-      if (playing()) this.ctl().doHold();
+      if (playing()) game.doHold();
     });
     this.bindBtn('btn-cyc', () => {
-      if (playing()) this.ctl().useCyc();
+      if (playing()) game.useCyc();
     });
     this.bindBtn('btn-sneeze', () => {
-      if (playing()) this.ctl().useSneeze();
+      if (playing()) game.useSneeze();
     });
     this.bindBtn('btn-spray', () => {
-      if (playing()) this.ctl().useSpray();
+      if (playing()) game.useSpray();
     });
     this.bindBtn('btn-pause', () => {
       if (playing()) this.deps.pause();

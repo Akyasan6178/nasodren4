@@ -201,18 +201,7 @@ describe('işaretleme ve odak', () => {
     const stageHtml = html.slice(html.indexOf('<div id="stage"'), html.indexOf('<div id="danger"'));
     const order = [...stageHtml.matchAll(/<button[^>]*id="([^"]+)"/g)].map((m) => m[1]);
     // btn-spray: Sinüzit Atağı ile kalıcı; hedef yokken kapalı (disabled), sekme sırasında Hapşırık'tan sonra
-    // NS4-44: Virüs Avı öğretici kartı (Elif) klasik kartın ardından; klasik modda gizli
-    expect(order).toEqual([
-      'btn-hold',
-      'btn-cyc',
-      'btn-sneeze',
-      'btn-spray',
-      'btn-pause',
-      'tut-skip',
-      'tut-done',
-      'vt-skip',
-      'vt-next',
-    ]);
+    expect(order).toEqual(['btn-hold', 'btn-cyc', 'btn-sneeze', 'btn-spray', 'btn-pause', 'tut-skip', 'tut-done']);
     expect(html).toMatch(/<button id="btn-spray" class="gbtn" disabled aria-label="Spray">/);
     expect(html).toMatch(/<div id="tutorial" class="tutorial" hidden>/);
     expect(html).toMatch(/class="tut-live" aria-live="polite"/);

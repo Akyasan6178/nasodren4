@@ -13,10 +13,11 @@
    torba başına bir çekirdekli parça, yakınlıkla aktifleşme, sonraki satır
    temizlemesinde kontrollü drenaj ve drenajın dokunduğu sütunlarda renkli
    hücre çökmesi. Sıklamen gücü basınca hemen 3 gri sıra siler (useCyc; aktif çekirdek varsa onun hizasından).
-   Sinüzit Atağı ve Spray (bkz. sinusAttack.ts ve docs/SINUS-ATTACK-AND-SPRAY-FINAL.md): 60 sn aktif oynanışta
-   alttan tek boşluklu atak satırı ve dağınık atak grileri; Spray yalnızca atak grisini temizler. Hücre kaynağı
-   katmanı (origin) oda ve atak grisini ayırır: oda hedefi, çekirdek ve Sıklamen gücü atak grisini görmez; atak
-   grisi içeren tam satır puan, satır, seviye, kombo ve B2B üretmez.
+   NS4-45 Zorlaşan dalgalar (bkz. pressure.ts, sinusAttack.ts): bölüm saati aktif oynanışta adım atar (NS4-46:
+   ilk adım 15 sn, sonra 30 sn); tek adımlarda yukarıdan tek kareler ve virüsler düşer, çift adımlarda parçalar hızlanır. Saat her bölümde
+   sıfırlanır, şiddet bölümle artar. Spray yalnızca dalga hücrelerini temizler. Hücre kaynağı katmanı (origin) oda
+   grisini ve dalga hücresini (tek kare, virüs türü) ayırır: oda hedefi, çekirdek ve Sıklamen gücü dalga hücresini
+   görmez. Dalga hücresi içeren satır normal puanlanır; silinen virüs ek puan verir.
    ===================================================================== */
 import { COLS, ROWS, HIDDEN, VIS, CFG, ROOMS } from '../config/gameConfig';
 import { PIECE, SHAPES, KICK_JLSTZ, KICK_I, kickKey, nextRotation } from './pieces';
@@ -36,15 +37,17 @@ import {
 import {
   ORIGIN,
   SINUS,
+  VIRUS_KINDS,
   attackRows,
   carryAttackCells,
   coloredInRows,
+  dropCells,
   hasAttackGray,
   isAttackGray,
+  isVirus,
   pickAttackCells,
-  pushGarbageRow,
-  scatterGray,
 } from './sinusAttack';
+import { PRESSURE, gravityLevel, resetsClock, speedBoost, stepDuration, stepKind, waveSize } from './pressure';
 import type { GameEventArgs, GameEventListener, GameEventName, PendingClear } from '../types/events';
 import type {
   GameOverReason,
@@ -86,11 +89,20 @@ export class Game {
   /** Sinüzit Atağı ve Spray rastgelelik akışları (tohumlu oyunda tohumdan türer; parça sırasıyla karışmaz). */
   private attackRand!: () => number;
   private sprayRand!: () => number;
-  /** Sinüzit Atağı: barın dolan süresi (ms), atak sayısı ve eklenen gri bulutçuk. */
+  /**
+   * NS4-45 bölüm saati: adımın dolan süresi (ms; stepMs()'de adım), bu bölümde atılan adım, bu bölümdeki
+   * hızlanma sayısı ve hız payı (seviye karşılığı; pressure.ts). attacks: oyundaki dalga sayısı; attackGray: düşen
+   * dalga hücresi (tek kare + virüs); viruses: düşen virüs; virusesCleared: satır temizlemesiyle silinen virüs.
+   */
   attackT!: number;
+  pressSteps!: number;
+  speedSteps!: number;
+  speedBoost!: number;
   attacks!: number;
   attackGray!: number;
-  /** Atak grisi içeren temizlenen tam satır (puan, satır, seviye, kombo, B2B üretmez). */
+  viruses!: number;
+  virusesCleared!: number;
+  /** Dalga hücresi içeren temizlenen tam satır (ölçüm; normal puanlanır). */
   attackLines!: number;
   /** Spray durumu (değişince 'spraystate' yayılır): dolmuyor/doluyor, hazır, dolu ama hedef yok. */
   sprayStatus!: 'charging' | 'ready' | 'notarget';
@@ -254,10 +266,12 @@ export class Game {
     }
     this.channelAt.fill(-1);
     this.attackT = 0;
+    this.pressSteps = this.speedSteps = this.speedBoost = 0;
     this.attackLines = 0;
     this.sprayStatus = 'charging';
     this.attacks = 0;
     this.attackGray = 0;
+    this.viruses = this.virusesCleared = 0;
     this.carriedAttackGray = this.relocatedAttackGray = this.carryOverflow = this.carryTopouts = 0;
     this.coreDrainRoomCells = this.powerDrainRoomCells = 0;
     this.sprayCharge = 0;
@@ -366,6 +380,13 @@ export class Game {
    */
   enterRoom(i: number, carry: readonly number[] = []): boolean {
     this.room = i;
+    // NS4-45: bölüm saati her bölümde baştan (Serbest nefes son bölümün saatiyle sürer)
+    if (resetsClock(i)) {
+      this.attackT = 0;
+      this.pressSteps = this.speedSteps = 0;
+      this.speedBoost = speedBoost(i, 0); // bölüm başı hız payı
+    }
+    const kinds = carry.map((k) => this.origin[k] ?? ORIGIN.attack); // virüs türü yeni odaya taşınır
     this.board.fill(0);
     this.plant.fill(0);
     this.coreLife = 0; // oda değişince tahtadaki aktif çekirdek de gider (tetiklemez)
@@ -401,7 +422,15 @@ export class Game {
     }
     let lost = 0;
     if (carry.length) {
-      const r = carryAttackCells(this.board, this.plant, this.origin, this.channelAt, carry, SINUS.attackZoneRows);
+      const r = carryAttackCells(
+        this.board,
+        this.plant,
+        this.origin,
+        this.channelAt,
+        carry,
+        SINUS.attackZoneRows,
+        kinds,
+      );
       this.carriedAttackGray += r.placed.length;
       this.relocatedAttackGray += r.relocated;
       this.carryOverflow += r.overflow;
@@ -624,8 +653,9 @@ export class Game {
     return true;
   }
 
+  /** NS4-45 / NS4-46: min(seviye, 6) + bölüm saatinin hız payı (pressure.ts gravityLevel). */
   gravityMs() {
-    const l = Math.min(this.level, CFG.maxLevel) - 1;
+    const l = gravityLevel(this.level, this.speedBoost) - 1;
     return Math.pow(0.8 - l * 0.007, l) * 1000;
   }
 
@@ -703,22 +733,31 @@ export class Game {
         }
       if (f) full.push(y);
     }
-    // atak satırı (atak grisi içeren tam satır): tahtadan normal biçimde silinir ama puan, satır, seviye, kombo, B2B,
-    // Tetris/T-spin sayımı, Tam Ferahlık ve Spray şarjı üretmez; yalnızca normal satırlar sayılır
+    // NS4-45: dalga hücresi (tek kare, virüs) içeren satır da normal puanlanır; silinen virüs başına ek puan
+    const normal = full;
     const atk = attackRows(this.board, this.origin, full);
-    const normal = atk.length ? full.filter((y) => !atk.includes(y)) : full;
-    // standart satır temizlemesinde kırılan renkli hücreler Spray'i doldurur (dolunca birikmez)
+    // satır temizlemesinde kırılan renkli hücreler Spray'i doldurur (dolunca birikmez)
     if (normal.length)
       this.sprayCharge = Math.min(SINUS.sprayThreshold, this.sprayCharge + coloredInRows(this.board, normal));
-    // yalnızca atak satırı silindiyse puanlama hiç çalışmaz (kombo ve B2B olduğu gibi kalır)
-    if (normal.length || !atk.length) this.scoreClear(normal.length, tspin);
+    this.scoreClear(normal.length, tspin);
     if (normal.length && this.emptyExcept(full)) this.scoreAllClear(normal.length);
     if (atk.length) {
-      let cells = 0;
+      let cells = 0,
+        vir = 0;
       for (const y of atk)
-        for (let x = 0; x < COLS; x++) if (isAttackGray(this.board, this.origin, y * COLS + x)) cells++;
+        for (let x = 0; x < COLS; x++) {
+          const k = y * COLS + x;
+          if (isAttackGray(this.board, this.origin, k)) cells++;
+          if (isVirus(this.board, this.origin, k)) vir++;
+        }
       this.attackLines += atk.length;
       this.emit('attackline', { rows: atk.length, cells });
+      if (vir) {
+        const pts = PRESSURE.virusBonus * vir * this.level;
+        this.score += pts;
+        this.virusesCleared += vir;
+        this.emit('virusclear', { n: vir, pts });
+      }
     }
     if (this.coreLife > 0) {
       // aktif çekirdeği ilk standart (normal) satır temizlemesi tetikler (çekirdeğin kendi parçasınınki dahil);
@@ -902,39 +941,72 @@ export class Game {
     return true;
   }
 
+  /** NS4-46: sıradaki adımın süresi (ms): bölümün ilk adımı kısa (PRESSURE.firstStepMs). */
+  stepMs() {
+    return stepDuration(this.pressSteps);
+  }
+
+  /** NS4-46: sıradaki adıma ilerleme (0..1; bar). */
+  stepProgress() {
+    return Math.min(1, this.attackT / this.stepMs());
+  }
+
+  /** NS4-45: bölüm saatinin sıradaki adımı: tek adım dalga, çift adım hızlanma. */
+  nextStep(): 'wave' | 'speed' {
+    return stepKind(this.pressSteps + 1);
+  }
+
+  /** NS4-45: bölüm saati bir adım attı (stepMs() aktif oynanış). */
+  pressureStep() {
+    if (this.state !== 'play') return;
+    this.pressSteps++;
+    if (stepKind(this.pressSteps) === 'wave') this.sinusAttack();
+    else {
+      this.speedSteps++;
+      this.speedBoost = speedBoost(this.room, this.speedSteps);
+      this.emit('speedup', { steps: this.speedSteps, boost: this.speedBoost });
+    }
+  }
+
   /**
-   * Sinüzit Atağı. Alttan tek boşluklu atak satırı gelir (tahta, bitki, kaynak ve kanal kaydı bir sıra yukarı kayar),
-   * ardından en alt SINUS.attackZoneRows sıranın boş hücrelerine en çok SINUS.attackScatter atak grisi dağılır.
-   * Satır, puan sayılmaz. Taşma: en üst sıra doluysa oyun biter (blockout); düşen parça sığmazsa yukarı itilir,
-   * olmazsa overlap.
+   * NS4-45 dalgası: bölümün o anki dalgası kadar tek kare ve virüs yukarıdan düşüp yığın tepesine oturur (dropCells:
+   * hava kanalına, düşen parçanın hücrelerine ve gizli sıralara düşmez; kendiliğinden satır doldurmaz). Sıra
+   * karışır; virüs türü rastgele (tohumlu atak akışı). Satır, puan yok. Yer kalmazsa daha az düşer.
    */
   sinusAttack() {
     if (this.state !== 'play') return;
+    const wave = Math.max(1, Math.ceil(this.pressSteps / 2));
+    const size = waveSize(this.room, wave);
     this.emit('attackstart');
-    const hole = Math.min(COLS - 1, Math.floor(this.attackRand() * COLS));
-    if (!pushGarbageRow(this.board, this.plant, this.origin, this.channelAt, hole)) return this.gameOver('blockout');
-    if (this.coreTargetRow >= 0) this.coreTargetRow--;
-    this.fizzleAt = -1;
-    // düşen parça tahtayla birlikte bir sıra yukarı taşınır; gelen gri parçanın altına yazılmaz
-    if (this.type) this.y--;
+    const kinds: number[] = [];
+    for (let i = 0; i < size.singles; i++) kinds.push(ORIGIN.attack);
+    for (let i = 0; i < size.viruses; i++)
+      kinds.push(ORIGIN.virus + Math.min(VIRUS_KINDS - 1, Math.floor(this.attackRand() * VIRUS_KINDS)));
+    for (let i = kinds.length - 1; i > 0; i--) {
+      const j = Math.min(i, Math.floor(this.attackRand() * (i + 1)));
+      const t = kinds[i] ?? ORIGIN.attack;
+      kinds[i] = kinds[j] ?? ORIGIN.attack;
+      kinds[j] = t;
+    }
     const blocked = new Set<number>();
     if (this.type) for (const [dx, dy] of SHAPES[this.type][this.rot]) blocked.add((this.y + dy) * COLS + this.x + dx);
-    const added = scatterGray(
+    const cells = dropCells(
       this.board,
+      this.plant,
       this.origin,
       this.channelAt,
       this.attackRand,
-      SINUS.attackScatter,
-      SINUS.attackZoneRows,
+      kinds,
+      HIDDEN,
       blocked,
     );
+    const vir = cells.filter((c) => c.kind >= ORIGIN.virus).length;
     this.attacks++;
-    this.attackGray += COLS - 1 + added.length;
+    this.attackGray += cells.length;
+    this.viruses += vir;
     if (this.rooms && this.room < ROOMS.length) this.roomGray = this.roomGoalGray();
     this.boardVer++;
-    this.pieceVer++;
-    this.emit('attack', { hole, scattered: added.length });
-    this.fixActiveOverlap();
+    this.emit('attack', { wave, cells, singles: cells.length - vir, viruses: vir });
   }
 
   /** Spray dolu ama görünür tahtada atak grisi yok (hedefsiz; düğme kapalı, şarj korunur). */
@@ -1193,9 +1265,9 @@ export class Game {
     // Sinüzit Atağı barı yalnızca aktif oynanışta dolar (temizleme/drenaj/oda geçişinde yukarıda döndü; mola ve oyun
     // sonunda update çağrılmaz)
     this.attackT += dt;
-    if (this.attackT >= SINUS.attackMs) {
+    if (this.attackT >= this.stepMs()) {
       this.attackT = 0;
-      this.sinusAttack();
+      this.pressureStep();
       if (this.state !== 'play') return;
     }
     // Spray durumu: değişince bir kez yayılır (analitik ve görünüm)

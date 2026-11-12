@@ -61,18 +61,26 @@
   --color-pressure-soft: #c9bfe0;
   --color-fresh-soft: #bff0ea;
 
+  /* NS4-46: yüz haritası (kullanıcının şeması art/bolumler/etmoid sinus.png renkleri; tools/bolumler/trace_map.py) */
+  --map-skin: #cfa694;
+  --map-skin-shade: #b98f7e;
+  --map-brow: #5b3b33;
+  --map-sclera: #f5efea;
+  --map-iris: #5d84a3;
+  --map-pupil: #1c2630;
+  --map-nostril: #a8706f;
+  --map-alin: #acbb84;
+  --map-alin-line: #6f8148;
+  --map-etmoid: #b2aec4;
+  --map-etmoid-line: #5b74b0;
+  --map-yanak: #bc91b4;
+  --map-yanak-line: #8a5598;
+  --map-burun: #eaa9aa;
+  --map-burun-line: #ffffff;
+
   /* NS4-38: "Sıradaki" gizem kartı (bulunmamış eşya kartı: siyah zemin, beyaz soru işareti) */
   --color-mystery: #121519;
   --color-mystery-top: #2a2f36;
-  /* NS4-44: Doktor Elif (Virüs Avı anlatıcısı) */
-  --color-elif-skin: #f6cdaa;
-  --color-elif-skin-shade: #e9b48d;
-  --color-elif-hair: #3b2420;
-  --color-elif-coat: #ffffff;
-  --color-elif-coat-line: #bfe3df;
-  --color-nazar-blue: #1f4fa3;
-  --color-nazar-light: #4fa8e0;
-  --color-nazar-dark: #0d1b3a;
   --color-mystery-mark: #ffffff;
   --color-mystery-edge: rgba(255, 255, 255, 0.16);
   --color-mystery-shine: rgba(255, 255, 255, 0.22);
@@ -1005,23 +1013,24 @@ input:focus-visible {
   transform-origin: left center;
   transition: transform var(--dur-meter) ease-out;
 }
-/* NS4-27: her odanın kendi sinüs tonu (yalnızca derinlik ve duvar; ızgara ve bloklar aynı) */
-#board-bg[data-room='1'] {
+/* NS4-27: her odanın kendi sinüs tonu (yalnızca derinlik ve duvar; ızgara ve bloklar aynı). NS4-46: ton bölüm
+   türünden (data-room = burun | yanak | etmoid | alin | free; yanak varsayılan ton) */
+#board-bg[data-room='etmoid'] {
   --color-board-light: #2a4f74;
   --color-rim: #d3d6f5;
   --color-rim-glow: rgba(196, 180, 255, 0.5);
 }
-#board-bg[data-room='2'] {
+#board-bg[data-room='alin'] {
   --color-board-light: #1c5f5a;
   --color-rim: #c6f0dc;
   --color-rim-glow: rgba(150, 236, 196, 0.5);
 }
-#board-bg[data-room='3'] {
+#board-bg[data-room='burun'] {
   --color-board-light: #4a4f6e;
   --color-rim: #ffe1cf;
   --color-rim-glow: rgba(255, 196, 160, 0.5);
 }
-#board-bg[data-room='4'] {
+#board-bg[data-room='free'] {
   --color-board-light: #5a2e55;
   --color-rim: #ffd3e6;
   --color-rim-glow: rgba(255, 140, 200, 0.55);
@@ -1095,80 +1104,143 @@ input:focus-visible {
 .rm-next {
   color: var(--color-text-muted);
 }
-/* NS4-31: sinüs haritası (yüz silüeti; durum kapsayıcının data-<oda> niteliğinde, sinusMap.ts) */
+/* NS4-46: açılan boşluğun görseli (kullanıcının çizimi, renkleri değiştirilmez): çerçeve basınç renginden turkuaza döner,
+   görsel hafifçe aydınlanır */
+.rm-art {
+  display: block;
+  width: calc(150px * var(--hud-scale));
+  max-width: 100%;
+  height: auto;
+  margin: 6px 0 4px;
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px var(--color-pressure-soft);
+}
+.rm-art[hidden],
+.sinus-map[hidden] {
+  display: none;
+}
+.room-map.on .rm-art {
+  animation: artRelief 1.4s ease-out 0.35s both;
+}
+@keyframes artRelief {
+  0% {
+    filter: none;
+    box-shadow: 0 0 0 2px var(--color-pressure);
+  }
+  100% {
+    filter: brightness(1.12) saturate(0.9);
+    box-shadow: 0 0 0 2px var(--color-fresh);
+  }
+}
+/* NS4-31 / NS4-46: sinüs haritası (kullanıcının şemasından yüz; durum kapsayıcının data-<bölüm> niteliğinde,
+   sinusMap.ts). Kapalı bölüm şemadaki rengiyle; açılan ve açık turkuaz, sıradaki sıklamen kenarlı. */
 .sinus-map {
-  width: calc(92px * var(--hud-scale));
-  margin: 4px 0;
+  width: calc(150px * var(--hud-scale));
+  margin: 6px 0 4px;
 }
 .sinus-map svg {
   display: block;
   width: 100%;
   height: auto;
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px var(--color-border);
 }
 .sinus-map-lg {
-  width: min(150px, 36vw);
+  width: min(230px, 62vw);
   margin: 0 auto 8px;
 }
-.sinus-svg .face {
-  fill: var(--color-surface-strong);
-  stroke: var(--color-border-strong);
-  stroke-width: 2;
+.sinus-svg .skin {
+  fill: var(--map-skin);
 }
-.sinus-svg .line {
-  fill: none;
-  stroke: var(--color-text-muted);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.sinus-svg .brow,
+.sinus-svg .lid {
+  fill: var(--map-brow);
 }
-.sinus-svg .eye {
-  fill: var(--color-text-muted);
+.sinus-svg .sclera {
+  fill: var(--map-sclera);
+}
+.sinus-svg .iris {
+  fill: var(--map-iris);
+}
+.sinus-svg .pupil {
+  fill: var(--map-pupil);
+}
+.sinus-svg .nostril {
+  fill: var(--map-nostril);
+  opacity: 0.7;
 }
 .sinus {
   fill: var(--color-pressure-soft);
   stroke: var(--color-pressure);
-  stroke-width: 1.5;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  fill-opacity: 0.88;
   transform-box: fill-box;
   transform-origin: center;
   transition:
     fill 0.4s,
     stroke 0.4s;
 }
-.s-sfenoid {
-  stroke-dasharray: 2 2;
+.sinus.k-alin {
+  fill: var(--map-alin);
+  stroke: var(--map-alin-line);
 }
-[data-yanak='open'] .s-yanak,
-[data-etmoid='open'] .s-etmoid,
-[data-alin='open'] .s-alin,
-[data-sfenoid='open'] .s-sfenoid {
+.sinus.k-etmoid {
+  fill: var(--map-etmoid);
+  stroke: var(--map-etmoid-line);
+}
+.sinus.k-yanak {
+  fill: var(--map-yanak);
+  stroke: var(--map-yanak-line);
+}
+.sinus.k-burun {
+  fill: var(--map-burun);
+  stroke: var(--map-burun-line);
+  stroke-width: 3.5;
+  fill-opacity: 0.7;
+}
+[data-burun-sol='open'] .s-burun-sol,
+[data-burun-sag='open'] .s-burun-sag,
+[data-yanak-sol='open'] .s-yanak-sol,
+[data-yanak-sag='open'] .s-yanak-sag,
+[data-etmoid-sol='open'] .s-etmoid-sol,
+[data-etmoid-sag='open'] .s-etmoid-sag,
+[data-alin-sol='open'] .s-alin-sol,
+[data-alin-sag='open'] .s-alin-sag {
   fill: var(--color-fresh-soft);
   stroke: var(--color-fresh);
 }
-[data-yanak='opening'] .s-yanak,
-[data-etmoid='opening'] .s-etmoid,
-[data-alin='opening'] .s-alin,
-[data-sfenoid='opening'] .s-sfenoid {
+[data-burun-sol='opening'] .s-burun-sol,
+[data-burun-sag='opening'] .s-burun-sag,
+[data-yanak-sol='opening'] .s-yanak-sol,
+[data-yanak-sag='opening'] .s-yanak-sag,
+[data-etmoid-sol='opening'] .s-etmoid-sol,
+[data-etmoid-sag='opening'] .s-etmoid-sag,
+[data-alin-sol='opening'] .s-alin-sol,
+[data-alin-sag='opening'] .s-alin-sag {
   fill: var(--color-fresh-soft);
   stroke: var(--color-fresh);
-  stroke-width: 2.5;
+  stroke-width: 4.5;
   animation: sinusOpen 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.25s both;
 }
-[data-yanak='next'] .s-yanak,
-[data-etmoid='next'] .s-etmoid,
-[data-alin='next'] .s-alin,
-[data-sfenoid='next'] .s-sfenoid {
+[data-burun-sol='next'] .s-burun-sol,
+[data-burun-sag='next'] .s-burun-sag,
+[data-yanak-sol='next'] .s-yanak-sol,
+[data-yanak-sag='next'] .s-yanak-sag,
+[data-etmoid-sol='next'] .s-etmoid-sol,
+[data-etmoid-sag='next'] .s-etmoid-sag,
+[data-alin-sol='next'] .s-alin-sol,
+[data-alin-sag='next'] .s-alin-sag {
   stroke: var(--color-cyclamen);
-  stroke-width: 2.5;
+  stroke-width: 5;
   animation: sinusNext 1.2s ease-in-out infinite;
 }
 @keyframes sinusOpen {
   0% {
-    fill: var(--color-pressure-soft);
-    stroke: var(--color-pressure);
-    transform: scale(0.75);
+    transform: scale(0.85);
   }
   60% {
-    transform: scale(1.3);
+    transform: scale(1.12);
   }
   100% {
     transform: scale(1);
@@ -2603,6 +2675,7 @@ input:focus-visible {
   .gbtn.ready,
   #btn-cyc.ready.core,
   #stage #attack-bar.warn i,
+  .room-map.on .rm-art,
   #danger.on,
   .breath {
     animation: none;
@@ -2921,7 +2994,7 @@ input:focus-visible {
   color: var(--color-cyclamen-strong);
 }
 
-/* ---------- Sinüzit Atağı barı ve Spray (ui/sinusHud.ts) ---------- */
+/* ---------- Bölüm saati barı (NS4-45: dalga / hızlanma) ve Spray (ui/sinusHud.ts) ---------- */
 #attack-bar[hidden],
 #btn-spray[hidden] {
   display: none !important;
@@ -2945,6 +3018,13 @@ input:focus-visible {
 #attack-bar.v i {
   background: linear-gradient(0deg, var(--color-warning), var(--color-danger));
   transform-origin: bottom;
+}
+/* NS4-45: sıradaki adım hızlanma: dolum leylaktan sıklamene (virüs dalgası turuncu-kırmızı kalır) */
+#attack-bar.speed i {
+  background: linear-gradient(90deg, var(--color-cyclamen-soft), var(--color-cyclamen-strong));
+}
+#attack-bar.v.speed i {
+  background: linear-gradient(0deg, var(--color-cyclamen-soft), var(--color-cyclamen-strong));
 }
 /* bar dolmaya yakın: hafif nabız (uyarı hissi) */
 #attack-bar.warn i {
@@ -2982,505 +3062,4 @@ input:focus-visible {
     color-mix(in srgb, var(--color-fresh) 55%, transparent) 0 4px,
     transparent 4px 7px
   );
-}
-
-/* NS4-44 · Doktor Elif çizimi (src/virus/elif.ts) */
-.elif .elif-skin {
-  fill: var(--color-elif-skin);
-}
-.elif .elif-skin-shade {
-  fill: var(--color-elif-skin-shade);
-}
-.elif .elif-hair {
-  fill: var(--color-elif-hair);
-}
-.elif .elif-hair-shine {
-  fill: none;
-  stroke: var(--color-elif-coat);
-  stroke-width: 3;
-  stroke-linecap: round;
-  opacity: 0.28;
-}
-.elif-coat {
-  fill: var(--color-elif-coat);
-  stroke: var(--color-elif-coat-line);
-  stroke-width: 2;
-}
-.elif .elif-coat-line {
-  fill: none;
-  stroke: var(--color-elif-coat-line);
-  stroke-width: 2;
-  stroke-linecap: round;
-}
-.elif .elif-sleeve {
-  fill: none;
-  stroke: var(--color-elif-coat);
-  stroke-width: 18;
-  stroke-linecap: round;
-}
-.elif .elif-sleeve-line {
-  fill: none;
-  stroke: var(--color-elif-coat-line);
-  stroke-width: 22;
-  stroke-linecap: round;
-}
-.elif .elif-scrub {
-  fill: var(--color-fresh);
-}
-.elif .elif-scrub-dark {
-  fill: var(--color-fresh-strong);
-}
-.elif .elif-steth {
-  fill: none;
-  stroke: var(--color-fresh-strong);
-  stroke-width: 4;
-  stroke-linecap: round;
-}
-.elif .elif-steth-ring {
-  fill: none;
-  stroke: var(--color-fresh-strong);
-  stroke-width: 2;
-}
-.elif .elif-cheek {
-  fill: var(--color-cyclamen);
-  opacity: 0.3;
-}
-.elif .elif-eye {
-  fill: var(--color-elif-hair);
-}
-.elif .elif-eye-white {
-  fill: var(--color-elif-coat);
-  stroke: var(--color-elif-hair);
-  stroke-width: 1.5;
-}
-.elif .elif-eye-shine {
-  fill: var(--color-elif-coat);
-}
-.elif .elif-brow,
-.elif .elif-line {
-  fill: none;
-  stroke: var(--color-elif-hair);
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-.elif .elif-line-bold {
-  stroke-width: 3.6;
-}
-.elif .elif-mouth {
-  fill: var(--color-cyclamen-strong);
-}
-.elif .elif-tongue {
-  fill: var(--color-cyclamen-soft);
-}
-.elif .elif-spark {
-  fill: none;
-  stroke: var(--color-warning);
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-.elif .elif-nazar-b {
-  fill: var(--color-nazar-blue);
-}
-.elif .elif-nazar-w {
-  fill: var(--color-elif-coat);
-}
-.elif .elif-nazar-l {
-  fill: var(--color-nazar-light);
-}
-.elif .elif-nazar-d {
-  fill: var(--color-nazar-dark);
-}
-
-/* NS4-44 · Virüs Avı: mod görünürlüğü */
-#app[data-mode='virus']
-  :is(
-    #next-bg,
-    #lbl-next,
-    #vt-elif,
-    .classic-only,
-    #submit-score,
-    #o-badges,
-    #meter,
-    #hold-bg,
-    #lbl-hold,
-    #next-mystery,
-    #cong,
-    #fx-badges,
-    #room-hud,
-    #room-map,
-    #btn-hold,
-    #btn-cyc,
-    #btn-sneeze,
-    #btn-spray,
-    #attack-bar,
-    #tutorial,
-    #sinus-walls,
-    #pressure,
-    #danger,
-    #stats .row:not(.virus-row)
-  ) {
-  display: none !important;
-}
-#app:not([data-mode='virus'])
-  :is(#virus-lens, #virus-card, .virus-row, #virus-tut, .virus-only, #virus-beaker, #virus-dropper, #virus-elif-side) {
-  display: none !important;
-}
-
-/* NS4-44 · Virüs Avı lensi */
-.virus-lens {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.lens-glass {
-  position: relative;
-  height: 100%;
-  max-width: 100%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 35% 30%,
-    var(--color-surface-strong) 0%,
-    var(--color-fresh-soft) 55%,
-    var(--color-rim) 100%
-  );
-  border: 3px solid var(--color-rim-inner);
-  box-shadow:
-    0 0 0 2px var(--color-rim),
-    inset 0 6px 14px color-mix(in srgb, var(--color-on-accent) 70%, transparent),
-    0 12px 26px -16px color-mix(in srgb, var(--color-board) 60%, transparent);
-}
-.lens-v {
-  position: absolute;
-  width: 48%;
-  aspect-ratio: 1;
-  transition:
-    transform 260ms ease,
-    opacity 260ms ease;
-}
-.lens-v:nth-child(1) {
-  left: 4%;
-  top: 8%;
-}
-.lens-v:nth-child(2) {
-  right: 4%;
-  top: 8%;
-}
-.lens-v:nth-child(3) {
-  left: 26%;
-  bottom: 2%;
-}
-.lens-sprite {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: url('/images/virus/virus-1-sheet.webp') 0 0 / 800% 100% no-repeat;
-  animation: lens-dance 0.72s steps(4) infinite;
-}
-.lens-v[data-type='1'] .lens-sprite {
-  background-image: url('/images/virus/virus-2-sheet.webp');
-  animation-delay: -0.24s;
-}
-.lens-v[data-type='2'] .lens-sprite {
-  background-image: url('/images/virus/virus-3-sheet.webp');
-  animation-delay: -0.48s;
-}
-/* NS4-44 ek: kendi türü patlayınca yere yığılıp ağlar (kare 6), arada dalga geçer (kare 7) */
-.lens-v.is-cry .lens-sprite {
-  background-position-x: 85.714%;
-  animation: lens-sob 0.36s ease-in-out infinite;
-}
-.lens-v.is-taunt .lens-sprite {
-  background-position-x: 100%;
-  animation: lens-taunt 0.28s ease-in-out infinite;
-}
-@keyframes lens-dance {
-  from {
-    background-position-x: 0%;
-  }
-  to {
-    background-position-x: 57.143%;
-  }
-}
-@keyframes lens-sob {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-3%) translateY(1%);
-  }
-  75% {
-    transform: translateX(3%) translateY(1%);
-  }
-}
-@keyframes lens-taunt {
-  0%,
-  100% {
-    transform: rotate(-5deg) translateY(0);
-  }
-  50% {
-    transform: rotate(5deg) translateY(-5%);
-  }
-}
-.lens-v.is-gone {
-  transform: scale(0);
-  opacity: 0;
-  animation: none;
-}
-
-/* NS4-44 · Süre / kalan virüs kartı */
-.virus-card {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-content: center;
-  justify-content: space-between;
-  column-gap: 8px;
-  padding: 4px 10px;
-  font-family: var(--font-display);
-  color: var(--color-text);
-}
-.vc-lbl {
-  font-weight: 700;
-  font-size: calc(var(--fs-hud-sub) * 1.45 * var(--hud-scale));
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  align-self: center;
-}
-.vc-n {
-  font-weight: 700;
-  font-size: calc(var(--fs-hud-value) * 1.7 * var(--hud-scale));
-  line-height: 1.05;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-.virus-card[data-warn] .vc-time {
-  color: var(--color-danger);
-  animation: vc-pulse 1s ease-in-out infinite;
-}
-@keyframes vc-pulse {
-  50% {
-    transform: scale(1.12);
-  }
-}
-.btn-virus .ico-virus {
-  display: inline-block;
-  width: 1.4em;
-  height: 1.4em;
-  margin-right: 0.4em;
-  vertical-align: -0.35em;
-  background: url('/images/virus/virus-1.webp') center / contain no-repeat;
-}
-@media (prefers-reduced-motion: reduce) {
-  .lens-sprite,
-  .lens-v.is-cry .lens-sprite,
-  .lens-v.is-taunt .lens-sprite {
-    animation: none;
-  }
-  .lens-sprite {
-    background-position-x: 14.286%;
-  }
-  .virus-card[data-warn] .vc-time {
-    animation: none;
-  }
-}
-
-/* NS4-44 · Virüs Avı öğreticisi: Elif solda, balon sağda (dar kartta Elif küçülür) */
-.virus-tut {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  padding: 8px 10px 10px 6px;
-}
-.vt-elif {
-  flex: 0 0 auto;
-  width: clamp(56px, 28%, 96px);
-}
-.vt-elif svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-.vt-bubble {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.vt-name {
-  margin: 0 0 2px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--color-fresh-strong);
-}
-
-/* NS4-44 · Virüs Avı oyun sonu: Elif özetin üstünde */
-.over-elif {
-  width: 88px;
-  margin: 0 auto 4px;
-}
-.over-elif svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/* NS4-44 · Skorlar: Klasik / Virüs Avı seçici (Yerel panel) */
-.seg {
-  display: inline-flex;
-  gap: 4px;
-  margin: 0 0 10px;
-  padding: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--color-border);
-}
-.seg-btn {
-  min-height: 36px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-text-muted);
-  font: 600 14px var(--font-display);
-  cursor: pointer;
-}
-.seg-btn[aria-pressed='true'] {
-  background: var(--color-surface-strong);
-  color: var(--color-text);
-  box-shadow: 0 2px 6px -3px color-mix(in srgb, var(--color-board) 50%, transparent);
-}
-.seg-btn:focus-visible {
-  outline: 3px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
-/* NS4-44 ek · Laboratuvar beheri: tahta camın içinde; sinüs ağzı ve yumuşak hale yerine cam duvar */
-#app[data-mode='virus'] #board-bg {
-  border-radius: 6px 6px calc(var(--radius-board) * 1.6) calc(var(--radius-board) * 1.6);
-  box-shadow:
-    inset 0 0 28px 4px color-mix(in srgb, var(--color-board-deep) 70%, transparent),
-    var(--shadow-board);
-}
-#app[data-mode='virus'] #board-bg::after {
-  display: none;
-}
-.virus-beaker {
-  pointer-events: none;
-}
-.virus-beaker svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.virus-beaker .bk-glass {
-  fill: none;
-  stroke: var(--color-rim-inner);
-  stroke-width: 5;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-.virus-beaker .bk-edge {
-  fill: none;
-  stroke: var(--color-rim);
-  stroke-width: 11;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  opacity: 0.9;
-}
-.virus-beaker .bk-shine {
-  fill: none;
-  stroke: var(--color-on-accent);
-  stroke-width: 3;
-  stroke-linecap: round;
-  opacity: 0.55;
-}
-.virus-beaker .bk-mark {
-  stroke: var(--color-rim-inner);
-  stroke-width: 2;
-  opacity: 0.75;
-}
-.virus-dropper {
-  pointer-events: none;
-  transform-origin: 50% 0%;
-}
-.virus-dropper svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.virus-dropper .dr-bulb {
-  fill: var(--color-cyclamen);
-  stroke: var(--color-cyclamen-strong);
-  stroke-width: 1.5;
-  transform-origin: 50% 85%;
-  transition: transform 120ms ease-out;
-}
-.virus-dropper .dr-collar {
-  fill: var(--color-cyclamen-strong);
-}
-.virus-dropper .dr-glass {
-  fill: color-mix(in srgb, var(--color-on-accent) 55%, transparent);
-  stroke: var(--color-rim-inner);
-  stroke-width: 1.5;
-}
-.virus-dropper .dr-shine {
-  stroke: var(--color-on-accent);
-  stroke-width: 1.5;
-  stroke-linecap: round;
-  opacity: 0.8;
-}
-.virus-dropper.is-squeeze .dr-bulb {
-  transform: scale(1.12, 0.72);
-}
-.virus-elif-side {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  pointer-events: none;
-}
-.virus-elif-side[hidden] {
-  display: none;
-}
-.virus-elif-side svg {
-  display: block;
-  height: 100%;
-  max-width: 100%;
-  width: auto;
-  overflow: visible;
-}
-.virus-elif-side.is-panic svg {
-  animation: elif-panic 0.32s ease-in-out infinite;
-}
-@keyframes elif-panic {
-  0%,
-  100% {
-    transform: translateX(0) rotate(0);
-  }
-  25% {
-    transform: translateX(-3%) rotate(-2deg);
-  }
-  75% {
-    transform: translateX(3%) rotate(2deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .virus-elif-side.is-panic svg {
-    animation: none;
-  }
-  .virus-dropper .dr-bulb {
-    transition: none;
-  }
-}
-
-/* NS4-44 ek · portrede süre kartı alçak: süre ve kalan virüs tek satırda (büyük yazı sığsın) */
-.virus-card:not(.wide) {
-  grid-template-columns: auto auto auto auto;
-  justify-content: space-around;
-}
-.virus-card:not(.wide) .vc-lbl {
-  font-size: calc(var(--fs-hud-sub) * 1.1 * var(--hud-scale));
-}
-.virus-card:not(.wide) .vc-n {
-  font-size: calc(var(--fs-hud-value) * 1.25 * var(--hud-scale));
 }

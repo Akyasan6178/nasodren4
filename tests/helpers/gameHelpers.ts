@@ -128,6 +128,8 @@ const EVENT_FLAGS: Record<GameEventName, true> = {
   attackstart: true,
   attack: true,
   attackline: true,
+  speedup: true,
+  virusclear: true,
   spray: true,
   spraystate: true,
 };

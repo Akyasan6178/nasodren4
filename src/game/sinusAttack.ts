@@ -1,105 +1,96 @@
 /* =====================================================================
-   SİNÜZİT ATAĞI VE SPRAY (kural seti sinus-attack-spray-v1;
-   docs/SINUS-ATTACK-AND-SPRAY-FINAL.md):
-   - Sinüzit Atağı: bar yalnızca aktif oynanışta dolar (SINUS.attackMs).
-     Dolunca alttan tek boşluklu bir gri satır gelir (tahta bir sıra yukarı
-     kayar) ve görünür alt SINUS.attackZoneRows sıranın boş hücrelerine en
-     çok SINUS.attackScatter dağınık gri düşer.
-   - Spray: standart satır temizlemesinde kırılan renkli hücrelerle dolar;
-     yalnızca atak kaynaklı grileri hedefler (en çok SINUS.sprayCells).
-   - Hücre kaynağı (Game.origin): her gri oda ya da atak kaynaklıdır. Oda
-     hedefi, Sıklamen çekirdeği ve Sıklamen gücü atak grisini görmez; atak
-     grisi oda geçişinde yeni odaya taşınır; atak grisi içeren tam satır
-     puan, satır, seviye, kombo ve B2B üretmez.
+   DALGALAR VE SPRAY (kural seti sinus-dalga-v1; docs/NS4-45-ZORLASAN-DALGALAR.md;
+   önceki: sinus-attack-spray-v1, docs/SINUS-ATTACK-AND-SPRAY-FINAL.md):
+   - Bölüm saati (game/pressure.ts) aktif oynanışta adım atar (ilk adım
+     PRESSURE.firstStepMs, sonra PRESSURE.stepMs): tek adımlar dalga (yukarıdan tek kareler ve virüsler düşer,
+     dropCells), çift adımlar hızlanma. Alttan satır itme yok (NS4-45).
+   - Spray: satır temizlemesinde kırılan renkli hücrelerle dolar; yalnızca
+     dalga hücrelerini (tek kare ve virüs) hedefler (en çok SINUS.sprayCells).
+   - Hücre kaynağı (Game.origin): her gri oda ya da dalga kaynaklıdır. Oda
+     hedefi, Sıklamen çekirdeği ve Sıklamen gücü dalga hücresini görmez;
+     dalga hücreleri oda geçişinde yeni odaya taşınır (virüs türü korunur).
+     NS4-45: dalga hücresi içeren satır normal puanlanır; virüs ek puan verir.
    Bütün rastgele seçimler oyunun tohumlu akışlarından gelir (Math.random yok).
    ===================================================================== */
 import { COLS, ROWS } from '../config/gameConfig';
 import { PIECE } from './pieces';
 
 export const SINUS = {
-  /** Sinüzit Atağı barının dolma süresi (ms; yalnızca aktif oynanışta ilerler). */
-  attackMs: 60_000,
-  /** Atak başına alt bölgeye dağılan gri hedefi (uygun yer yoksa daha az) ve bölgenin yüksekliği (sıra). */
-  attackScatter: 3,
+  /** Oda geçişinde taşınan dalga hücrelerinin yerleştiği alt bölge (sıra). */
   attackZoneRows: 8,
-  /** Spray: hazır olması için kırılan renkli hücre sayısı ve kullanım başına en çok silinen atak grisi. */
+  /** Spray: hazır olması için kırılan renkli hücre sayısı ve kullanım başına en çok silinen dalga hücresi. */
   sprayThreshold: 30,
   sprayCells: 8,
 } as const;
 
 /**
- * Hücre kaynağı (Game.origin; tahtayla aynı boyutta ayrı katman, board değeri değişmez): gri bulutçuğun nereden
- * geldiği. Renkli ve boş hücrelerde 0.
+ * Hücre kaynağı (Game.origin; tahtayla aynı boyutta ayrı katman, board değeri değişmez): gri hücrenin nereden
+ * geldiği. Renkli ve boş hücrelerde 0. NS4-45: virüs, türüyle birlikte saklanır (virus + 0..VIRUS_KINDS-1).
  */
-export const ORIGIN = { none: 0, room: 1, attack: 2 } as const;
+export const ORIGIN = { none: 0, room: 1, attack: 2, virus: 3 } as const;
+/** NS4-45: virüs türü sayısı (public/images/virus/virus-1..3.webp). */
+export const VIRUS_KINDS = 3;
 
-/** Atak kaynaklı gri mi. */
+/** Dalga hücresi mi (tek kare ya da virüs; board değeri gri). Spray hedefi; oda hedefi ve çekirdek görmez. */
 export const isAttackGray = (board: Uint8Array, origin: Uint8Array, k: number): boolean =>
-  board[k] === PIECE.GARBAGE && origin[k] === ORIGIN.attack;
+  board[k] === PIECE.GARBAGE && (origin[k] ?? 0) >= ORIGIN.attack;
+
+/** NS4-45: virüs hücresi mi. */
+export const isVirus = (board: Uint8Array, origin: Uint8Array, k: number): boolean =>
+  board[k] === PIECE.GARBAGE && (origin[k] ?? 0) >= ORIGIN.virus;
+
+/** NS4-45: virüs türü (0..VIRUS_KINDS-1); virüs değilse -1. */
+export const virusKind = (origin: number): number => (origin >= ORIGIN.virus ? origin - ORIGIN.virus : -1);
 
 /** [0, n) aralığında tamsayı. */
 const pick = (rand: () => number, n: number) => Math.min(n - 1, Math.floor(rand() * n));
 
 /**
- * Tahta, bitki, kaynak ve kanal kaydı bir sıra yukarı kayar; en alta boşluğu `hole` sütununda olan atak kaynaklı gri
- * satır gelir (bitkisiz). En üst sırada dolu hücre varsa kaydırma yapılmaz (taşma): false.
+ * Dalga hücreleri yukarıdan düşer: `kinds` sırasıyla her biri (ORIGIN.attack tek kare, ORIGIN.virus.. virüs) rastgele
+ * bir sütunun yığın tepesine (sütundaki en üst dolu hücrenin hemen üstü; boş sütunda en alt sıra) oturur. Atlanan
+ * sütunlar: tepe gizli sıralarda (< `from`), hava kanalı (channelAt; oda sıralarının üstünde en üst kanalın sütunu da
+ * boş kalır, kanala üstten erişim kapanmaz), `blocked` (düşen parçanın hücreleri) ve sırayı tam dolduracak hücre
+ * (dalga kendiliğinden satır silmez). Uygun sütun kalmazsa daha az düşer; sonsuz arama yok. Düşen hücreler döner.
  */
-export function pushGarbageRow(
+export function dropCells(
   board: Uint8Array,
   plant: Uint8Array,
   origin: Uint8Array,
   channelAt: Int8Array,
-  hole: number,
-): boolean {
-  for (let x = 0; x < COLS; x++) if (board[x]) return false;
-  board.copyWithin(0, COLS);
-  plant.copyWithin(0, COLS);
-  origin.copyWithin(0, COLS);
-  channelAt.copyWithin(0, 1);
-  const base = (ROWS - 1) * COLS;
-  for (let x = 0; x < COLS; x++) {
-    board[base + x] = x === hole ? 0 : PIECE.GARBAGE;
-    plant[base + x] = 0;
-    origin[base + x] = x === hole ? ORIGIN.none : ORIGIN.attack;
-  }
-  channelAt[ROWS - 1] = hole;
-  return true;
-}
-
-/**
- * En alt `zone` sıranın boş hücrelerine en çok `n` atak grisi. Atlanan hücreler: dolu hücre, hava kanalı (channelAt),
- * `blocked` (düşen parça) ve sırayı tam dolduracak hücre. Aday listesi sonludur (sonsuz arama yok); uygun hücre azsa
- * daha az eklenir. Eklenen hücre indeksleri döner.
- */
-export function scatterGray(
-  board: Uint8Array,
-  origin: Uint8Array,
-  channelAt: Int8Array,
   rand: () => number,
-  n: number,
-  zone: number,
+  kinds: readonly number[],
+  from: number,
   blocked: ReadonlySet<number> = new Set(),
-): number[] {
-  const cand: number[] = [];
-  for (let y = Math.max(0, ROWS - zone); y < ROWS; y++)
-    for (let x = 0; x < COLS; x++) {
-      const k = y * COLS + x;
-      if (!board[k] && channelAt[y] !== x && !blocked.has(k)) cand.push(k);
-    }
+): { readonly k: number; readonly kind: number }[] {
+  let topY = 0;
+  while (topY < ROWS && (channelAt[topY] ?? -1) < 0) topY++;
+  const topCh = topY < ROWS ? (channelAt[topY] ?? -1) : -1;
   const filled = new Int8Array(ROWS);
-  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (board[y * COLS + x]) filled[y]++;
-  const out: number[] = [];
-  while (out.length < n && cand.length) {
-    const i = pick(rand, cand.length);
-    const k = cand[i] ?? 0;
-    cand[i] = cand[cand.length - 1] ?? 0;
-    cand.pop();
-    const y = (k / COLS) | 0;
-    if (filled[y] + 1 >= COLS) continue; // tam satır oluşmasın
+  for (let k = 0; k < board.length; k++) if (board[k]) filled[(k / COLS) | 0]++;
+  const landing = (x: number) => {
+    let y = 0;
+    while (y < ROWS && !board[y * COLS + x]) y++;
+    y--;
+    if (y < from) return -1;
+    const ch = y < topY ? topCh : (channelAt[y] ?? -1);
+    const k = y * COLS + x;
+    if (ch === x || blocked.has(k) || (filled[y] ?? 0) + 1 >= COLS) return -1;
+    return k;
+  };
+  const out: { k: number; kind: number }[] = [];
+  for (const kind of kinds) {
+    const cand: number[] = [];
+    for (let x = 0; x < COLS; x++) {
+      const k = landing(x);
+      if (k >= 0) cand.push(k);
+    }
+    if (!cand.length) break;
+    const k = cand[pick(rand, cand.length)] ?? 0;
     board[k] = PIECE.GARBAGE;
-    origin[k] = ORIGIN.attack;
-    filled[y]++;
-    out.push(k);
+    plant[k] = 0;
+    origin[k] = kind;
+    filled[(k / COLS) | 0]++;
+    out.push({ k, kind });
   }
   return out;
 }
@@ -133,7 +124,7 @@ export function hasAttackGray(board: Uint8Array, origin: Uint8Array, from: numbe
   return false;
 }
 
-/** `rows` sıralarından atak grisi içerenler (atak satırı: puan, satır, seviye, kombo, B2B üretmez). */
+/** `rows` sıralarından dalga hücresi içerenler (ölçüm; NS4-45'ten beri normal puanlanır). */
 export function attackRows(board: Uint8Array, origin: Uint8Array, rows: readonly number[]): number[] {
   return rows.filter((y) => {
     for (let x = 0; x < COLS; x++) if (isAttackGray(board, origin, y * COLS + x)) return true;
@@ -160,7 +151,7 @@ export interface CarryResult {
  *   2. Değilse görünür tahtanın alt `zone` sırasındaki en yakın uygun hücre (Manhattan; eşitlikte alttaki, sonra soldaki).
  *   3. O da yoksa tahtanın geri kalanındaki en yakın uygun hücre (üstten taşma baskısı; gizli sıralar dahil).
  *   4. Hiç yoksa hücre yerleşmez ve `lost` sayılır (çağıran mevcut top-out kuralını uygular; sessiz silme yok).
- * Yerleşen hücre: board gri, origin attack, plant 0.
+ * Yerleşen hücre: board gri, plant 0, origin `kinds[i]` (NS4-45: virüs türü korunur; verilmezse ORIGIN.attack).
  */
 export function carryAttackCells(
   board: Uint8Array,
@@ -169,6 +160,7 @@ export function carryAttackCells(
   channelAt: Int8Array,
   cells: readonly number[],
   zone: number,
+  kinds: readonly number[] = [],
 ): CarryResult {
   const filled = new Int8Array(ROWS);
   for (let k = 0; k < board.length; k++) if (board[k]) filled[(k / COLS) | 0]++;
@@ -183,10 +175,10 @@ export function carryAttackCells(
     return !board[k] && ch !== x && (filled[y] ?? 0) + 1 < COLS;
   };
   const placed: number[] = [];
-  const put = (k: number) => {
+  const put = (k: number, kind: number) => {
     board[k] = PIECE.GARBAGE;
     plant[k] = 0;
-    origin[k] = ORIGIN.attack;
+    origin[k] = kind;
     filled[(k / COLS) | 0]++;
     placed.push(k);
   };
@@ -207,15 +199,17 @@ export function carryAttackCells(
       }
     return best;
   };
-  const rest: number[] = [];
-  for (const k of cells)
-    if (ok(k)) put(k);
-    else rest.push(k);
+  const rest: [number, number][] = [];
+  cells.forEach((k, i) => {
+    const kind = kinds[i] ?? ORIGIN.attack;
+    if (ok(k)) put(k, kind);
+    else rest.push([k, kind]);
+  });
   const bottom = Math.max(0, ROWS - zone);
   let relocated = 0,
     overflow = 0,
     lost = 0;
-  for (const k of rest) {
+  for (const [k, kind] of rest) {
     let c = nearest(k, bottom, ROWS);
     if (c < 0) {
       c = nearest(k, 0, bottom);
@@ -223,14 +217,14 @@ export function carryAttackCells(
     }
     if (c < 0) lost++;
     else {
-      put(c);
+      put(c, kind);
       relocated++;
     }
   }
   return { placed, relocated, overflow, lost };
 }
 
-/** Satırlardaki renkli (1-7) hücre sayısı: Spray şarjına katkı (yalnızca normal satırlar sayılır). */
+/** Satırlardaki renkli (1-7) hücre sayısı: Spray şarjına katkı. */
 export function coloredInRows(board: Uint8Array, rows: readonly number[]): number {
   let n = 0;
   for (const y of rows)

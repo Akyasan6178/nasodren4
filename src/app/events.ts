@@ -18,6 +18,7 @@ import { CLOUD_HINT, ROOM_GOAL, roomText } from '../content/rooms';
 import { hideRoomMap, showRoomMap } from '../ui/sinusMap';
 import { PIECE } from '../game/pieces';
 import { COLS } from '../config/gameConfig';
+import { SPEED_SUB, SPEED_TITLE, WAVE_SUB, WAVE_TITLE, virusClearText } from '../content/waves';
 import { ROOMS } from '../config/gameConfig';
 import { FULL_RELIEF, FULL_RELIEF_SUB } from '../content/relief';
 import { drainCongestion, fmt, reliefFlash } from '../ui/hud';
@@ -133,14 +134,32 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
   game.on('powerdone', (e) => {
     if (e.kind === 'sneeze' && game.sneezeUses >= 3) award('hapsu');
   });
-  // Sinüzit Atağı: kısa kırmızı-turuncu uyarı ve hafif sarsıntı (reduced motion: sarsıntı yok), sert bırakma sesi ve
-  // titreşimi (yeni ses yok). Spray: drenaj sesi clearstart'ta çalar; püskürtme GameView.onClearStart'ta.
+  // NS4-45 dalga: kısa kırmızı-turuncu uyarı ve hafif sarsıntı (reduced motion: sarsıntı yok), hücreler yukarıdan
+  // düşer, sert bırakma sesi ve titreşimi (yeni ses yok). Hızlanma: seviye atlama sesi ve başlık. Spray: drenaj sesi
+  // clearstart'ta çalar; püskürtme GameView.onClearStart'ta.
   game.on('attackstart', () => track('sinus_attack_started', { room: game.room, level: game.level }));
   game.on('attack', (e) => {
     view.sinusAttackFx();
+    view.dropIn(e.cells.map((c) => c.k));
     sound.hard();
     buzz(HAPTIC.hard);
-    track('sinus_attack_row_added', { attackCellsAdded: COLS - 1 + e.scattered, room: game.room, level: game.level });
+    popup(WAVE_TITLE, WAVE_SUB, 'wave');
+    track('wave_dropped', {
+      wave: e.wave,
+      singles: e.singles,
+      viruses: e.viruses,
+      room: game.room,
+      level: game.level,
+    });
+  });
+  game.on('speedup', (e) => {
+    sound.level();
+    popup(SPEED_TITLE, SPEED_SUB, 'speed');
+    track('speed_up', { steps: e.steps, room: game.room, level: game.level });
+  });
+  game.on('virusclear', (e) => {
+    toast(virusClearText(e.n, e.pts));
+    track('virus_cleared', { viruses: e.n, room: game.room, level: game.level });
   });
   game.on('spray', (e) => track('spray_used', { sprayTargets: e.cells.length, room: game.room, level: game.level }));
   game.on('spraystate', (s) => {
@@ -179,7 +198,7 @@ export function wireGameEvents({ game, view, sound, buzz, lifecycle }: WireDeps)
     if (e.room === 0) cloudHint = false; // yeni oyun
     hideRoomMap();
     track('room_start', { room: e.room, gray: e.gray });
-    if (e.room < ROOMS.length) popup(`${e.room + 1}. oda · ${roomText(e.room).name}`, ROOM_GOAL);
+    if (e.room < ROOMS.length) popup(`${e.room + 1}. bölüm · ${roomText(e.room).name}`, ROOM_GOAL);
     else lifecycle.showFinal(); // NS4-31: dört sinüs açık: final ekranı (Serbest nefes popup'ı devam edilince)
   });
   game.on('allclear', (e) => {

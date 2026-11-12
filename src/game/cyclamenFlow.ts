@@ -66,7 +66,7 @@ export function shiftedRow(y: number, removed: readonly number[]): number {
  * gibi sayılır (atak grisi yalnızca Spray'in hedefidir); oyunda her gri oda ya da atak kaynaklıdır.
  */
 const isRoomGray = (board: Uint8Array, k: number, origin?: Uint8Array) =>
-  board[k] === PIECE.GARBAGE && origin?.[k] !== ORIGIN.attack;
+  board[k] === PIECE.GARBAGE && (origin?.[k] ?? 0) < ORIGIN.attack; // NS4-45: virüs de dalga hücresidir
 
 /**
  * Aktivasyon: `k` hücresinin (çekirdek) çevresinde (sütun ±FLOW.nearCols, sıra ±FLOW.nearRows) gri var mı; varsa hedef

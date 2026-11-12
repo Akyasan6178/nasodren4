@@ -1,6 +1,8 @@
 # NS4-44 · Virüs Avı modu
 
-Tarih: 2026-11-10. Dal: `feat/ns4-44-virus-avi`. Tasarım: [`docs/superpowers/specs/2026-11-10-virus-avi-design.md`](superpowers/specs/2026-11-10-virus-avi-design.md), plan: [`docs/superpowers/plans/2026-11-10-virus-avi.md`](superpowers/plans/2026-11-10-virus-avi.md).
+> **Kaldırıldı (2026-11-12, NS4-45).** Müşteri kararıyla ayrı mod yerine klasik oyuna zorlaşan dalgalar geldi: [NS4-45-ZORLASAN-DALGALAR.md](NS4-45-ZORLASAN-DALGALAR.md). Bu belge tarihsel kayıttır; kod git geçmişinde (`7571a6a` ve öncesi). Virüs görselleri klasik moddaki virüs hücresinde kullanılıyor.
+
+Tarih: 2026-11-10. Dal: `feat/ns4-44-virus-avi`. Tasarım ve plan belgeleri NS4-45 ile silindi (git geçmişinde).
 
 ## 1. Ne yapıldı
 

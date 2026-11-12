@@ -13,6 +13,7 @@ import {
   CLOUD_HINT,
   FREE_GOAL,
   FREE_NAME,
+  NOSE_CLEAR,
   ROOM_CLEAR,
   ROOM_GOAL,
   ROOM_NEXT_FINAL,
@@ -20,6 +21,7 @@ import {
   roomText,
 } from '../../src/content/rooms';
 import { FULL_RELIEF, FULL_RELIEF_SUB } from '../../src/content/relief';
+import { BAR_LABEL, SPEED_SUB, SPEED_TITLE, WAVE_SUB, WAVE_TITLE, virusClearText } from '../../src/content/waves';
 import { HEALTH_TIPS, HEALTH_TOASTS } from '../../src/content/health';
 import { CYC_NAME, CYC_SHORT, CYC_TEXT, SNEEZE_NAME, SNEEZE_SHORT, SNEEZE_TEXT } from '../../src/ui/powerups';
 import { GLOBAL_TEXT, NO_NICKNAME } from '../../src/ui/scoresView';
@@ -27,8 +29,6 @@ import { SUBMIT_TEXT } from '../../src/ui/submitScore';
 import { ROTATE_O_NOTE, STEP_COPY, TUTORIAL_DONE_TEXT } from '../../src/tutorial/steps';
 import { MP_TEXT } from '../../src/multiplayer/versus';
 import { NET_TEXT } from '../../src/multiplayer/net';
-import { VIRUS_TEXT, VIRUS_TUT_CHEER, VIRUS_TUT_COPY, VIRUS_TUT_LABELS } from '../../src/virus/copy';
-import { NARRATOR } from '../../src/virus/elif';
 
 export type Area =
   | 'ana_menu'
@@ -46,8 +46,7 @@ export type Area =
   | 'cta'
   | 'bildirimler'
   | 'rozetler'
-  | 'cok_oyunculu'
-  | 'virus_avi';
+  | 'cok_oyunculu';
 
 /** Görünür metin: yorum/SVG/etiket atılır, boşluk tekleşir. */
 export function visibleText(s: string): string {
@@ -129,6 +128,8 @@ export const INVENTORY: Readonly<Record<Area, readonly string[]>> = {
     ...ROOMS.map((_, i) => roomLabel(i)),
     FREE_NAME,
     'Bulutçuk',
+    // NS4-45: bölüm saati barının ekran okuyucu adları
+    ...Object.values(BAR_LABEL),
     ...[...hudSrc.matchAll(/`((?:Ferah nefes)[^`]*)`/g)].map((m) => m[1] ?? ''),
   ],
   guclendiriciler: [
@@ -180,14 +181,22 @@ export const INVENTORY: Readonly<Record<Area, readonly string[]>> = {
   ],
   bildirimler: [
     ...notices(eventsSrc),
+    // NS4-45: zorlaşan dalgalar (bildirim ve virüs temizleme şablonu)
+    WAVE_TITLE,
+    WAVE_SUB,
+    SPEED_TITLE,
+    SPEED_SUB,
+    virusClearText(1, 0).replace('+0', '+<puan>'),
+    virusClearText(2, 0).replace('2 virüs', '<n> virüs').replace('+0', '+<puan>'),
     ...notices(hudSrc),
     HEALTH_TOASTS.cyclamenReady.text,
     ...notices(badgesUiSrc),
     // NS4-27: oda popup'ları (şablonlu metinler)
-    ...ROOMS.map((_, i) => `${i + 1}. oda · ${roomText(i).name}`),
+    ...ROOMS.map((_, i) => `${i + 1}. bölüm · ${roomText(i).name}`),
     ROOM_GOAL,
     // NS4-31: oda açılış kartı (harita)
     ROOM_CLEAR,
+    NOSE_CLEAR,
     ...ROOMS.map((_, i) => `${roomText(i).name} ferahladı · +<bonus>`),
     ...ROOMS.slice(1).map((_, i) => `Sıradaki: ${roomText(i + 1).name}`),
     ROOM_NEXT_FINAL,
@@ -200,15 +209,6 @@ export const INVENTORY: Readonly<Record<Area, readonly string[]>> = {
     `${FULL_RELIEF_SUB} · +<bonus>`,
   ],
   rozetler: Object.values(BADGES).flatMap((b) => [b.name, b.desc]),
-  // NS4-44: Virüs Avı (HUD, lens, oyun sonu başlıkları, bölüm bildirimleri, Doktor Elif'in öğretici cümleleri)
-  virus_avi: [
-    ...Object.values(VIRUS_TEXT).map((v) => (typeof v === 'function' ? v(2) : v)),
-    `${VIRUS_TEXT.level} 2`,
-    NARRATOR.name,
-    ...Object.values(VIRUS_TUT_COPY).flatMap((c) => [c.keyboard, c.touch]),
-    VIRUS_TUT_CHEER,
-    ...Object.values(VIRUS_TUT_LABELS),
-  ],
 };
 
 /** Bütün görünür metinler (tekrarsız). */

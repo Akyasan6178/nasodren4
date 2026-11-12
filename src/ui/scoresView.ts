@@ -41,8 +41,6 @@ export const NO_NICKNAME = '—';
 export interface ScoresViewDeps {
   readonly client: LeaderboardClient;
   readonly loadLocal: () => LocalScore[];
-  /** NS4-44: Virüs Avı yerel listesi (kural seti virus-avi-v1). Verilmezse boş. */
-  readonly loadLocalVirus?: () => LocalScore[];
   /** Bu oturumda global tabloya gönderilen son skor (yoksa null). */
   readonly mine?: () => GlobalEntry | null;
 }
@@ -79,12 +77,7 @@ function fillTable(table: HTMLElement, rows: readonly Row[]): void {
   }
 }
 
-export function createScoresView({
-  client,
-  loadLocal,
-  loadLocalVirus = () => [],
-  mine = () => null,
-}: ScoresViewDeps): ScoresView {
+export function createScoresView({ client, loadLocal, mine = () => null }: ScoresViewDeps): ScoresView {
   let current: ScoresTab = 'local';
   let globalLoadedThisOpen = false;
   let token = 0;
@@ -95,29 +88,14 @@ export function createScoresView({
   const refresh = $('b-global-refresh', HTMLButtonElement);
   const gTable = $('table-global');
 
-  const toRows = (list: LocalScore[]): Row[] =>
-    list.map((e, i) => ({ rank: i + 1, nickname: e.nickname, score: e.score, lines: e.lines }));
-  const localRows = (): Row[] => toRows(loadLocal());
-  /** NS4-44: Yerel panelde hangi liste (Klasik / Virüs Avı) gösteriliyor. */
-  let localMode: 'classic' | 'virus' = 'classic';
+  const localRows = (): Row[] =>
+    loadLocal().map((e, i) => ({ rank: i + 1, nickname: e.nickname, score: e.score, lines: e.lines }));
   function renderLocal(): void {
     const rows = localRows();
-    const vrows = toRows(loadLocalVirus());
     fillTable($('table-local'), rows);
-    fillTable($('table-virus'), vrows);
-    const virus = localMode === 'virus';
-    $('table-local').hidden = virus || rows.length === 0;
-    $('local-empty').hidden = virus || rows.length > 0;
-    $('table-virus').hidden = !virus || vrows.length === 0;
-    $('virus-empty').hidden = !virus || vrows.length > 0;
-    $('seg-classic').setAttribute('aria-pressed', String(!virus));
-    $('seg-virus').setAttribute('aria-pressed', String(virus));
+    $('table-local').hidden = rows.length === 0;
+    $('local-empty').hidden = rows.length > 0;
   }
-  for (const m of ['classic', 'virus'] as const)
-    $(m === 'classic' ? 'seg-classic' : 'seg-virus').addEventListener('click', () => {
-      localMode = m;
-      renderLocal();
-    });
 
   function renderGlobal(r: FetchResult | 'loading'): void {
     const loading = r === 'loading';
@@ -210,7 +188,6 @@ export function createScoresView({
   return {
     open() {
       globalLoadedThisOpen = false;
-      localMode = 'classic';
       renderLocal();
       select('local'); // ilk odak (data-focus) Yerel sekmesindedir; son oyun yerel listededir
     },

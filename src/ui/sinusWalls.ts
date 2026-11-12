@@ -4,7 +4,7 @@
    şekli var. Oda açıldıkça (Game.roomOpenness) duvarlar geri çekilir.
    Birim hücredir (viewBox 0 0 COLS VIS). Renk ve parıltı CSS'tedir.
    ===================================================================== */
-import { COLS, ROOMS, VIS } from '../config/gameConfig';
+import { COLS, ROOMS, VIS, type RoomKind } from '../config/gameConfig';
 import { svg } from './dom';
 
 type Side = 'left' | 'right' | 'top' | 'bottom';
@@ -22,13 +22,23 @@ export interface WallShape {
 }
 
 /**
- * Oda şekilleri (ROOMS sırasıyla; son eleman Serbest nefes). Üst kenarın ortası sinüs ağzıdır: orada kabarık yok.
+ * Bölüm türlerinin şekilleri (sol taraf; sağ taraf aynası, bkz. mirrorShape) ve Serbest nefes. Üst kenarın ortası
+ * sinüs ağzıdır: orada kabarık yok.
+ * - Burun boşluğu (NS4-46): dar, uzun geçit; dış duvarda üç burun kıvrımı (konka), iç duvar (orta bölme) düz.
  * - Yanak: geniş, yuvarlak mağara; tabanı derin.
  * - Gözler arası (etmoid): petek gibi küçük, sık kıvrımlar.
  * - Alın: üstü kubbe, alta doğru huni gibi daralır.
- * - Kafa tabanı (sfenoid): derin kutu, tabanında orta sırt (kıvrımlar üst yarıda: alt yarı başta gri sıralarla dolu).
  */
-export const WALLS: Readonly<Record<(typeof ROOMS)[number]['id'] | 'free', WallShape>> = {
+export const WALLS: Readonly<Record<RoomKind | 'free', WallShape>> = {
+  burun: {
+    corners: [1.2, 1.2, 1.6, 1.6],
+    bulges: [
+      { side: 'left', at: 5.5, size: 0.85, span: 2.2 },
+      { side: 'left', at: 10.5, size: 0.95, span: 2.4 },
+      { side: 'left', at: 15.5, size: 0.85, span: 2.2 },
+      { side: 'right', at: 10, size: 0.35, span: 8 },
+    ],
+  },
   yanak: {
     corners: [1.6, 1.6, 2.8, 2.8],
     bulges: [
@@ -52,14 +62,6 @@ export const WALLS: Readonly<Record<(typeof ROOMS)[number]['id'] | 'free', WallS
       { side: 'right', at: 6, size: 0.3, span: 2 },
       { side: 'left', at: 15, size: 0.9, span: 4.5 },
       { side: 'right', at: 15, size: 0.9, span: 4.5 },
-    ],
-  },
-  sfenoid: {
-    corners: [1.4, 1.4, 1.8, 1.8],
-    bulges: [
-      { side: 'bottom', at: 5, size: 0.8, span: 1.8 },
-      { side: 'left', at: 7, size: 0.75, span: 3 },
-      { side: 'right', at: 4.5, size: 0.7, span: 3 },
     ],
   },
   free: { corners: [1, 1, 1, 1], bulges: [] },
@@ -152,10 +154,22 @@ export function wallPath(shape: WallShape, open: number, scale = 1): string {
   return wallPolygons(shape, open, scale).map(poly).join('');
 }
 
-/** Oda sırası → şekil. Serbest nefes (ROOMS.length ve sonrası) ve oda akışı kapalıyken 'free'. */
+/** NS4-46: sağ taraf: sol/sağ kabarıklar ve köşeler yer değiştirir. */
+export function mirrorShape(shape: WallShape): WallShape {
+  const [tl, tr, br, bl] = shape.corners;
+  return {
+    corners: [tr, tl, bl, br],
+    bulges: shape.bulges.map((b) =>
+      b.side === 'left' ? { ...b, side: 'right' } : b.side === 'right' ? { ...b, side: 'left' } : b,
+    ),
+  };
+}
+
+/** Oda sırası → şekil (türün şekli; sağ tarafta aynası). Serbest nefes ve oda akışı kapalıyken 'free'. */
 export function wallShape(room: number): WallShape {
   const r = ROOMS[room];
-  return r ? WALLS[r.id] : WALLS.free;
+  if (!r) return WALLS.free;
+  return r.side === 'sag' ? mirrorShape(WALLS[r.kind]) : WALLS[r.kind];
 }
 
 /** shown: gösterilen açıklık (her karede ilerler); written: yola en son yazılan değer (-1: henüz yok). */

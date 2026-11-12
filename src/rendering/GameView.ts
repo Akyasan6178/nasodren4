@@ -21,7 +21,8 @@ import { bloomIndex, bloomRotation, createPlantAtlas, stemIndex, PLANT_COLS, PLA
 import type { PlantArt } from './plants';
 import { PLANTS } from '../game/plants';
 import { FLOW, hasCore, withCore } from '../game/cyclamenFlow';
-import { ORIGIN } from '../game/sinusAttack';
+import { ORIGIN, VIRUS_KINDS, virusKind } from '../game/sinusAttack';
+import { createVirusCellCanvas, loadVirusArt } from './virusArt';
 import { CORE_FX, activeCorePulse, coreMarkPulse, createAttackMarkCanvas, createCoreMarkCanvas } from './coreMark';
 import {
   Budget,
@@ -38,6 +39,7 @@ import {
   RELIEF_FX,
   ROOM_FX,
   SNEEZE_FX,
+  WAVE_FALL,
   PROTO_FX,
   SPARKLE_TINTS,
   airflowRate,
@@ -187,6 +189,11 @@ export class View {
   coreTex!: PIXI.Texture;
   /** Atak grisi köşe işareti dokusu (tahta hücrelerinin 4. çocuğu). */
   attackTex!: PIXI.Texture;
+  /** NS4-45: virüs hücresi dokuları (tür sırasıyla) ve görselleri (yüklenene kadar null: yedek çizim). */
+  virusTex: PIXI.Texture[] = [];
+  virusArt: HTMLImageElement[] | null = null;
+  /** NS4-45: dalgayla yukarıdan düşen hücreler (görünür hücre sprite'ı, geçen süre, gecikme). */
+  readonly falls: { readonly s: PIXI.Sprite; readonly r: number; t: number; readonly delay: number }[] = [];
   readonly marks: PIXI.Sprite[];
   coreT: number;
   /** Aktif çekirdeğin hedef sırası: blokların arkasında altın şerit (Texture.WHITE). */
@@ -376,6 +383,11 @@ export class View {
       this.art = art;
       if (this.L) this.buildTextures(this.L.cell);
     });
+    void loadVirusArt().then((imgs) => {
+      if (!imgs) return;
+      this.virusArt = imgs;
+      if (this.L) this.buildTextures(this.L.cell);
+    });
   }
 
   /**
@@ -424,7 +436,8 @@ export class View {
       oldHappy = this.happyTex,
       oldPetal = this.petalTex,
       oldCore = this.coreTex,
-      oldAttack = this.attackTex;
+      oldAttack = this.attackTex,
+      oldVirus = this.virusTex;
     const { atlas, P } = createBlockAtlas(px, this.art); // NS4-03: çizim rendering/textures.ts içinde
     const base = (this.atlasBase = PIXI.BaseTexture.from(atlas));
     // i: atlas sütunu (BLOCK_IDS sırası). NS4-04: önce bütün blok, sonra bütün hayalet karoları oluşturulur.
@@ -452,6 +465,9 @@ export class View {
     for (const m of this.marks) m.texture = this.coreTex;
     this.attackTex = PIXI.Texture.from(createAttackMarkCanvas(px));
     for (const s of this.cells) (s.children[3] as PIXI.Sprite).texture = this.attackTex;
+    this.virusTex = Array.from({ length: VIRUS_KINDS }, (_, k) =>
+      PIXI.Texture.from(createVirusCellCanvas(px, k, this.virusArt?.[k] ?? null)),
+    );
     this.fizzle.texture = this.coreTex;
     this.petalTex = PIXI.Texture.from(createPetalCanvas(cell * res * 0.6));
     for (const p of this.petals) p.s.texture = this.petalTex;
@@ -474,6 +490,7 @@ export class View {
     if (oldPetal) oldPetal.destroy(true);
     if (oldCore) oldCore.destroy(true);
     if (oldAttack) oldAttack.destroy(true);
+    for (const t of oldVirus) t.destroy(true);
   }
 
   layout(L: Layout) {
@@ -482,6 +499,7 @@ export class View {
     this.boardC.position.set(L.board.x, L.board.y);
     for (const b of this.bounce) b.s.scale.set(1);
     this.bounce.length = 0;
+    this.falls.length = 0;
     for (let i = 0; i < 10; i++) {
       this.flashes[i].width = COLS * c;
       this.flashes[i].height = c;
@@ -531,10 +549,12 @@ export class View {
         const v = b[(r + HIDDEN) * COLS + col],
           s = this.cells[r * COLS + col];
         if (v) {
-          s.texture = this.tex[asBlock(v)];
+          const o = g.origin[(r + HIDDEN) * COLS + col] ?? 0,
+            vk = v === PIECE.GARBAGE ? virusKind(o) : -1;
+          // NS4-45: virüs kendi dokusuyla; tek kare (dalga grisi) köşe işaretiyle
+          s.texture = (vk >= 0 ? this.virusTex[vk] : undefined) ?? this.tex[asBlock(v)];
           this.setPlant(s, v, g.plant[(r + HIDDEN) * COLS + col]);
-          (s.children[3] as PIXI.Sprite).visible =
-            v === PIECE.GARBAGE && g.origin[(r + HIDDEN) * COLS + col] === ORIGIN.attack;
+          (s.children[3] as PIXI.Sprite).visible = v === PIECE.GARBAGE && o === ORIGIN.attack;
           s.visible = true;
           s.alpha = 1;
           s.tint = 0xffffff;
@@ -560,7 +580,7 @@ export class View {
       const channel = (this.game.channelAt[r + HIDDEN] ?? -1) >= 0;
       let gray = false;
       for (let col = 0; col < COLS; col++)
-        if (b[row + col] === PIECE.GARBAGE && (channel || o[row + col] !== ORIGIN.attack)) gray = true;
+        if (b[row + col] === PIECE.GARBAGE && (channel || (o[row + col] ?? 0) < ORIGIN.attack)) gray = true;
       if (!gray) continue;
       for (let col = 0; col < COLS && n < this.holes.length; col++) {
         if (b[row + col]) continue;
@@ -866,6 +886,7 @@ export class View {
   /** Yeni oyun: süren bütün efektler temizlenir (NS4-15 öncesi lifecycle'daki sıfırlamaları da kapsar). */
   resetFx() {
     this.overT = -1;
+    this.endFalls();
     this.coreLane.visible = false;
     this.fizzleT = -1;
     this.fizzle.visible = false;
@@ -944,7 +965,18 @@ export class View {
     }
   }
 
+  /** NS4-45: süren düşüşleri yerlerinde bitirir (temizleme ve sıfırlama öncesi). */
+  endFalls() {
+    const c = this.L?.cell ?? 0;
+    for (const f of this.falls) {
+      f.s.y = f.r * c + c / 2;
+      f.s.alpha = 1;
+    }
+    this.falls.length = 0;
+  }
+
   onClearStart(e: PendingClear) {
+    this.endFalls();
     const c = this.L.cell,
       g = this.game;
     const flavor: ClearFlavor = e.kind === 'lines' ? this.flavor : 'drain';
@@ -1118,6 +1150,20 @@ export class View {
     this.startGlow(this.glow, PROTO_FX.attackGlow, PROTO_FX.attackPeak, PROTO_FX.attackMs, 1);
   }
 
+  /**
+   * NS4-45: dalga hücreleri (tam tahta dizinleri) tahtanın üstünden yerlerine düşer; sırayla kısa gecikmeli. Hareketi
+   * azalt: düşme yok, hücre yerinde belirir.
+   */
+  dropIn(cells: readonly number[]) {
+    if (this.reducedMotion) return;
+    cells.forEach((k, i) => {
+      const r = ((k / COLS) | 0) - HIDDEN;
+      if (r < 0) return;
+      const s = this.cells[r * COLS + (k % COLS)];
+      if (s) this.falls.push({ s, r, t: 0, delay: i * WAVE_FALL.stagger });
+    });
+  }
+
   /** Spray: silinen her hücreden dağılan damlacıklar (görünür hücre indeksleri). */
   sprayBurst(cells: readonly number[]) {
     const c = this.L.cell,
@@ -1238,6 +1284,21 @@ export class View {
     if (g.boardVer !== this.seen.board && !this.anim) this.syncBoard();
     if (g.pieceVer !== this.seen.piece || this.settings.ghost !== this.seen.ghost) this.syncPiece();
     if (g.queueVer !== this.seen.queue) this.syncQueue();
+
+    // NS4-45: dalga hücrelerinin düşüşü (tahtanın üstünden yerine; hızlanan iniş)
+    for (let i = this.falls.length - 1; i >= 0; i--) {
+      const f = this.falls[i];
+      f.t += dt;
+      const y1 = f.r * c + c / 2,
+        p = Math.max(0, Math.min(1, (f.t - f.delay) / WAVE_FALL.ms));
+      f.s.y = -c + (y1 + c) * p * p;
+      f.s.alpha = f.t < f.delay ? 0 : 1;
+      if (p >= 1) {
+        f.s.y = y1;
+        f.s.alpha = 1;
+        this.falls.splice(i, 1);
+      }
+    }
 
     // oturma yaylanması
     for (let i = this.bounce.length - 1; i >= 0; i--) {

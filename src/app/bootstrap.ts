@@ -5,6 +5,7 @@
    lifecycle + olay bağlantıları → input → ipuçları/ekranlar → butonlar/CTA →
    ayarlar → ana döngü → ilk ipucu → doLayout → fontlar hazır olunca yeniden layout.
    ===================================================================== */
+import { roomKindIndex } from '../content/rooms';
 import * as PIXI from 'pixi.js';
 import type { Layout } from '../types/layout';
 import { Game } from '../game/Game';
@@ -34,7 +35,7 @@ import { createNet } from '../multiplayer/net';
 import { createVersus, type Versus } from '../multiplayer/versus';
 import { createSinusHud } from '../ui/sinusHud';
 import { computeLayout, versusLayout } from '../rendering/layout';
-import { loadLocalScores, loadLocalScoresFor, updateLocalScore } from '../leaderboard/localScores';
+import { loadLocalScores, updateLocalScore } from '../leaderboard/localScores';
 import { loadNickname, saveNickname } from '../leaderboard/nickname';
 import { createScoresView } from '../ui/scoresView';
 import { createSubmitPanel } from '../ui/submitScore';
@@ -43,15 +44,6 @@ import { createLifecycle } from './lifecycle';
 import { wireGameEvents } from './events';
 import { watchReducedMotion } from './motion';
 import { setWallsReducedMotion } from '../ui/sinusWalls';
-import { VirusGame } from '../virus/VirusGame';
-import { VirusView } from '../virus/VirusView';
-import { createVirusHud } from '../virus/hud';
-import { VirusTutorial, virusTutorialStore } from '../virus/tutorial';
-import { createVirusTutorialView } from '../virus/tutorialView';
-import { VIRUS_RULESET, createVirusSession, type VirusSession } from '../virus/session';
-import { createModeRouter } from '../virus/modeRouter';
-import { createVirusStage, dropperPoints, fingerPoint } from '../virus/stage';
-import { VIRUS_CFG } from '../virus/config';
 
 export function bootstrap(): void {
   const stageEl = $('stage');
@@ -80,14 +72,9 @@ export function bootstrap(): void {
   // Not: ticker.maxFPS bilerek ayarlanmıyor; Pixi'nin kare atlama mantığı 60Hz ekranda
   // rAF jitter'ı yüzünden kare düşürebiliyor. Mantık zaman tabanlı, 120Hz'de de doğru çalışır.
   const view = new View(app, game, settings);
-  // NS4-44: Virüs Avı: ayrı motor ve ayrı Pixi kabı (klasik kap moda göre gizlenir)
-  const vgame = new VirusGame();
-  const vview = new VirusView(app, vgame);
-  vview.root.visible = false;
   // NS4-15: hareketi azalt tercihi Pixi efektlerine de uygulanır (sarsıntı/parçacık azalır, süreler aynı)
   watchReducedMotion((reduced) => {
     view.reducedMotion = reduced;
-    vview.reducedMotion = reduced;
     setWallsReducedMotion(reduced); // NS4-33
   });
   let L: Layout | null = null;
@@ -106,13 +93,6 @@ export function bootstrap(): void {
     sinusHud.layout(L);
     applyHudLayout(L);
     tutorialView.layout(L);
-    virusHud.layout(L);
-    virusStage.layout(L);
-    // NS4-44 ek: sıradaki kapsül Elif'in parmağında; yeni kapsül damlalık üzerinden tahtaya uçar
-    const drop = dropperPoints(L);
-    vview.setAnchors({ finger: fingerPoint(L), dropperTop: drop.top, dropperTip: drop.tip });
-    virusTutView.layout(L);
-    vview.layout(L);
     // NS4-13: yeniden yerleşimde süren dokunmatik jest iptal edilir (hücre ve tahta konumu değişti)
     input.cancelGesture();
     view.layout(L);
@@ -156,7 +136,6 @@ export function bootstrap(): void {
   const scoresView = createScoresView({
     client: leaderboard,
     loadLocal: loadLocalScores,
-    loadLocalVirus: () => loadLocalScoresFor(VIRUS_RULESET),
     mine: () => lastSubmitted,
   });
   const lifecycle = createLifecycle({
@@ -171,48 +150,11 @@ export function bootstrap(): void {
     versus: { onOver: (r) => versus.onOver(r), onPause: (p) => versus.onPause(p) },
   });
   // çok oyunculu: oda kodu ile 2–3 oyuncu (Supabase Realtime; tablo gerekmez)
-  // NS4-44: Virüs Avı oturumu, Elif öğreticisi ve mod yönlendirici (ortak düğmeler ve girişler aktif moda gider)
-  const virusHud = createVirusHud();
-  // NS4-44 ek: beher, damlalık ve tahtanın yanındaki Elif
-  const virusStage = createVirusStage();
-  vgame.on('spawn', () => virusStage.onSpawn(vview.reducedMotion));
-  const virusTutView = createVirusTutorialView({ skip: () => virusTutorial.skip(), next: () => virusTutorial.next() });
-  const virusTutorial = new VirusTutorial(vgame, virusTutView, virusTutorialStore, {
-    mode: navigator.maxTouchPoints > 0 ? 'touch' : 'keyboard',
-    onFinish: () => session.onTutorialFinish(),
-    track: (action, step) => track('virus_tutorial', { action, step }),
-  });
-  const session: VirusSession = createVirusSession({
-    app,
-    sound,
-    buzz,
-    resetInput: () => input.reset(),
-    game: vgame,
-    view: vview,
-    hud: virusHud,
-    tutorial: virusTutorial,
-  });
-  const router = createModeRouter({
-    lifecycle,
-    session,
-    classicGame: game,
-    classicView: view,
-    virusView: vview,
-    onModeChange: queueLayout,
-  });
-  // çok oyunculu tur her zaman klasik modda başlar
-  const routedLifecycle = {
-    ...lifecycle,
-    start: (opts?: Parameters<typeof lifecycle.start>[0]) => {
-      router.prepareClassic();
-      lifecycle.start(opts);
-    },
-  };
   const versus: Versus = createVersus({
     // Supabase SDK (Realtime) yalnızca çok oyunculu açılınca yüklenir
     net: createNet({ load: loadSupabase, api: leaderboardConfig && createRoomApi(leaderboardConfig), win: window }),
     game,
-    lifecycle: () => routedLifecycle,
+    lifecycle: () => lifecycle,
     relayout: queueLayout,
     loadNickname,
     saveNickname,
@@ -221,21 +163,17 @@ export function bootstrap(): void {
 
   const input = new InputController({
     game,
-    getControls: () => router.controls(),
     canvas: app.view,
     settings,
-    getState: () => router.getState(),
+    getState: lifecycle.getState,
     getCell: () => L!.cell, // pointer olayları yalnızca oynarken, ilk layout'tan sonra gelir
     getBoard: () => L!.board,
-    pause: () => router.pause(),
-    resume: () => router.resume(),
+    pause: lifecycle.pause,
+    resume: lifecycle.resume,
     closeSub,
     unlockAudio: () => sound.unlock(),
     onSoftDrop: () => tutorial.softDrop(),
-    onInputMode: (mode) => {
-      tutorial.setMode(mode);
-      virusTutorial.setMode(mode);
-    },
+    onInputMode: (mode) => tutorial.setMode(mode),
   });
 
   // ekranlar
@@ -243,28 +181,18 @@ export function bootstrap(): void {
   bindBackButtons();
   initScreens(); // NS4-10: başlangıç ekranı açıkken arka plan inert
   // NS4-19: CTA / Tekrar oyna / Skorlar huni olayları (davranış dinleyicilerinden önce bağlanır)
-  bindUiAnalytics({
-    getState: () => router.getState(),
-    getScore: () => (router.mode() === 'virus' ? vgame.score : game.score),
-    getLevel: () => (router.mode() === 'virus' ? vgame.level : game.level),
-  });
-  $('b-play').addEventListener('click', () => router.startClassic());
-  $('b-again').addEventListener('click', () => router.again());
-  $('b-menu').addEventListener('click', () => router.toMenu());
-  // NS4-44: Virüs Avı (ilk girişte Doktor Elif öğreticisi); "Nasıl oynanır"dan öğreticiyi yeniden izleme
-  $('b-virus').addEventListener('click', () => {
-    sound.unlock();
-    router.startVirus();
-  });
-  $('b-virus-tutorial').addEventListener('click', () => router.startVirus({ forceTutorial: true }));
+  bindUiAnalytics({ getState: lifecycle.getState, getScore: () => game.score, getLevel: () => game.level });
+  $('b-play').addEventListener('click', () => lifecycle.start());
+  $('b-again').addEventListener('click', () => lifecycle.start());
+  $('b-menu').addEventListener('click', lifecycle.toMenu);
   // çok oyunculu turda molada "Ana menü" odadan çıkar
-  $('b-quit').addEventListener('click', () => (versus.inRoom() ? versus.leave() : router.toMenu()));
+  $('b-quit').addEventListener('click', () => (versus.inRoom() ? versus.leave() : lifecycle.toMenu()));
   $('b-multi').hidden = !leaderboardConfig;
   $('b-multi').addEventListener('click', () => {
     sound.unlock();
     versus.open();
   });
-  $('b-resume').addEventListener('click', () => router.resume());
+  $('b-resume').addEventListener('click', lifecycle.resume);
   // NS4-31: final ekranı
   $('b-free').addEventListener('click', lifecycle.continueFree);
   $('b-finish').addEventListener('click', lifecycle.finish);
@@ -272,7 +200,7 @@ export function bootstrap(): void {
   // "Nasıl oynanır" → öğreticiyi baştan göstererek yeni oyun başlatır
   $('b-tutorial').addEventListener('click', () => {
     tutorial.restart();
-    router.startClassic();
+    lifecycle.start();
   });
   $('b-set1').addEventListener('click', () => openSub('scr-set'));
   $('b-scores').addEventListener('click', () => {
@@ -303,20 +231,6 @@ export function bootstrap(): void {
   app.ticker.add(() => {
     const raw = app.ticker.deltaMS;
     const dt = Math.min(raw, 100); // sekme dönüşü gibi uzun boşluklarda patlama yok
-    // NS4-44: Virüs Avı karesi (klasik döngü bu modda çalışmaz)
-    if (router.mode() === 'virus') {
-      if (session.getState() === 'playing') input.update(dt);
-      session.update(dt);
-      const playing = session.getState() === 'playing';
-      const warn = playing && !vgame.tutorial && vgame.timeLeftMs < VIRUS_CFG.warnMs;
-      virusStage.sync({ state: vgame.state, warn });
-      // NS4-44 ek: bu modda boğuk ses süzgeci yok; son saniyelerde müzik hızlanır
-      sound.setCongestion(0);
-      sound.setHurry(warn);
-      if (playing) sound.setMusicContext(Math.max(1, vgame.level), 0);
-      return;
-    }
-    sound.setHurry(false);
     if (lifecycle.getState() === 'playing') {
       input.update(dt);
       game.update(dt);
@@ -333,7 +247,8 @@ export function bootstrap(): void {
     // NS4-42: gösterilen değer (oda açılınca boşalan gösterge): müzik de birlikte ferahlar
     sound.setCongestion(appState === 'playing' ? shownCongestion(game) : 0);
     // NS4-40: oyun müziği bağlamı: seviye tempoyu hafifçe artırır, her sinüs odasında ton değişir
-    if (appState === 'playing') sound.setMusicContext(game.level, game.rooms ? game.room : 0);
+    // NS4-46: müzik tonu bölüm türünden (Serbest nefes: son ton)
+    if (appState === 'playing') sound.setMusicContext(game.level, game.rooms ? (roomKindIndex(game.room) + 5) % 5 : 0);
     if (settings.fps) {
       fpsAcc += raw;
       fpsFrames++;
@@ -363,10 +278,6 @@ export function bootstrap(): void {
   if (import.meta.env.DEV) {
     const fn: NonNullable<Window['__fn']> = { game, view, app };
     window.__fn = fn;
-    // NS4-44: Virüs Avı bakım araçları (__fn.virus: süre, tahtayı temizle, bölüme atla, durum)
-    void import('../dev/virusDemo').then(({ createVirusDemo }) => {
-      fn.virus = createVirusDemo(vgame, router);
-    });
     // NS4-15: efekt gösterimi (__fn.fx); NS4-16: yardımcı ekran gösterimi (__fn.ui).
     // Dinamik importlar production paketinde yer almaz.
     void import('../dev/fxDemo').then(({ createFxDemo }) => {

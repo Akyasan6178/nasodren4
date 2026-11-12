@@ -1,11 +1,13 @@
 /* =====================================================================
-   NS4-31: sinüs haritası: yüz silüetinde dört sinüs (index.html'de iki
-   kopya: oda açılış kartı #rmap, final ekranı #fmap). Her sinüsün durumu
-   kapsayıcının data-<oda id> niteliğine yazılır; renk ve hareket CSS'tedir
-   (SVG öğelerine doğrudan dokunulmaz).
+   NS4-31: sinüs haritası: yüz silüetinde bölümler (index.html'de iki
+   kopya: oda açılış kartı #rmap, final ekranı #fmap). Her bölümün durumu
+   kapsayıcının data-<bölüm id> niteliğine yazılır (ör. data-yanak-sol);
+   renk ve hareket CSS'tedir (SVG öğelerine doğrudan dokunulmaz).
+   NS4-46: 8 bölüm (sol/sağ ayrı); açılan bölümün boşluk görseli varsa kart
+   haritanın yerine onu gösterir (kırmızıdan ferah tona döner, CSS).
    ===================================================================== */
 import { ROOMS } from '../config/gameConfig';
-import { ROOM_NEXT_FINAL, roomText } from '../content/rooms';
+import { ROOM_NEXT_FINAL, roomArtUrl, roomClearTitle, roomText } from '../content/rooms';
 import { $ } from './dom';
 import { fmt } from './hud';
 
@@ -19,15 +21,24 @@ export function mapStates(opening: number): SinusState[] {
   );
 }
 
+/** "yanak-sol" → "yanakSol" (dataset anahtarı; nitelik data-yanak-sol). */
+export const datasetKey = (id: string): string => id.replace(/-([a-z])/g, (_m, c: string) => c.toUpperCase());
+
 export function renderMap(el: HTMLElement, states: readonly SinusState[]): void {
   ROOMS.forEach((r, i) => {
-    el.dataset[r.id] = states[i] ?? 'closed';
+    el.dataset[datasetKey(r.id)] = states[i] ?? 'closed';
   });
 }
 
 /** Oda açılış kartı: "Sinüs açıldı!", oda adı + bonus, harita ve sıradaki oda (geçiş boyunca). */
 export function showRoomMap(room: number, bonus: number): void {
   renderMap($('rmap'), mapStates(room));
+  $('rm-title').textContent = roomClearTitle(room);
+  const art = $('rm-art'),
+    url = roomArtUrl(room);
+  art.hidden = !url;
+  $('rmap').hidden = !!url;
+  if (url) art.setAttribute('src', url);
   $('rm-sub').textContent = `${roomText(room).name} ferahladı · +${fmt(bonus)}`;
   $('rm-next').textContent = room + 1 < ROOMS.length ? `Sıradaki: ${roomText(room + 1).name}` : ROOM_NEXT_FINAL;
   $('room-map').classList.add('on');

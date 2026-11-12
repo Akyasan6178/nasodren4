@@ -6,6 +6,7 @@ import {
   WALLS,
   WALL_BACK,
   WALL_BASE,
+  mirrorShape,
   wallInset,
   wallPath,
   wallPolygons,
@@ -34,9 +35,15 @@ const area = (pts: readonly (readonly [number, number])[]) =>
   }, 0) / 2;
 
 describe('NS4-33: oda şekilleri', () => {
-  it('her odanın kendi şekli var; Serbest nefes ve oda dışı "free"', () => {
-    expect(ROOMS.map((_, i) => wallShape(i))).toEqual(ROOMS.map((r) => WALLS[r.id]));
-    expect(new Set(ROOMS.map((_, i) => wallPath(wallShape(i), 0))).size).toBe(ROOMS.length);
+  it('NS4-46: her bölüm türünün kendi şekli; sol taraf türün şekli, sağ taraf aynası; Serbest nefes "free"', () => {
+    expect(ROOMS.map((_, i) => wallShape(i))).toEqual(
+      ROOMS.map((r) => (r.side === 'sag' ? mirrorShape(WALLS[r.kind]) : WALLS[r.kind])),
+    );
+    const kinds = [...new Set(ROOMS.map((r) => r.kind))];
+    expect(new Set(kinds.map((k) => wallPath(WALLS[k], 0))).size).toBe(kinds.length);
+    // simetrik olmayan türlerde sağ taraf soldan farklı (burun: konkalar dış duvarda)
+    expect(wallPath(mirrorShape(WALLS.burun), 0)).not.toBe(wallPath(WALLS.burun, 0));
+    expect(mirrorShape(mirrorShape(WALLS.yanak))).toEqual(WALLS.yanak);
     expect(wallShape(ROOMS.length)).toBe(WALLS.free);
     expect(WALLS.free.bulges).toEqual([]);
   });
@@ -53,8 +60,8 @@ describe('NS4-33: oda şekilleri', () => {
   });
 
   it("kapalı odada duvarlar belirgin (en az 0,5 hücre), açılınca kabarıklar %12'ye çekilir", () => {
-    for (const r of ROOMS) {
-      const s = WALLS[r.id];
+    for (let i = 0; i < ROOMS.length; i++) {
+      const s = wallShape(i);
       expect(deepest(s)).toBeGreaterThanOrEqual(0.5);
       expect(deepest(s, 0.12) - WALL_BASE).toBeCloseTo((deepest(s) - WALL_BASE) * 0.12, 5);
     }
@@ -84,8 +91,8 @@ describe('NS4-33: yumuşak geçiş (syncWalls)', () => {
   it('ilk karede hedefe oturur; ön ve arka katman yazılır', async () => {
     const w = await load();
     w.syncWalls(0, 0, 1000);
-    expect(front()).toBe(wallPath(WALLS.yanak, 0));
-    expect(back()).toBe(wallPath(WALLS.yanak, 0, WALL_BACK));
+    expect(front()).toBe(wallPath(wallShape(0), 0));
+    expect(back()).toBe(wallPath(wallShape(0), 0, WALL_BACK));
   });
 
   it('açıklık değişince süzülerek gider, sonunda hedefe varır', async () => {
@@ -93,10 +100,10 @@ describe('NS4-33: yumuşak geçiş (syncWalls)', () => {
     w.syncWalls(0, 0, 0);
     w.syncWalls(0, 0.5, 100);
     const mid = front();
-    expect(mid).not.toBe(wallPath(WALLS.yanak, 0));
-    expect(mid).not.toBe(wallPath(WALLS.yanak, 0.5));
+    expect(mid).not.toBe(wallPath(wallShape(0), 0));
+    expect(mid).not.toBe(wallPath(wallShape(0), 0.5));
     for (let t = 116; t < 5000; t += 16) w.syncWalls(0, 0.5, t);
-    expect(front()).toBe(wallPath(WALLS.yanak, 0.5));
+    expect(front()).toBe(wallPath(wallShape(0), 0.5));
   });
 
   it('değişiklik yoksa yol yeniden yazılmaz', async () => {
@@ -112,10 +119,10 @@ describe('NS4-33: yumuşak geçiş (syncWalls)', () => {
     const w = await load();
     w.syncWalls(0, 1, 0);
     w.syncWalls(1, 0, 16);
-    expect(front()).not.toBe(wallPath(WALLS.yanak, 1));
-    expect(front()).not.toBe(wallPath(WALLS.etmoid, 0)); // hemen kapanmaz
+    expect(front()).not.toBe(wallPath(wallShape(0), 1));
+    expect(front()).not.toBe(wallPath(wallShape(1), 0)); // hemen kapanmaz
     for (let t = 32; t < 5000; t += 16) w.syncWalls(1, 0, t);
-    expect(front()).toBe(wallPath(WALLS.etmoid, 0));
+    expect(front()).toBe(wallPath(wallShape(1), 0));
   });
 
   it('hareketi azalt: süzülmeden yeni duruma geçer; resetWalls sonrası ilk kare oturur', async () => {
@@ -123,11 +130,11 @@ describe('NS4-33: yumuşak geçiş (syncWalls)', () => {
     w.setWallsReducedMotion(true);
     w.syncWalls(2, 0, 0);
     w.syncWalls(2, 0.7, 16);
-    expect(front()).toBe(wallPath(WALLS.alin, 0.7));
+    expect(front()).toBe(wallPath(wallShape(2), 0.7));
     w.setWallsReducedMotion(false);
     w.resetWalls();
     w.syncWalls(3, 0.3, 32);
-    expect(front()).toBe(wallPath(WALLS.sfenoid, 0.3));
+    expect(front()).toBe(wallPath(wallShape(3), 0.3));
   });
 });
 
@@ -142,7 +149,7 @@ describe('NS4-33: HUD bağlantısı', () => {
     const ui = await loadUi(1, true);
     ui.lc.start();
     ui.frame();
-    expect(dom.el('walls-front').getAttribute('d')).toBe(wallPath(WALLS.yanak, 0));
+    expect(dom.el('walls-front').getAttribute('d')).toBe(wallPath(wallShape(0), 0));
     clearBoard(ui.g);
     fillRow(ui.g, 21, PIECE.GARBAGE, [9]);
     dropVerticalI(ui.g);
@@ -152,7 +159,7 @@ describe('NS4-33: HUD bağlantısı', () => {
     for (let i = 0; i < 400; i++) ui.frame(); // gerçek zamanla süzülür; şekil oda değişince hemen yazılır
     expect(ui.g.room).toBe(1);
     const d = dom.el('walls-front').getAttribute('d') ?? '';
-    expect(d.split('Z').length - 1).toBe(wallPolygons(WALLS.etmoid, 0).length);
+    expect(d.split('Z').length - 1).toBe(wallPolygons(wallShape(1), 0).length);
   });
 
   it('oda akışı kapalıyken açık "free" duvarı', async () => {

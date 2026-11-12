@@ -77,12 +77,15 @@ export interface AnalyticsPayloads {
   core_triggered: { room: number; level: number };
   core_drain_completed: { room: number; level: number; cells: number; moved: number; power: boolean };
   /**
-   * Sinüzit Atağı ve Spray: atak tetiklendi; atak satırı eklendi (eklenen atak grisi); Spray hazır oldu / dolu ama
-   * hedefsiz kaldı; Spray kullanıldı (hedef sayısı); atak satırı puansız silindi (içindeki atak grisi). Atak satırı
-   * first_drain gibi satır temizleme olaylarına yazılmaz. Yalnızca sayısal oyun verisi (room: 0 tabanlı).
+   * NS4-45 zorlaşan dalgalar ve Spray: dalga başladı; dalga düştü (bölümdeki dalga sırası, tek kare ve virüs); bölüm
+   * saati hızlandırdı (bölümdeki hızlanma sayısı); satır temizlemesi virüs sildi; Spray hazır oldu / dolu ama hedefsiz
+   * kaldı; Spray kullanıldı (hedef sayısı); dalga hücresi içeren satır silindi (içindeki dalga hücresi). Yalnızca
+   * sayısal oyun verisi (room: 0 tabanlı).
    */
   sinus_attack_started: { room: number; level: number };
-  sinus_attack_row_added: { attackCellsAdded: number; room: number; level: number };
+  wave_dropped: { wave: number; singles: number; viruses: number; room: number; level: number };
+  speed_up: { steps: number; room: number; level: number };
+  virus_cleared: { viruses: number; room: number; level: number };
   spray_ready: { room: number; level: number };
   spray_no_target: { room: number; level: number };
   spray_used: { sprayTargets: number; room: number; level: number };
@@ -99,17 +102,6 @@ export interface AnalyticsPayloads {
   mp_room: { action: 'create' | 'join' };
   mp_round_start: { players: number; round: number };
   mp_round_end: { players: number; round: number; rank: number };
-  // NS4-44: Virüs Avı (yerel; global skor yok)
-  virus_start: { tutorial: boolean };
-  virus_level_clear: { level: number; dur_s: number; bonus: number };
-  virus_game_over: {
-    reason: 'blockout' | 'lockout' | 'time' | 'complete';
-    score: number;
-    level: number;
-    viruses: number;
-    dur_s: number;
-  };
-  virus_tutorial: { action: 'started' | 'step' | 'completed' | 'skipped'; step: number };
 }
 
 export type AnalyticsEvent = keyof AnalyticsPayloads;

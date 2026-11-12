@@ -155,8 +155,6 @@ export class Sound {
   private phase: GamePhase = 'ferah';
   private musicLevel = 1;
   private musicRoom = 0;
-  /** NS4-44 ek: Virüs Avı'nda son saniyeler (müzik hızlanır). */
-  private hurry = false;
   /** Sekme gizlenince bu sınıf context'i askıya aldıysa true (görünür olunca devam ettirilir). */
   private suspendedByHide = false;
   private lastMove = -1;
@@ -464,17 +462,6 @@ export class Sound {
       this.duck(0.45, 0.9);
     }
   }
-  /**
-   * NS4-44 · Virüs Avı: virüs patlaması. Kısa, tatlı "pop" (yukarı kayan sinüs) + parlak tık; zincir büyüdükçe
-   * pentatonik basamakla yükselen ek notalar (en çok 4). Toplam < 0,6 sn.
-   */
-  virusPop(chain: number) {
-    const n = Math.max(1, Math.min(4, Math.floor(chain)));
-    this.tone(380, 0.09, 'sine', 0.09, 900);
-    this.tone(1900, 0.03, 'triangle', 0.03, 0, 0.01);
-    const steps = [659, 784, 880, 1047];
-    for (let i = 0; i < n; i++) this.tone(steps[i] ?? 1047, 0.12, 'triangle', 0.04, 0, 0.06 + i * 0.07);
-  }
   /** Sıklamen: en yumuşak ve ferah an — uzun, düşük kazançlı nefes, seyrek damlalar, yavaş açılan akor. */
   cyc() {
     this.breath(1.4, 220, 1800, 0.07, 0.7);
@@ -652,7 +639,7 @@ export class Sound {
         step = s.step % STEPS,
         bar = Math.floor(s.step / STEPS);
       if (step === 0 || !s.plan) {
-        const phase = s.kind === 'game' ? this.phase : s.kind === 'virus' && this.hurry ? 'orta' : 'ferah';
+        const phase = s.kind === 'game' ? this.phase : 'ferah';
         if (s.phase === 'tikali' && phase !== 'tikali') s.cycleStart = bar - 8; // rahatlama: doğrudan nakarat
         s.plan = planBar(
           {
@@ -842,13 +829,6 @@ export class Sound {
    * `delay` (sn): yeni parçanın girişi gecikir (ör. oyun sonu sesi önce duyulsun). Ayar kapalıysa çalmaz.
    */
   /** NS4-40: oyun müziği bağlamı (her karede çağrılabilir; ölçü başında okunur). */
-  /** NS4-44 ek: Virüs Avı müziğinde acele (son 15 sn); ölçü başında okunur. */
-  setHurry(on: boolean): void {
-    this.hurry = on;
-  }
-  get musicHurry(): boolean {
-    return this.hurry;
-  }
   setMusicContext(level: number, room: number): void {
     this.musicLevel = level;
     this.musicRoom = room;

@@ -124,7 +124,11 @@ describe('aktif çekirdek yokken', () => {
 });
 
 describe('dolu oda tek basışta açılmaz', () => {
-  it.each(ROOMS.map((r, i) => [r.id, i] as const))('%s: odaya girer girmez güç → oda açılmaz, gri kalır', (_id, i) => {
+  // NS4-46: 1-3. bölümler (2-3 sıra) FLOW.powerRows kadar ya da daha az gri sıra taşır: güç onları tek basışta açabilir
+  // (oyun başına tek kullanım; acemi oyuncuya bilinçli yardım). Kural daha çok sıralı bölümler için geçerli.
+  const big = ROOMS.flatMap((r, i) => (r.rows > FLOW.powerRows ? [[r.id, i] as const] : []));
+  it('NS4-46: en az 4 bölüm kural kapsamında', () => expect(big.length).toBeGreaterThanOrEqual(4));
+  it.each(big)('%s: odaya girer girmez güç → oda açılmaz, gri kalır', (_id, i) => {
     for (const seed of [1, 2, 3, 4, 5]) {
       const g = createGame(seed);
       g.reset({ rooms: true });

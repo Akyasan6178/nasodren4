@@ -39,15 +39,13 @@ describe('başlangıç ekranı içeriği', () => {
     // NS4-41: ikincil eylemler eşit karolar (Nasıl oynanır · Skorlar · Ayarlar); Çok oyunculu (yalnızca Supabase varsa)
     expect(buttons).toEqual([
       ['b-play', 'btn primary', 'Oyna'],
-      // NS4-44: Virüs Avı modu (Oyna'nın altında, ikincil görünümde)
-      ['b-virus', 'btn ghost btn-virus', 'Virüs Avı'],
       ['b-multi', 'btn ghost', 'Çok oyunculu'],
       ['b-how', 'btn ghost tile', 'Nasıl oynanır'],
       ['b-scores', 'btn ghost tile', 'Skorlar'],
       ['b-set1', 'btn ghost tile', 'Ayarlar'],
     ]);
     expect(start).not.toMatch(/<a\s/);
-    expect((start.match(/<button/g) ?? []).length).toBe(6);
+    expect((start.match(/<button/g) ?? []).length).toBe(5);
     expect(start).toMatch(/<button class="btn ghost" id="b-multi" hidden>/); // bootstrap yapılandırma varsa açar
   });
 

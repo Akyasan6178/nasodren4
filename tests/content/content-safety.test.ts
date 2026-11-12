@@ -37,7 +37,6 @@ describe('içerik envanteri', () => {
       'bildirimler',
       'rozetler',
       'cok_oyunculu',
-      'virus_avi',
     ];
     expect(Object.keys(INVENTORY).sort()).toEqual([...areas].sort());
     for (const a of areas) expect(INVENTORY[a].length, a).toBeGreaterThan(0);

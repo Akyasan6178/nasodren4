@@ -26,11 +26,17 @@ export const GAME_RULES = {
   /** NS4-24: Hapşırık (sentetik açıcının yerine): 50 × satır × seviye, 3 üst sıra (gameConfig sneezeRows). */
   sneezeBonusPerRow: 50,
   sneezeRows: 3,
-  /** NS4-27: Sinüs Odaları: oda bonusu 1000 × oda sırası × seviye, 4 oda (en çok 1000 × (1+2+3+4) × seviye). */
+  /** NS4-27: Sinüs Odaları: oda bonusu 1000 × oda sırası × seviye; NS4-46: 8 bölüm (en çok 1000 × 36 × seviye). */
   roomBonus: 1000,
-  rooms: 4,
+  rooms: 8,
   /** NS4-22: Tam Ferahlık bonusu (temizlenen satır sayısına göre) × seviye; ×2 uygulanmaz (gameConfig allClearBonus). */
   allClearBonus: [0, 800, 1200, 1800, 2000],
+  /**
+   * NS4-45: satır temizlemesinde silinen virüs başına ek puan × seviye (src/game/pressure.ts PRESSURE.virusBonus;
+   * ×2 uygulanmaz). Bir satırda en çok 9 dalga hücresi olabilir (dalga satırı tamamlamaz).
+   */
+  virusBonus: 100,
+  boardCols: 10,
   /** Hard drop: satır başına 2 puan, en çok 22 satır. */
   hardDropPerRow: 2,
   boardRows: 22,
@@ -57,9 +63,11 @@ export const CLIENT_VERSION_MAX = 32;
  *                     (docs/CYCLAMEN-POWER-V3.md). Drenaj puan vermez: skor üst sınırı değişmez.
  *   sinus-attack-spray-v1: Sinüzit Atağı ve Spray kalıcı (docs/SINUS-ATTACK-AND-SPRAY-FINAL.md). Atak grisi içeren satır
  *                     puan, satır ve seviye üretmez; Spray ve oda taşıması puan vermez: satır başına üst sınır aynı kalır.
+ *   sinus-dalga-v1:   NS4-45 zorlaşan dalgalar (docs/NS4-45-ZORLASAN-DALGALAR.md): alttan satır yerine yukarıdan tek kare
+ *                     ve virüs düşer, bölüm saati hızlandırır; dalga hücreli satır normal puanlanır; virüs başına bonus.
  * Kural seti alanı olmayan (NS4-18'den kalan) kayıtlar LEGACY_RULESET sayılır.
  */
-export const RULESET = 'sinus-attack-spray-v1';
+export const RULESET = 'sinus-dalga-v1';
 export const LEGACY_RULESET = 'legacy';
 /** Kural seti adı biçimi (veritabanı kısıtıyla aynı). */
 export const RULESET_RE = /^[a-z0-9][a-z0-9._-]{0,31}$/;
@@ -108,7 +116,8 @@ export function minDurationForLines(lines: number): number {
  * 50 × kombo × seviye × 2 her temizlemede; parça başına T-spin (satırsız, 400) + hard drop + hapşırık bonusu (gerçekte 20 parçada bir;
  * cömert kalsın diye her parçada sayılır);
  * dört oda bonusu (NS4-27); her temizlenen satır Tam Ferahlık'ın satır başına en yüksek
- * payıyla (tekli: 800; NS4-22). Seviye son seviyedir (seviye yalnızca artar).
+ * payıyla (tekli: 800; NS4-22); her temizlenen satırda en çok 9 virüs bonusu (NS4-45). Seviye son seviyedir (seviye
+ * yalnızca artar).
  */
 export function maxPlausibleScore(lines: number, level: number, durationSeconds: number): number {
   const R = GAME_RULES;
@@ -119,7 +128,8 @@ export function maxPlausibleScore(lines: number, level: number, durationSeconds:
     pieces * (400 * level * R.cycMult + R.hardDropPerRow * R.boardRows + R.sneezeBonusPerRow * R.sneezeRows * level);
   const roomPts = ((R.roomBonus * R.rooms * (R.rooms + 1)) / 2) * level;
   const allClearPts = lines * Math.max(...R.allClearBonus.map((b, n) => (n ? b / n : 0))) * level;
-  return Math.min(SCORE_LIMITS.maxScore, Math.floor(linePts + comboPts + piecePts + roomPts + allClearPts));
+  const virusPts = lines * (R.boardCols - 1) * R.virusBonus * level;
+  return Math.min(SCORE_LIMITS.maxScore, Math.floor(linePts + comboPts + piecePts + roomPts + allClearPts + virusPts));
 }
 
 /** Global gönderim gövdesi (istemci → Edge Function). */

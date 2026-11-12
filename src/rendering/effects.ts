@@ -77,6 +77,9 @@ export interface GlowRecipe {
  * Sinüzit Atağı ve Spray. Atak: kısa kırmızı-turuncu tahta ışıması ve hafif sarsıntı (reduced motion
  * çarpanları uygulanır). Spray: silinen her hücreden serin damlacıklar (mevcut parçacık havuzu).
  */
+/** NS4-45: dalga hücresinin düşüşü (ms) ve hücreler arası gecikme (ms). */
+export const WAVE_FALL = { ms: 420, stagger: 70 } as const;
+
 export const PROTO_FX = {
   attackGlow: 0xff6a3d,
   attackPeak: 0.22,

@@ -1,5 +1,6 @@
 // NS4-15: geri bildirim efektleri. Tarifler saf veridir; GameView gerçek Pixi sahne nesneleriyle (render olmadan,
 // sahte canvas) kurulur. Blok dokusu, atlas ve mekanik süreler efektlerden etkilenmemelidir.
+import { ROOMS } from '../../src/config/gameConfig';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CFG, COLS, VIS } from '../../src/config/gameConfig';
 import { PIECE } from '../../src/game/pieces';
@@ -635,7 +636,7 @@ describe('boşluk işaretleri', () => {
   it('oda başında kanal işaretlenir; satır temizlenince güncellenir; oyun sonunda söner', () => {
     g.reset({ rooms: true });
     v.syncAll();
-    expect(marks()).toHaveLength(4); // 1. oda: 4 sıra × tek kanal
+    expect(marks()).toHaveLength(ROOMS[0].rows); // 1. bölüm: sıra başına tek kanal
     H.step(100);
     expect(marks()[0]?.alpha).toBeGreaterThan(0);
     v.onGameOver();

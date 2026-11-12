@@ -42,6 +42,8 @@ describe('olaylar', () => {
         'spawn',
         'spray',
         'spraystate',
+        'speedup',
+        'virusclear',
       ].sort(),
     );
   });
@@ -97,15 +99,18 @@ describe('olaylar', () => {
     stackRows(g, 7); // Sıklamen gücü: aktif çekirdek yok → en alttaki 3 gri sıra akar ('cyclamen')
     g.useCyc();
     while (g.pending) finishClear(g);
-    // Sinüzit Atağı ('attackstart', 'attack'), Spray durumu ve kullanımı ('spraystate', 'spray'), atak satırı ('attackline')
+    // NS4-45 dalga ('attackstart', 'attack') ve hızlanma ('speedup'), Spray durumu ve kullanımı ('spraystate', 'spray'),
+    // dalga hücreli satır ('attackline') ve virüs ('virusclear')
     g.sinusAttack();
+    g.pressSteps = 1;
+    g.pressureStep();
     g.sprayCharge = SINUS.sprayThreshold;
     g.update(16);
     g.useSpray();
     while (g.pending) finishClear(g);
     setupWell(g, 1);
     g.board[21 * 10] = PIECE.GARBAGE;
-    g.origin[21 * 10] = ORIGIN.attack;
+    g.origin[21 * 10] = ORIGIN.virus;
     dropVerticalI(g);
     while (g.pending) finishClear(g);
     // görünür alan dolu: gizli satırlarda kilitlenen parça → oyun sonu (lockout)

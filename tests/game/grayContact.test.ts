@@ -22,7 +22,10 @@ function land(g: Game, t: TetrominoType, rot: RotationState, x: number, how: How
     g.softDrop = true;
     for (let i = 0; i < 2000 && !cells.length; i++) g.update(16);
     g.softDrop = false;
-  } else for (let i = 0; i < 5000 && !cells.length; i++) g.update(16); // seviye 1: 1 sn/sıra + kilit gecikmesi
+  } else {
+    g.attackT = -1e9; // NS4-46: bölüm saati 15. saniyede dalga düşürür; bu test yalnızca yerçekimini ölçer
+    for (let i = 0; i < 5000 && !cells.length; i++) g.update(16); // seviye 1: 1 sn/sıra + kilit gecikmesi
+  }
   off();
   return cells.sort((a, b) => a - b);
 }

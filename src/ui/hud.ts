@@ -269,7 +269,8 @@ export function updateHud(g: Game, playing: boolean): void {
     hud.room = room;
     const on = room >= 0;
     $('room-hud').style.display = on ? 'flex' : 'none';
-    $('board-bg').dataset['room'] = on ? String(Math.min(room, ROOMS.length)) : '';
+    // NS4-46: ton bölüm türünden (sol/sağ aynı tonda); Serbest nefeste 'free'
+    $('board-bg').dataset['room'] = on ? (ROOMS[room]?.kind ?? 'free') : '';
     if (on) {
       $('room-name').textContent = roomLabel(room);
       $('room-name').setAttribute('aria-label', `Oda: ${roomText(room).name}`);

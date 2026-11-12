@@ -1,12 +1,14 @@
 /* =====================================================================
-   Sinüzit Atağı barı ve Spray düğmesi (docs/SINUS-ATTACK-AND-SPRAY-FINAL.md).
-   Yalnızca değişen değerler DOM'a yazılır. Yeni metin yok: düğme adı
-   yalnızca "Spray"; bar ekran okuyucuya "Sinüzit Atağı" ilerleme çubuğu.
+   Bölüm saati barı ve Spray düğmesi (docs/NS4-45-ZORLASAN-DALGALAR.md).
+   Yalnızca değişen değerler DOM'a yazılır. Bar sıradaki adımı gösterir:
+   virüs dalgası (turuncu-kırmızı) ya da hızlanma (sıklamen, .speed); ekran
+   okuyucu adı buna göre değişir (content/waves.ts BAR_LABEL).
    ===================================================================== */
 import { $, place } from './dom';
 import type { Game } from '../game/Game';
 import type { Layout } from '../types/layout';
 import { SINUS } from '../game/sinusAttack';
+import { BAR_LABEL } from '../content/waves';
 
 /** Bar bu orandan sonra uyarı nabzı atar. */
 export const ATTACK_WARN = 0.75;
@@ -33,10 +35,11 @@ export function createSinusHud(): SinusHud {
     lastReady: boolean | null = null,
     lastIdle: boolean | null = null,
     lastWarn: boolean | null = null,
+    lastNext: 'wave' | 'speed' | null = null,
     hitTimer: ReturnType<typeof setTimeout> | undefined;
   const reset = () => {
     lastP = lastS = lastAria = -1;
-    lastReady = lastIdle = lastWarn = null;
+    lastReady = lastIdle = lastWarn = lastNext = null;
     clearTimeout(hitTimer);
     bar.classList.remove('hit', 'warn');
   };
@@ -50,7 +53,7 @@ export function createSinusHud(): SinusHud {
       lastP = -1;
     },
     sync(g, playing) {
-      const p = Math.round(Math.min(1, g.attackT / SINUS.attackMs) * 200) / 200;
+      const p = Math.round(g.stepProgress() * 200) / 200;
       if (p !== lastP) {
         lastP = p;
         fill.style.transform = vertical ? `scaleY(${p})` : `scaleX(${p})`;
@@ -60,6 +63,12 @@ export function createSinusHud(): SinusHud {
       if (aria !== lastAria) {
         lastAria = aria;
         bar.setAttribute('aria-valuenow', String(aria));
+      }
+      const next = g.nextStep();
+      if (next !== lastNext) {
+        lastNext = next;
+        bar.classList.toggle('speed', next === 'speed');
+        bar.setAttribute('aria-label', BAR_LABEL[next]);
       }
       const warn = playing && p >= ATTACK_WARN;
       if (warn !== lastWarn) {

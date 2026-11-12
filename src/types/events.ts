@@ -73,12 +73,24 @@ export interface GameEvents {
   core: CoreEvent;
   /** Sıklamen gücü kullanıldı: aktif çekirdek vardı (hizasından) ya da yoktu (en alttaki gri sıralar). */
   cyclamen: { readonly core: boolean };
-  /** Sinüzit Atağı tetiklendi (satır eklenmeden önce; taşma olursa ardından gameover gelir). */
+  /** NS4-45: dalga başlıyor (hücreler düşmeden önce). */
   attackstart: void;
-  /** Sinüzit Atağı satırı eklendi (alttan gelen satırın boşluk sütunu, alt bölgeye dağılan gri sayısı). */
-  attack: { readonly hole: number; readonly scattered: number };
-  /** Atak grisi içeren tam satırlar silindi (puansız; satır sayısı ve içlerindeki atak grisi). */
+  /**
+   * NS4-45: dalga düştü: bölümdeki dalga sırası (1'den), düşen hücreler (tam tahta dizini ve kaynak: ORIGIN.attack tek
+   * kare, ORIGIN.virus + tür virüs), tek kare ve virüs sayısı.
+   */
+  attack: {
+    readonly wave: number;
+    readonly cells: readonly { readonly k: number; readonly kind: number }[];
+    readonly singles: number;
+    readonly viruses: number;
+  };
+  /** NS4-45: bölüm saati hızlandırdı (bu bölümdeki hızlanma sayısı ve hız payı, seviye karşılığı). */
+  speedup: { readonly steps: number; readonly boost: number };
+  /** Dalga hücresi içeren tam satırlar silindi (normal puanlanır; satır sayısı ve içlerindeki dalga hücresi). */
   attackline: { readonly rows: number; readonly cells: number };
+  /** NS4-45: satır temizlemesi virüs sildi (sayı ve ek puan). */
+  virusclear: { readonly n: number; readonly pts: number };
   /** Spray kullanıldı (silinecek atak grisi indeksleri). */
   spray: { readonly cells: readonly number[] };
   /** Spray durumu değişti: doluyor, hazır ya da dolu ama hedefsiz (atak grisi yok). */

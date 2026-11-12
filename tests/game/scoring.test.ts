@@ -273,12 +273,14 @@ describe('seviye ve yerçekimi', () => {
     expect(log.payloads('levelup')).toEqual([20]);
   });
 
+  // NS4-46: satırdan gelen seviye yerçekimine en çok seviye 6 kadar katkı verir (sonrası bölüm saatinden)
   it.each([
     [1, 1000],
     [2, 793],
     [5, 355.196928256],
-    [10, 64.151584959],
-    [20, 0.455397712],
+    [6, 262.003549978],
+    [10, 262.003549978],
+    [20, 262.003549978],
   ])('seviye %i yerçekimi aralığı %f ms', (level, ms) => {
     const g = createGame(1);
     g.level = level;

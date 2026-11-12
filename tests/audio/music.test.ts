@@ -139,10 +139,10 @@ describe('NS4-40: ölçü planı', () => {
     expect(plan({ phase: 'orta', prevPhase: 'tikali' }).fill).toBe('relief');
     expect(plan({ phase: 'ferah', prevPhase: 'orta' }).fill).toBeNull();
   });
-  it('her odada ton değişir (oda tablosundaki yarım ses kadar)', () => {
-    const r0 = plan({ room: 0 }).pad?.chord[0] ?? 0;
+  it('NS4-46: her bölüm türünde ton değişir (tür tablosundaki yarım ses kadar; sol/sağ aynı)', () => {
+    const base = (plan({ room: 0 }).pad?.chord[0] ?? 0) / Math.pow(2, (ROOM_TRANSPOSE[0] ?? 0) / 12);
     ROOM_TRANSPOSE.forEach((n, room) => {
-      expect(plan({ room }).pad?.chord[0]).toBeCloseTo(r0 * Math.pow(2, n / 12), 6);
+      expect(plan({ room }).pad?.chord[0]).toBeCloseTo(base * Math.pow(2, n / 12), 6);
     });
     expect(Math.max(...ROOM_TRANSPOSE.map(Math.abs))).toBeLessThanOrEqual(3); // melodi pes kalır
     expect(new Set(ROOM_TRANSPOSE).size).toBe(ROOM_TRANSPOSE.length);
@@ -282,50 +282,5 @@ describe('Sound: menü / oyun müziği', () => {
     c.advance(1);
     s.preview();
     expect(c.sources().length - n0).toBe(2);
-  });
-});
-
-describe('NS4-44 ek: Virüs Avı müziği', () => {
-  const base: PlanInput = { kind: 'virus', bar: 0, cycleBar: 0, phase: 'ferah', prevPhase: 'ferah', level: 1, room: 0 };
-  const plan = (o: Partial<PlanInput>) => planBar({ ...base, ...o }, new Melody(TRACKS.virus, rng(9)));
-  it('kendi parçası: oyundan hızlı, rüzgârsız', () => {
-    expect(TRACKS.virus.bpm).toBeGreaterThan(TRACKS.game.bpm);
-    expect(TRACKS.virus.wind).toBe(false);
-  });
-  it("her ölçüde zıplayan bas, 8'lik arpej, kick ve şıklatma; çoğu ölçüde melodi", () => {
-    let sung = 0;
-    for (let b = 0; b < 16; b++) {
-      const p = plan({ bar: b, cycleBar: b });
-      expect(p.bass.length).toBeGreaterThan(0);
-      expect(p.arp.length).toBeGreaterThanOrEqual(8);
-      expect(p.kick.length).toBeGreaterThan(0);
-      expect(p.snap.length).toBeGreaterThan(0);
-      for (const e of [...p.bass, ...p.melody, ...p.arp, ...p.kick, ...p.snap, ...p.hat])
-        expect(e.step).toBeLessThan(STEPS);
-      if (p.melody.length) sung++;
-    }
-    expect(sung).toBeGreaterThanOrEqual(10);
-  });
-  it("acele (son saniyeler) daha hızlı ve 16'lık shaker", () => {
-    expect(tempoFor('virus', 1, 'orta')).toBeGreaterThanOrEqual(tempoFor('virus', 1, 'ferah') + 10);
-    expect(plan({ phase: 'orta' }).hat.length).toBe(STEPS);
-  });
-  it('Sound: setMusic("virus") çalar, süzgeçten geçmez; setHurry fazı değiştirir', () => {
-    const { ctx } = installFakeAudio();
-    const s = new Sound({ sound: true, music: true });
-    s.unlock();
-    const c = ctx();
-    const muffle = c.nodes.find((n) => n.kind === 'biquad')!;
-    const vol = c.nodes.find((n) => n.kind === 'gain' && muffle.outputs.has(n))!;
-    s.setMusic('virus');
-    expect(s.musicKind).toBe('virus');
-    expect(c.nodes.filter((n) => n.kind === 'gain' && n.outputs.has(vol) && n !== muffle)).toHaveLength(1);
-    s.setHurry(true);
-    expect(s.musicHurry).toBe(true);
-    for (let t = 0; t < 3; t += MUSIC_TICK_MS / 1000) {
-      c.advance(MUSIC_TICK_MS / 1000);
-      vi.advanceTimersByTime(MUSIC_TICK_MS);
-    }
-    expect(c.sources().length).toBeGreaterThan(5);
   });
 });

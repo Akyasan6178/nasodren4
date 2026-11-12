@@ -33,25 +33,25 @@ describe('oda başlangıcı', () => {
     expect(g.board.every((v) => v === 0)).toBe(true);
   });
 
-  it('reset({ rooms }) 1. odayı kurar: alttan 4 sıra delikli gri bulutçuk, dolu sıra yok', () => {
+  it('reset({ rooms }) 1. bölümü kurar: alttan ROOMS[0].rows sıra delikli gri bulutçuk, dolu sıra yok', () => {
     const g = createGame(1);
     const log = recordEvents(g, ['roomstart']);
     g.reset({ rooms: true });
     expect([g.rooms, g.room]).toEqual([true, 0]);
-    expect(grayRows(g)).toEqual([18, 19, 20, 21]);
+    expect(grayRows(g)).toEqual(Array.from({ length: ROOMS[0].rows }, (_, k) => ROWS - ROOMS[0].rows + k));
     // NS4-30: tek hava kanalı: her sırada tek boşluk, hepsi aynı sütunda (tek dikey I odayı açar)
     const holes = grayRows(g).map((y) => rowCells(g, y).flatMap((v, x) => (v === 0 ? [x] : [])));
     expect(holes.every((h) => h.length === 1)).toBe(true);
     expect(new Set(holes.flat()).size).toBe(1);
     expect([g.roomGray, g.roomGray0]).toEqual([g.grayCount(), g.grayCount()]);
     expect(g.roomOpenness()).toBe(0);
-    expect(g.congestion()).toBe(4 / VIS);
+    expect(g.congestion()).toBe(ROOMS[0].rows / VIS);
     expect(log.payloads('roomstart')).toEqual([{ room: 0, gray: g.roomGray }]);
     expect(g.state).toBe('play');
     expect(g.type).not.toBe(0);
   });
 
-  it('NS4-30: her oda hava kanallarıyla kurulur: kanal parçaları ayrı sütunda, ek boşluk sınırlı; tıkanıklık artar', () => {
+  it('NS4-30: her oda hava kanallarıyla kurulur: kanal parçaları ayrı sütunda, ek boşluk sınırlı; tıkanıklık azalmaz', () => {
     const g = createGame(3);
     let prev = 0;
     ROOMS.forEach((def, i) => {
@@ -76,26 +76,31 @@ describe('oda başlangıcı', () => {
         if (def.extraHoles === 0)
           for (let p = 1; p < channels.length; p++) expect(channels[p]).not.toBe(channels[p - 1]);
       }
-      expect(g.congestion()).toBeGreaterThan(prev);
+      expect(g.congestion()).toBeGreaterThanOrEqual(prev);
       prev = g.congestion();
     });
-    expect(ROOMS.map((r) => [r.rows, r.channels, r.extraHoles])).toEqual([
-      [4, 1, 0],
-      [6, 2, 0],
-      [8, 2, 1],
-      [10, 3, 1],
+    // NS4-46: 8 bölüm (burun, yanak, gözler arası, alın; önce sol sonra sağ); sıralar sanal oyuncu testiyle
+    expect(ROOMS.map((r) => [r.id, r.rows, r.channels, r.extraHoles])).toEqual([
+      ['burun-sol', 2, 1, 0],
+      ['burun-sag', 3, 1, 0],
+      ['yanak-sol', 3, 1, 0],
+      ['yanak-sag', 4, 2, 0],
+      ['etmoid-sol', 5, 2, 0],
+      ['etmoid-sag', 6, 2, 0],
+      ['alin-sol', 6, 2, 1],
+      ['alin-sag', 8, 2, 1],
     ]);
   });
 
-  it('NS4-30: 1. oda tek dikey I ile açılır (ve tahta boşalır: Tam Ferahlık)', () => {
+  it('NS4-30: 1. bölüm tek dikey I ile açılır', () => {
     const g = createGame(5);
     g.reset({ rooms: true });
     const col = rowCells(g, ROWS - 1).indexOf(0);
-    const log = recordEvents(g, ['allclear', 'roomclear']);
+    const log = recordEvents(g, ['roomclear']);
     placePiece(g, PIECE.I, 1, col - 2, 0);
     g.hardDrop();
     finishClear(g);
-    expect(log.names()).toEqual(['allclear', 'roomclear']);
+    expect(log.names()).toEqual(['roomclear']);
   });
 
   it('NS4-30: açıklık oranı temizledikçe artar; Serbest nefeste 1', () => {

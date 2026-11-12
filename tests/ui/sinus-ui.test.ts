@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Game } from '../../src/game/Game';
 import { PIECE } from '../../src/game/pieces';
 import { ORIGIN, SINUS } from '../../src/game/sinusAttack';
+import { BAR_LABEL } from '../../src/content/waves';
 import { computeLayout, versusLayout } from '../../src/rendering/layout';
 import type { Layout, Rect } from '../../src/types/layout';
 import { createAppStubs } from '../helpers/appStubs';
@@ -73,12 +74,12 @@ describe('HUD', () => {
     g.reset({ seed: 1 });
     const hud = createSinusHud();
     hud.layout(computeLayout(390, 844));
-    g.attackT = SINUS.attackMs * 0.5;
+    g.attackT = g.stepMs() * 0.5;
     hud.sync(g, true);
     expect(dom.el('attack-fill').style['transform']).toBe('scaleX(0.5)');
     expect(dom.el('attack-bar').getAttribute('aria-valuenow')).toBe('50');
     expect(dom.el('attack-bar').classList.contains('warn')).toBe(false);
-    g.attackT = SINUS.attackMs * ATTACK_WARN;
+    g.attackT = g.stepMs() * ATTACK_WARN;
     hud.sync(g, true);
     expect(dom.el('attack-bar').classList.contains('warn')).toBe(true);
     hud.sync(g, false); // oyun dışı: uyarı yok
@@ -111,18 +112,32 @@ describe('HUD', () => {
     g.reset({ seed: 1 });
     const hud = createSinusHud();
     hud.layout(computeLayout(1366, 768));
-    g.attackT = SINUS.attackMs * 0.25;
+    g.attackT = g.stepMs() * 0.25;
     hud.sync(g, true);
     expect(dom.el('attack-fill').style['transform']).toBe('scaleY(0.25)');
     expect(dom.el('attack-bar').classList.contains('v')).toBe(true);
   });
-  it('erişilebilirlik: Spray düğmesi adlı ve gizli değil; bar "Sinüzit Atağı" ilerleme çubuğu; yeni görünür metin yok', () => {
+  it('NS4-45: bar sıradaki adımı gösterir: dalga (varsayılan) / hızlanma (.speed) ve ekran okuyucu adı', async () => {
+    const { createSinusHud } = await import('../../src/ui/sinusHud');
+    const g = new Game();
+    g.reset({ seed: 1 });
+    const hud = createSinusHud();
+    hud.layout(computeLayout(390, 844));
+    hud.sync(g, true);
+    expect(dom.el('attack-bar').classList.contains('speed')).toBe(false);
+    expect(dom.el('attack-bar').getAttribute('aria-label')).toBe(BAR_LABEL.wave);
+    g.pressSteps = 1; // dalga geçti: sırada hızlanma
+    hud.sync(g, true);
+    expect(dom.el('attack-bar').classList.contains('speed')).toBe(true);
+    expect(dom.el('attack-bar').getAttribute('aria-label')).toBe(BAR_LABEL.speed);
+  });
+  it('erişilebilirlik: Spray düğmesi adlı ve gizli değil; bar sıradaki adımı adlandıran ilerleme çubuğu; yeni görünür metin yok', () => {
     const spray = /<button id="btn-spray"[^>]*>/.exec(html)?.[0] ?? '';
     expect(spray).toContain('aria-label="Spray"');
     expect(spray).not.toContain('hidden');
     const bar = /<div\s+id="attack-bar"[^>]*>/.exec(html)?.[0] ?? '';
     expect(bar).toMatch(/role="progressbar"/);
-    expect(bar).toMatch(/aria-label="Sinüzit Atağı"/);
+    expect(bar).toContain(`aria-label="${BAR_LABEL.wave}"`);
     expect(bar).not.toMatch(/hidden/);
     // görünür metin: yalnızca düğme adı
     const btn = html.slice(
@@ -167,7 +182,7 @@ describe('kayıt: tek oyunculu kaydedilir, çok oyunculu tur kaydedilmez', () =>
     lc.handleGameOver('blockout');
     vi.advanceTimersByTime(1000);
     expect(onGameRecorded).toHaveBeenCalled();
-    expect(onGameRecorded.mock.calls[0]?.[0]).toMatchObject({ ruleset: 'sinus-attack-spray-v1' });
+    expect(onGameRecorded.mock.calls[0]?.[0]).toMatchObject({ ruleset: 'sinus-dalga-v1' });
     expect(JSON.parse(data.get('fn_meta') ?? '{}')).toMatchObject({ best: 50 });
   });
   it('çok oyunculu tur: yerel skor, kişisel rekor ve gönderim yok', async () => {

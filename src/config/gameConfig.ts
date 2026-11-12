@@ -56,10 +56,19 @@ export const CFG = {
   cta: 'https://www.yasasinsaglik.com/',
 } as const satisfies GameConfig;
 
-/** NS4-27: sinüs odası kimlikleri (görünür adlar content/rooms.ts'te). */
-export type RoomId = 'yanak' | 'etmoid' | 'alin' | 'sfenoid';
+/**
+ * NS4-27 / NS4-46: bölüm (oda) türleri ve tarafları. 8 bölüm: dört boşluk, her biri önce sol sonra sağ (kullanıcı
+ * kararı 2026-11-12; Kafa tabanı/sfenoid kalktı). Görünür adlar content/rooms.ts'te. "Sol" ekranda soldaki taraftır.
+ */
+export type RoomKind = 'burun' | 'yanak' | 'etmoid' | 'alin';
+export type RoomSide = 'sol' | 'sag';
+export type RoomId = `${RoomKind}-${RoomSide}`;
+/** Bölüm türlerinin sırası (müzik tonu, tahta tonu ve duvar şekli türden gelir). */
+export const ROOM_KINDS = ['burun', 'yanak', 'etmoid', 'alin'] as const satisfies readonly RoomKind[];
 export interface RoomDef {
   readonly id: RoomId;
+  readonly kind: RoomKind;
+  readonly side: RoomSide;
   /** Oda başında alttan dolu gelen gri bulutçuk sırası (tıkanıklık = rows / VIS). */
   readonly rows: number;
   /**
@@ -70,13 +79,26 @@ export interface RoomDef {
   /** NS4-30: sıra başına en çok ek (kanal dışı) boşluk (0..extraHoles; rastgele). */
   readonly extraHoles: number;
 }
+const room = (kind: RoomKind, side: RoomSide, rows: number, channels: number, extraHoles: number): RoomDef => ({
+  id: `${kind}-${side}`,
+  kind,
+  side,
+  rows,
+  channels,
+  extraHoles,
+});
 /**
- * NS4-27: Sinüs Odaları. Oyun sırayla bu odalardan geçer; geçme şartı odadaki bütün gri bulutçukları temizlemek.
- * Son odadan sonra "Serbest nefes" (sonsuz maraton; room === ROOMS.length).
+ * NS4-27 / NS4-46: bölümler. Oyun sırayla bu bölümlerden geçer; geçme şartı bölümdeki bütün gri bulutçukları
+ * temizlemek. Son bölümden sonra "Serbest nefes" (sonsuz; room === ROOMS.length). Gri sıra sayıları sanal oyuncu
+ * testleriyle ayarlandı (docs/NS4-46-SEKIZ-BOLUM.md).
  */
-export const ROOMS = [
-  { id: 'yanak', rows: 4, channels: 1, extraHoles: 0 },
-  { id: 'etmoid', rows: 6, channels: 2, extraHoles: 0 },
-  { id: 'alin', rows: 8, channels: 2, extraHoles: 1 },
-  { id: 'sfenoid', rows: 10, channels: 3, extraHoles: 1 },
-] as const satisfies readonly RoomDef[];
+export const ROOMS: readonly RoomDef[] = [
+  room('burun', 'sol', 2, 1, 0),
+  room('burun', 'sag', 3, 1, 0),
+  room('yanak', 'sol', 3, 1, 0),
+  room('yanak', 'sag', 4, 2, 0),
+  room('etmoid', 'sol', 5, 2, 0),
+  room('etmoid', 'sag', 6, 2, 0),
+  room('alin', 'sol', 6, 2, 1),
+  room('alin', 'sag', 8, 2, 1),
+];

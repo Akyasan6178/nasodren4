@@ -65,7 +65,9 @@ const SCHEMA: Record<AnalyticsEvent, Record<string, Kind>> = {
   core_triggered: { room: 'number', level: 'number' },
   core_drain_completed: { room: 'number', level: 'number', cells: 'number', moved: 'number', power: 'boolean' },
   sinus_attack_started: { room: 'number', level: 'number' },
-  sinus_attack_row_added: { attackCellsAdded: 'number', room: 'number', level: 'number' },
+  wave_dropped: { wave: 'number', singles: 'number', viruses: 'number', room: 'number', level: 'number' },
+  speed_up: { steps: 'number', room: 'number', level: 'number' },
+  virus_cleared: { viruses: 'number', room: 'number', level: 'number' },
   spray_ready: { room: 'number', level: 'number' },
   spray_no_target: { room: 'number', level: 'number' },
   spray_used: { sprayTargets: 'number', room: 'number', level: 'number' },
@@ -83,16 +85,6 @@ const SCHEMA: Record<AnalyticsEvent, Record<string, Kind>> = {
   mp_room: { action: ['create', 'join'] },
   mp_round_start: { players: 'number', round: 'number' },
   mp_round_end: { players: 'number', round: 'number', rank: 'number' },
-  virus_start: { tutorial: 'boolean' },
-  virus_level_clear: { level: 'number', dur_s: 'number', bonus: 'number' },
-  virus_game_over: {
-    reason: ['blockout', 'lockout', 'time', 'complete'],
-    score: 'number',
-    level: 'number',
-    viruses: 'number',
-    dur_s: 'number',
-  },
-  virus_tutorial: { action: ['started', 'step', 'completed', 'skipped'], step: 'number' },
 };
 const EVENTS = Object.keys(SCHEMA) as AnalyticsEvent[];
 
@@ -385,14 +377,17 @@ describe('sıklamen çekirdeği olayları', () => {
   });
 });
 
-describe('Sinüzit Atağı ve Spray olayları', () => {
-  it('atak, Spray durumu ve kullanımı, atak satırı: şemaya uygun, kişisel veri yok; atak satırı first_drain yazmaz', async () => {
+describe('dalga, hızlanma ve Spray olayları (NS4-45)', () => {
+  it('dalga, hızlanma, virüs, Spray durumu ve kullanımı, dalga hücreli satır: şemaya uygun, kişisel veri yok', async () => {
     const { g, lc } = await loadGame(3);
     lc.start();
     clearBoard(g);
     g.sinusAttack();
-    expect([count('sinus_attack_started'), count('sinus_attack_row_added')]).toEqual([1, 1]);
-    expect(last('sinus_attack_row_added')).toMatchObject({ room: 0, level: 1 });
+    expect([count('sinus_attack_started'), count('wave_dropped')]).toEqual([1, 1]);
+    expect(last('wave_dropped')).toMatchObject({ wave: 1, singles: 1, viruses: 1, room: 0, level: 1 });
+    g.pressSteps = 1;
+    g.pressureStep(); // 2. adım: hızlanma
+    expect(last('speed_up')).toMatchObject({ steps: 1, room: 0, level: 1 });
     g.sprayCharge = SINUS.sprayThreshold;
     g.update(16);
     expect(count('spray_ready')).toBe(1);
@@ -404,14 +399,15 @@ describe('Sinüzit Atağı ve Spray olayları', () => {
     g.sprayCharge = SINUS.sprayThreshold;
     g.update(16);
     expect(count('spray_no_target')).toBe(1);
-    // yalnızca atak satırı: attack_line_cleared, first_drain yok
+    // virüslü satır: attack_line_cleared + virus_cleared; NS4-45'ten beri normal satır (first_drain yazılır)
     setupWell(g, 1);
     g.board[21 * 10] = PIECE.GARBAGE;
-    g.origin[21 * 10] = ORIGIN.attack;
+    g.origin[21 * 10] = ORIGIN.virus;
     placePiece(g, PIECE.I, 1, 7, 0);
     g.hardDrop();
     expect(last('attack_line_cleared')).toMatchObject({ attackCellsCleared: 1, room: 0, level: 1 });
-    expect(count('first_drain')).toBe(0);
+    expect(last('virus_cleared')).toMatchObject({ viruses: 1, room: 0, level: 1 });
+    expect(count('first_drain')).toBe(1);
     for (const r of records()) expect(validate(r), r.event).toEqual([]);
   });
 });
@@ -527,7 +523,7 @@ describe('skor tablosu ve global gönderim olayları; kişisel veri yok', () => 
       durationSeconds: 90,
       recordedAt: 1,
       submitted: false,
-      ruleset: 'sinus-attack-spray-v1',
+      ruleset: 'sinus-dalga-v1',
     });
     const input = dom.el('nick-input') as unknown as { value: string };
     input.value = '<x>';
