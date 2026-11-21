@@ -6,6 +6,8 @@ Kaynak: art/bloklar/siklamen (1..7).png (1254 px, arka planı saydam: çiçek, s
 - Her görsel saydam olmayan sınırına kırpılır, kareye ortalanır (kenarlarda küçük pay) ve 256 px'e küçültülür.
 - Karo yoktur: hücrede yalnızca sıklamen görünür, kare arka plan çizilmez (src/rendering/textures.ts drawArt).
 - Renkler görsellerin kendisidir; ayrıca doygunluk / parlaklık ayarı yapılmaz.
+- Her görselin çevresine eşit kalınlıkta beyaz kontür eklenir (OUTLINE). Kaynaktaki ince kontür hücre boyutunda
+  (telefonda ~70 px) kaybolduğu için kalınlık son boyuta göre seçilir; kontür kenar payına sığar.
 
 Parça eşlemesi (src/rendering/textures.ts BLOCK_ART ile aynı):
   siklamen (1) → L (sağ L)      siklamen (2) → J (sol L)
@@ -19,15 +21,19 @@ Gereken: Pillow.
 
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "art" / "bloklar"
 OUT = ROOT / "public" / "images" / "bloklar"
 SIZE = 256
 QUALITY = 90
-#: kenarlarda bırakılan pay (karenin kenarına oranı)
-MARGIN = 0.03
+#: kenarlarda bırakılan pay (karenin kenarına oranı; kontürü de içine alır)
+MARGIN = 0.055
+#: beyaz kontür kalınlığı (karenin kenarına oranı; 256 px'te ~8 px, hücrede ~2 piksel)
+OUTLINE = 0.032
+#: kontür bu çözünürlükte çizilir, sonra SIZE'a küçültülür (yumuşak kenar)
+WORK = 1024
 
 # çıktı adı -> kaynak dosya
 SOURCES = {
@@ -42,7 +48,7 @@ SOURCES = {
 
 
 def fit_square(im: Image.Image) -> Image.Image:
-    """Saydam olmayan sınıra kırpar, kenar payıyla kareye ortalar ve SIZE px'e küçültür."""
+    """Saydam olmayan sınıra kırpar, kenar payıyla kareye ortalar, beyaz kontür ekler ve SIZE px'e küçültür."""
     im = im.convert("RGBA")
     box = im.getchannel("A").point(lambda a: 255 if a > 8 else 0).getbbox()
     if box:
@@ -51,7 +57,21 @@ def fit_square(im: Image.Image) -> Image.Image:
     side = round(max(w, h) / (1 - 2 * MARGIN))
     sq = Image.new("RGBA", (side, side), (0, 0, 0, 0))
     sq.alpha_composite(im, ((side - w) // 2, (side - h) // 2))
-    return sq.resize((SIZE, SIZE), Image.LANCZOS)
+    sq = sq.resize((WORK, WORK), Image.LANCZOS)
+    return add_outline(sq).resize((SIZE, SIZE), Image.LANCZOS)
+
+
+def add_outline(im: Image.Image) -> Image.Image:
+    """Şeklin çevresine OUTLINE kalınlığında beyaz kontür: alfa maskesi yuvarlak biçimde genişletilir (bulanıklık +
+    eşik), kenarı hafifçe yumuşatılır ve görselin arkasına beyaz olarak konur."""
+    r = OUTLINE * im.width
+    solid = im.getchannel("A").point(lambda a: 255 if a > 8 else 0)
+    grown = solid.filter(ImageFilter.GaussianBlur(r / 2)).point(lambda a: 255 if a > 6 else 0)
+    grown = grown.filter(ImageFilter.GaussianBlur(1.2))
+    out = Image.new("RGBA", im.size, (255, 255, 255, 0))
+    out.putalpha(grown)
+    out.alpha_composite(im)
+    return out
 
 
 def main() -> None:
