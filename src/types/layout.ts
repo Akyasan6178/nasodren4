@@ -35,8 +35,8 @@ interface LayoutBase {
   readonly nextSlot: Pt;
   readonly compactBtns: boolean;
   readonly compactStats: boolean;
-  /** Sinüzit Atağı barı (portrede tahtanın altında yatay, yatayda tahtanın sağında dikey) ve Spray butonu. */
-  readonly attackBar: Rect;
+  /** NS4-47: sinüzit atağı geri sayımı (portrede tahtanın altında satır, yatayda sağ sütunda kart) ve Spray butonu. */
+  readonly attackTimer: Rect;
   readonly btnSpray: Rect;
 }
 

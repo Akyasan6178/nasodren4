@@ -21,7 +21,7 @@ import { datasetKey, type SinusState } from '../../src/ui/sinusMap';
 import { OVER_TITLE } from '../../src/ui/screens';
 import { installFakeDom, type FakeDom } from '../helpers/fakeDom';
 import { mediaBlock, rule } from '../helpers/css';
-import { clearBoard, dropVerticalI, fillRow, finishClear } from '../helpers/gameHelpers';
+import { clearBoard, dropVerticalI, fillRow, finishClear, dropFlatI, lastRoomRow } from '../helpers/gameHelpers';
 import { loadUi } from '../helpers/uiHarness';
 
 let dom: FakeDom;
@@ -54,11 +54,10 @@ async function playRooms() {
   return ui;
 }
 type Ui = Awaited<ReturnType<typeof playRooms>>;
-/** Odanın son gri satırını tamamlar (oda açılır; "Sinüs açıldı" geçişi başlar). */
+/** NS4-47: odanın son bloklarını temizler (tahta tamamen boşalır; oda açılır, "Sinüs açıldı" geçişi başlar). */
 function clearRoom(g: Ui['g']) {
-  clearBoard(g);
-  fillRow(g, 21, PIECE.GARBAGE, [9]);
-  dropVerticalI(g);
+  lastRoomRow(g);
+  dropFlatI(g);
   finishClear(g);
 }
 /** Son odayı açar ve geçişi bitirir: final ekranı. */
@@ -88,8 +87,9 @@ describe('oda etiketleri ve tahta tonu', () => {
     expect(dom.el('toast').textContent).toBe(CLOUD_HINT);
     finishClear(g);
     frame();
-    expect(hudState().open).toBe('%52'); // 9 / 17 (aşağı yuvarlanır)
-    expect(dom.el('room-open-fill').style['transform']).toBe('scaleX(0.52)');
+    // NS4-47: kalan = bütün yerleşmiş hücreler (8 gri + I'nın 3 hücresi = 11): 6 / 17 (aşağı yuvarlanır)
+    expect(hudState().open).toBe('%35');
+    expect(dom.el('room-open-fill').style['transform']).toBe('scaleX(0.35)');
     dom.el('toast').textContent = '';
     fillRow(g, 21, PIECE.GARBAGE, [9]); // bir satır daha temizlenir: ipucu tekrar çıkmaz
     dropVerticalI(g);

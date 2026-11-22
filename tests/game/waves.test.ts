@@ -1,4 +1,4 @@
-// NS4-45 / NS4-46 zorlaşan dalgalar: bölüm saati tablosu (dalga boyu, ilk adım 15 sn, sonra 30 sn, hızlanma,
+// NS4-45 / NS4-46 / NS4-47 zorlaşan dalgalar: bölüm saati tablosu (dalga boyu, ilk adım 45 sn, sonra 60 sn, hızlanma,
 // satırdan gelen hızın seviye 6'da durması, yerçekimi tavanı), saatin her bölümde sıfırlanması ve Serbest nefeste
 // sürmesi, hızlanmanın seviyeyi (sunucu doğrulaması) değiştirmemesi.
 import { describe, expect, it } from 'vitest';
@@ -26,9 +26,30 @@ const gravityAt = (l: number) => Math.pow(0.8 - (l - 1) * 0.007, l - 1) * 1000;
 const LAST = ROOMS.length - 1;
 
 describe('tablo', () => {
-  it('tek adımlar dalga, çift adımlar hızlanma; ilk adım 15 sn, sonrakiler 30 sn', () => {
+  it('NS4-47: aktif oynanışta 45 sn sonra ilk adım (dalga), sonra her 60 sn (hızlanma, dalga); kalan süre geri sayılır', () => {
+    const g = new Game();
+    g.reset({ seed: 3, rooms: true });
+    const run = (ms: number) => {
+      // tahta tıkanmasın: büyük adımlar parça kilitleyebilir
+      clearBoard(g);
+      g.update(ms);
+    };
+    run(30_000);
+    expect([g.pressSteps, g.stepRemainingMs()]).toEqual([0, 15_000]);
+    run(15_000 - 1);
+    expect([g.pressSteps, g.nextStep()]).toEqual([0, 'wave']);
+    run(1);
+    expect([g.pressSteps, g.attacks, g.nextStep(), g.stepRemainingMs()]).toEqual([1, 1, 'speed', 60_000]);
+    run(60_000 - 1);
+    expect(g.pressSteps).toBe(1);
+    run(1);
+    expect([g.pressSteps, g.speedSteps, g.nextStep()]).toEqual([2, 1, 'wave']);
+    run(60_000);
+    expect([g.pressSteps, g.attacks]).toEqual([3, 2]);
+  });
+  it('tek adımlar dalga, çift adımlar hızlanma; NS4-47: ilk adım 45 sn, sonrakiler 60 sn', () => {
     expect([1, 2, 3, 4, 5, 6, 7].map(stepKind)).toEqual(['wave', 'speed', 'wave', 'speed', 'wave', 'speed', 'wave']);
-    expect([0, 1, 2, 5].map(stepDuration)).toEqual([15_000, 30_000, 30_000, 30_000]);
+    expect([0, 1, 2, 5].map(stepDuration)).toEqual([45_000, 60_000, 60_000, 60_000]);
   });
   it('her bölümün satırı var; son bölüm: 3 tek kare + 1 virüsle başlar, dalga dalga büyür, sınırda durur', () => {
     expect(PRESSURE.rooms).toHaveLength(ROOMS.length);

@@ -1,5 +1,5 @@
 /* =====================================================================
-   DALGALAR VE SPRAY (kural seti sinus-dalga-v1; docs/NS4-45-ZORLASAN-DALGALAR.md;
+   DALGALAR VE SPRAY (kural seti sinus-dalga-v2; docs/NS4-45-ZORLASAN-DALGALAR.md;
    önceki: sinus-attack-spray-v1, docs/SINUS-ATTACK-AND-SPRAY-FINAL.md):
    - Bölüm saati (game/pressure.ts) aktif oynanışta adım atar (ilk adım
      PRESSURE.firstStepMs, sonra PRESSURE.stepMs): tek adımlar dalga (yukarıdan tek kareler ve virüsler düşer,

@@ -21,7 +21,15 @@ import {
   roomText,
 } from '../../src/content/rooms';
 import { FULL_RELIEF, FULL_RELIEF_SUB } from '../../src/content/relief';
-import { BAR_LABEL, SPEED_SUB, SPEED_TITLE, WAVE_SUB, WAVE_TITLE, virusClearText } from '../../src/content/waves';
+import {
+  STEP_NAME,
+  SPEED_SUB,
+  SPEED_TITLE,
+  WAVE_SUB,
+  WAVE_TITLE,
+  virusClearText,
+  TIMER_LABEL,
+} from '../../src/content/waves';
 import { HEALTH_TIPS, HEALTH_TOASTS } from '../../src/content/health';
 import { CYC_NAME, CYC_SHORT, CYC_TEXT, SNEEZE_NAME, SNEEZE_SHORT, SNEEZE_TEXT } from '../../src/ui/powerups';
 import { GLOBAL_TEXT, NO_NICKNAME } from '../../src/ui/scoresView';
@@ -128,8 +136,9 @@ export const INVENTORY: Readonly<Record<Area, readonly string[]>> = {
     ...ROOMS.map((_, i) => roomLabel(i)),
     FREE_NAME,
     'Bulutçuk',
-    // NS4-45: bölüm saati barının ekran okuyucu adları
-    ...Object.values(BAR_LABEL),
+    // NS4-47: sinüzit atağı geri sayımı (etiket ve sıradaki adımın adı)
+    TIMER_LABEL,
+    ...Object.values(STEP_NAME),
     ...[...hudSrc.matchAll(/`((?:Ferah nefes)[^`]*)`/g)].map((m) => m[1] ?? ''),
   ],
   guclendiriciler: [

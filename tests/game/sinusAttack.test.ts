@@ -1,4 +1,4 @@
-// Dalgalar ve Spray (NS4-45, kural seti sinus-dalga-v1; docs/NS4-45-ZORLASAN-DALGALAR.md): zamanlama, yukarıdan düşen
+// Dalgalar ve Spray (NS4-45, kural seti sinus-dalga-v2; docs/NS4-45-ZORLASAN-DALGALAR.md): zamanlama, yukarıdan düşen
 // tek kareler ve virüsler, hücre kaynağı katmanı, Spray, dalga hücreli satır puanı ve virüs bonusu, oda geçişinde
 // taşıma (virüs türü korunur), çekirdek ve Sıklamen gücünün dalga hücresini görmemesi, çok oyunculu determinizm.
 // Bölüm saati tablosu (dalga boyu, hızlanma, bölüm sıfırlaması) tests/game/waves.test.ts'te.
@@ -21,6 +21,7 @@ import {
   recordEvents,
   setupWell,
   stackRows,
+  dropFlatI,
 } from '../helpers/gameHelpers';
 
 function game(seed = 7, rooms = false) {
@@ -69,9 +70,9 @@ function consistent(g: Game) {
 }
 
 describe('kural değerleri', () => {
-  it('taşıma bölgesi alt 8 sıra; Spray 30 renkli hücrede, en çok 8 dalga hücresi; adımlar 15 sn sonra her 30 sn', () => {
+  it('taşıma bölgesi alt 8 sıra; Spray 30 renkli hücrede, en çok 8 dalga hücresi; adımlar 45 sn sonra her 60 sn', () => {
     expect(SINUS).toEqual({ attackZoneRows: 8, sprayThreshold: 30, sprayCells: 8 });
-    expect([PRESSURE.firstStepMs, PRESSURE.stepMs]).toEqual([15_000, 30_000]);
+    expect([PRESSURE.firstStepMs, PRESSURE.stepMs]).toEqual([45_000, 60_000]);
     expect([HIDDEN, ROOMS.length]).toEqual([2, 8]);
   });
   it('parça sırası (tohumlu) atak ve Spray akışlarından etkilenmez; tohumsuz oyunda kurulum ek sayı çekmez', () => {
@@ -372,69 +373,55 @@ describe('dalga hücreli satır puanı ve virüs bonusu (NS4-45)', () => {
     expect(fullRows(g)).toEqual([]);
     expect(consistent(g)).toBe('ok');
   });
-  it('tek kareli satırdaki oda grileri silinir ve oda ilerlemesine katkı verir', () => {
+  it('tek kareli satır silinir; tahtadaki son bloklarsa oda açılır (NS4-47: hedef bütün yerleşmiş hücreler)', () => {
     const g = game(4, true);
     clearBoard(g);
-    for (const x of [0, 1, 2, 3, 4]) {
+    for (const x of [0, 1, 2]) {
       g.board[idx(x, ROWS - 1)] = PIECE.GARBAGE;
       g.origin[idx(x, ROWS - 1)] = ORIGIN.room;
     }
-    setAttack(g, 5, ROWS - 1);
-    for (const x of [6, 7, 8]) g.board[idx(x, ROWS - 1)] = PIECE.S;
+    setAttack(g, 3, ROWS - 1);
+    for (const x of [4, 5]) g.board[idx(x, ROWS - 1)] = PIECE.S;
     g.roomGray = g.roomGoalGray();
-    expect(g.roomGray).toBe(5);
+    expect(g.roomGray).toBe(6); // 3 oda grisi + 1 tek kare + 2 renkli
     const log = recordEvents(g, ['roomclear', 'scored']);
-    dropVerticalI(g);
+    dropFlatI(g);
     finishClear(g);
     expect(log.payloads('scored')).toHaveLength(1);
-    expect(log.payloads('roomclear')).toHaveLength(1); // oda grisi kalmadı: oda açılır
+    expect(log.payloads('roomclear')).toHaveLength(1); // tahtada blok kalmadı: oda açılır
     expect(g.pending?.kind).toBe('room');
   });
-  it('oda hedefi virüsü saymaz', () => {
+  it('NS4-47: oda hedefi virüsü ve tek kareyi de sayar (kalırken oda açılmaz)', () => {
     const g = game(4, true);
     const goal = g.roomGoalGray();
     setVirus(g, 0, 5, 2);
-    expect(g.roomGoalGray()).toBe(goal);
+    setAttack(g, 1, 5);
+    expect(g.roomGoalGray()).toBe(goal + 2);
   });
 });
 
-describe('oda geçişi: atak grileri taşınır', () => {
-  function openRoom(g: Game) {
-    g.removeCells(cellsOf(g, ORIGIN.room));
-    g.boardVer++;
-    expect(g.roomCleared()).toBe(true);
-    g.beginRoomClear();
-    finishClear(g);
-  }
-  it('oda hedefi yalnızca oda grileri; dalga hücreleri silinmez, yeni odaya taşınır (virüs türü korunur)', () => {
+describe('oda geçişi ve taşıma (NS4-47: oda yalnızca boş tahtada açılır)', () => {
+  it('NS4-47: oda grileri bitse de dalga hücreleri (tek kare, virüs) kalırken oda açılmaz; taşınacak hücre kalmaz', () => {
     const g = game(5, true);
-    const goal = g.roomGray;
     g.sinusAttack();
     g.sinusAttack();
     setVirus(g, 0, 3, 2);
-    expect(g.roomGray).toBe(goal);
-    const n = cellsOf(g, ORIGIN.attack).length,
-      vir = waveCells(g).length - n;
-    const kinds = waveCells(g)
-      .map((k) => g.origin[k])
-      .sort();
-    const s0 = { lines: g.lines, charge: g.sprayCharge };
-    openRoom(g);
-    expect(g.room).toBe(1);
-    expect([cellsOf(g, ORIGIN.attack).length, g.carriedAttackGray]).toEqual([n, n + vir]);
-    expect(
-      waveCells(g)
-        .map((k) => g.origin[k])
-        .sort(),
-    ).toEqual(kinds);
-    expect([g.lines, g.sprayCharge]).toEqual([s0.lines, s0.charge]);
-    expect(g.roomGray).toBe(cellsOf(g, ORIGIN.room).length);
-    expect(fullRows(g)).toEqual([]);
+    g.removeCells(cellsOf(g, ORIGIN.room));
+    g.boardVer++;
+    const wave = waveCells(g).length;
+    expect(wave).toBeGreaterThan(0);
+    expect(g.roomCleared()).toBe(false);
+    expect(g.roomGray).toBe(wave);
     expect(consistent(g)).toBe('ok');
-    // hava kanalına ve oda sıralarının üstünde en üst kanalın sütununa yerleşmez
-    for (const k of waveCells(g)) expect(g.channelAt[(k / COLS) | 0]).not.toBe(k % COLS);
-    const topY = [...g.channelAt].findIndex((c) => c >= 0);
-    for (let y = 0; y < topY; y++) expect(g.board[idx(g.channelAt[topY] ?? 0, y)]).toBe(0);
+    // dalga hücreleri de silinince (ör. Spray) oda açılır; tahta boş olduğundan yeni odaya taşınan hücre yok
+    g.removeCells(waveCells(g));
+    g.boardVer++;
+    expect(g.roomCleared()).toBe(true);
+    expect(g.attackCarry()).toEqual([]);
+    g.beginRoomClear();
+    finishClear(g);
+    expect([g.room, g.carriedAttackGray, waveCells(g).length]).toEqual([1, 0, 0]);
+    expect(consistent(g)).toBe('ok');
   });
   it('saf yerleşim: eski koordinat korunur; çakışan hücre en yakın güvenli hücreye; renkli/oda grisi ezilmez', () => {
     const b = new Uint8Array(COLS * ROWS),

@@ -68,10 +68,12 @@ describe('bağlantılar', () => {
   it('oda açılışı: oda kutlaması + açılma anı (oda gücünde)', async () => {
     const { g, lc, calls } = await loadUi(1, true);
     lc.start();
+    // NS4-47: satır temizlemesiyle açılan bölüm hep Tam Ferahlık'tır; Tam Ferahlıksız açılış hapşırıkla: bütün
+    // bloklar yığının en üstteki 3 sırasında (havada, tıkanıklık %35), hapşırık hepsini savurur
     clearBoard(g);
-    fillRow(g, 21, PIECE.GARBAGE, [9]);
+    for (let y = 15; y < 18; y++) fillRow(g, y, PIECE.GARBAGE, [9]);
     calls.length = 0;
-    dropVerticalI(g); // I'nın üst üç hücresi kalır: Tam Ferahlık değil
+    expect(g.useSneeze()).toBe(true);
     expect(reliefCalls(calls)).toEqual([]);
     finishClear(g);
     expect(reliefCalls(calls)).toEqual(['view.onRoomClear', 'view.relief', 'sound.roomClear']);
@@ -96,8 +98,8 @@ describe('bağlantılar', () => {
     finishClear(g);
     vi.advanceTimersByTime(RELIEF_MS.allclear);
     clearBoard(g);
-    fillRow(g, 21, PIECE.GARBAGE, [9]);
-    dropVerticalI(g);
+    for (let y = 15; y < 18; y++) fillRow(g, y, PIECE.GARBAGE, [9]);
+    expect(g.useSneeze()).toBe(true);
     finishClear(g);
     expect(light()).toBe('room');
   });

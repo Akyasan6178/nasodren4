@@ -145,7 +145,8 @@ export const HEALTH_STATIC = [
     id: 'how.rooms',
     placement: 'how_to',
     location: 'index.html #scr-how .map li',
-    text: 'Oyun dört sinüs odasından geçer: yanak, gözler arası, alın ve kafa tabanı. Her oda gri bulutçuklarla başlar; parlayan boşlukları doldurup hepsini uçurunca sinüs açılır. Dördü de açılınca ister serbest nefese devam et, ister bitir.',
+    // NS4-47: 8 bölüm (NS4-46) ve tam temizlik kuralı; eski "dört oda / kafa tabanı / bulutçukları uçur" metni kalktı
+    text: 'Oyun sekiz bölümden geçer: burun boşlukları, yanaklar, gözler arası ve alın; her birinde önce sol, sonra sağ taraf. Her bölüm gri bulutçuklarla başlar; bölümü açmak için tahtadaki bütün blokları temizle. Sekizi de açılınca ister serbest nefese devam et, ister bitir.',
     approval: R,
     source: null,
   },
@@ -172,6 +173,15 @@ export const HEALTH_STATIC = [
     placement: 'how_to',
     location: 'index.html #scr-how .map li',
     text: 'Hapşırık tıkanıklığın en üstteki 3 sırasını savurur. 20 blok yerleştirince yeniden dolar.',
+    approval: R,
+    source: null,
+  },
+  {
+    id: 'how.attack',
+    placement: 'how_to',
+    location: 'index.html #scr-how .map li',
+    // NS4-47: geri sayım, dalga / hızlanma ve Spray (mekanik anlatımı; sağlık iddiası yok)
+    text: 'Sinüzit atağı sayacı bitince yukarıdan virüsler ve tek kareler düşer ya da bloklar hızlanır; sayaç bitmeden tahtayı kontrol altında tut. Spray yalnızca sinüzit atağıyla gelen hücreleri temizler.',
     approval: R,
     source: null,
   },

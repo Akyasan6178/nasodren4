@@ -19,10 +19,10 @@ export const ROOM_TEXT: Readonly<Record<RoomId, { readonly name: string; readonl
 };
 /** Son odadan sonraki sonsuz mod. */
 export const FREE_NAME = 'Serbest nefes';
-/** NS4-30: hedef, neyin yapılacağını söyler (parlayan boşluklar = hava kanalı). */
-export const ROOM_GOAL = 'Parlayan boşlukları doldur, bulutçukları uçur';
+/** NS4-30 / NS4-47: hedef, neyin yapılacağını söyler: bölüm tahta tamamen temizlenince açılır. */
+export const ROOM_GOAL = 'Tahtadaki bütün blokları temizle';
 /** NS4-30: oyunda ilk bulutçuk uçunca (1. odada, oyun başına bir kez). */
-export const CLOUD_HINT = 'Bulutçuk uçtu! Hepsini uçur, sinüs açılsın.';
+export const CLOUD_HINT = 'Bulutçuk uçtu! Bütün blokları temizle, bölüm açılsın.';
 export const ROOM_CLEAR = 'Sinüs açıldı!';
 /** NS4-46: burun boşluğu bir sinüs değildir; açılış kartı başlığı türe göre. */
 export const NOSE_CLEAR = 'Burun açıldı!';

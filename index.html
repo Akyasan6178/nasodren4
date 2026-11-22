@@ -240,16 +240,11 @@
             <span class="t">Spray</span>
             <span class="charge" aria-hidden="true"><i id="spray-fill"></i></span>
           </button>
-          <div
-            id="attack-bar"
-            class="abs"
-            role="progressbar"
-            aria-label="Sıradaki: virüs dalgası"
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-valuenow="0"
-          >
-            <i id="attack-fill"></i>
+          <!-- NS4-47: sinüzit atağı geri sayımı (ui/sinusHud.ts); sayı saniyede bir yazılır, canlı anons yok -->
+          <div id="attack-timer" class="abs" role="timer" aria-labelledby="attack-lbl">
+            <span class="at-lbl" id="attack-lbl">Sonraki sinüzit atağı</span
+            ><span class="at-val"><b id="attack-sec">45</b> sn</span
+            ><span class="at-kind" id="attack-kind">Virüs dalgası</span>
           </div>
           <button id="btn-pause" class="gbtn" aria-label="Duraklat">
             <svg viewBox="0 0 24 24" fill="currentColor">
@@ -444,8 +439,8 @@
                   <dd>Yavaş indir · anında bırak</dd>
                   <dt><kbd>C</kbd> / <kbd>Shift</kbd></dt>
                   <dd>Beklet</dd>
-                  <dt><kbd>1</kbd> · <kbd>2</kbd></dt>
-                  <dd>Sıklamen özütü · hapşırık</dd>
+                  <dt><kbd>1</kbd> · <kbd>2</kbd> · <kbd>3</kbd></dt>
+                  <dd>Sıklamen özütü · hapşırık · Spray</dd>
                   <dt><kbd>Esc</kbd> / <kbd>P</kbd></dt>
                   <dd>Duraklat</dd>
                 </dl>
@@ -455,9 +450,9 @@
             <ul class="map">
               <li>Düşen bloklar burnunda biriken tıkanıklık; alan dolarsa sinüs tamamen tıkanır.</li>
               <li>
-                Oyun dört sinüs odasından geçer: yanak, gözler arası, alın ve kafa tabanı. Her oda gri bulutçuklarla
-                başlar; parlayan boşlukları doldurup hepsini uçurunca sinüs açılır. Dördü de açılınca ister serbest
-                nefese devam et, ister bitir.
+                Oyun sekiz bölümden geçer: burun boşlukları, yanaklar, gözler arası ve alın; her birinde önce sol, sonra
+                sağ taraf. Her bölüm gri bulutçuklarla başlar; bölümü açmak için tahtadaki bütün blokları temizle.
+                Sekizi de açılınca ister serbest nefese devam et, ister bitir.
               </li>
               <li>
                 Bir satırı tamamen doldurunca satır silinir. Dört satırı birden silersen TETRİS. T bloğunu döndürüp dar
@@ -468,6 +463,11 @@
                 puanları ikiye katlar.
               </li>
               <li><b>Hapşırık</b> tıkanıklığın en üstteki 3 sırasını savurur. 20 blok yerleştirince yeniden dolar.</li>
+              <li>
+                <b>Sinüzit atağı</b> sayacı bitince yukarıdan virüsler ve tek kareler düşer ya da bloklar hızlanır;
+                sayaç bitmeden tahtayı kontrol altında tut. <b>Spray</b> yalnızca sinüzit atağıyla gelen hücreleri
+                temizler.
+              </li>
             </ul>
           </div>
           <!-- geri dönüş (Tamam) ve oyun başlatan eylem (Öğreticiyle oyna) ayrı ağırlıkta -->

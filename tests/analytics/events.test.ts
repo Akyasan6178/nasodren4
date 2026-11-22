@@ -17,6 +17,8 @@ import {
   placePiece,
   setupWell,
   stackRows,
+  dropFlatI,
+  lastRoomRow,
 } from '../helpers/gameHelpers';
 
 const sources = import.meta.glob<string>('../../src/**/*.ts', { query: '?raw', import: 'default', eager: true });
@@ -224,8 +226,8 @@ describe('oyun hunisi: her olay doğru anda bir kez', () => {
     lc.start();
     expect(last('room_start')).toMatchObject({ room: 0, gray: g.roomGray });
     clearBoard(g);
-    fillRow(g, 21, PIECE.GARBAGE, [9]);
-    dropVerticalI(g);
+    lastRoomRow(g);
+    dropFlatI(g);
     finishClear(g);
     expect(count('room_clear')).toBe(1);
     expect(last('room_clear')).toMatchObject({ room: 0, level: 1, bonus: CFG.roomBonus });
@@ -257,8 +259,8 @@ describe('oyun hunisi: her olay doğru anda bir kez', () => {
     lc.start();
     g.enterRoom(ROOMS.length - 1);
     clearBoard(g);
-    fillRow(g, 21, PIECE.GARBAGE, [9]);
-    dropVerticalI(g);
+    lastRoomRow(g);
+    dropFlatI(g);
     finishClear(g);
     finishClear(g); // → final ekranı
     expect(count('final_choice')).toBe(0);
@@ -269,8 +271,8 @@ describe('oyun hunisi: her olay doğru anda bir kez', () => {
     lc.start();
     g.enterRoom(ROOMS.length - 1);
     clearBoard(g);
-    fillRow(g, 21, PIECE.GARBAGE, [9]);
-    dropVerticalI(g);
+    lastRoomRow(g);
+    dropFlatI(g);
     finishClear(g);
     finishClear(g);
     lc.finish();
@@ -523,7 +525,7 @@ describe('skor tablosu ve global gönderim olayları; kişisel veri yok', () => 
       durationSeconds: 90,
       recordedAt: 1,
       submitted: false,
-      ruleset: 'sinus-dalga-v1',
+      ruleset: 'sinus-dalga-v2',
     });
     const input = dom.el('nick-input') as unknown as { value: string };
     input.value = '<x>';

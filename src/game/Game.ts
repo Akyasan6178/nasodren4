@@ -348,11 +348,13 @@ export class Game {
     this.spawn();
   }
 
-  /** Oda hedefindeki gri sayısı: yalnızca oda grileri (atak grisi sayılmaz). */
+  /**
+   * NS4-47: bölüm hedefinde kalan hücre: tahtadaki bütün yerleşmiş hücreler (oda grisi, renkli blok, tek kare, virüs;
+   * gizli sıralar dahil). Düşen parça tahtada değildir, sayılmaz. Bölüm, tahta tamamen temizlenince açılır.
+   */
   roomGoalGray() {
     let n = 0;
-    for (let i = 0; i < this.board.length; i++)
-      if (this.board[i] === PIECE.GARBAGE && !isAttackGray(this.board, this.origin, i)) n++;
+    for (let i = 0; i < this.board.length; i++) if (this.board[i]) n++;
     return n;
   }
 
@@ -465,7 +467,10 @@ export class Game {
     return this.roomGray0 > 0 ? Math.max(0, 1 - this.roomGray / this.roomGray0) : 1;
   }
 
-  /** NS4-27: odadaki son gri bulutçuk temizlendi mi (Serbest nefeste ve oda akışı kapalıyken hep false). */
+  /**
+   * NS4-47: bölüm temizlendi mi: tahtada yerleşmiş hücre kalmadı (düşen parça hariç). Serbest nefeste ve oda akışı
+   * kapalıyken hep false. Yalnızca bekleyen temizleme/drenaj/çökme bittikten sonra (finishPending) sorulur.
+   */
   roomCleared() {
     if (!this.rooms || this.room >= ROOMS.length) return false;
     this.roomGray = this.roomGoalGray();
@@ -718,6 +723,8 @@ export class Game {
     this.boardVer++;
     this.canHold = true;
     if (this.sneezePieces < CFG.sneezePieces) this.sneezePieces++;
+    // NS4-47: bölüm hedefi bütün yerleşmiş hücreler: kilitlenen parça da sayılır ("% açık" göstergesi güncel kalır)
+    if (this.rooms && this.room < ROOMS.length) this.roomGray = this.roomGoalGray();
     this.emit('lock', cells);
     if (allHidden) return this.gameOver('lockout');
     if (armed) this.emit('core', { kind: 'activated', row: this.coreTargetRow, col: this.coreTargetCol });
@@ -947,6 +954,10 @@ export class Game {
   }
 
   /** NS4-46: sıradaki adıma ilerleme (0..1; bar). */
+  /** NS4-47: sıradaki adıma kalan aktif oynanış süresi (ms; 0'ın altına inmez). Geri sayımın tek kaynağı. */
+  stepRemainingMs() {
+    return Math.max(0, this.stepMs() - this.attackT);
+  }
   stepProgress() {
     return Math.min(1, this.attackT / this.stepMs());
   }

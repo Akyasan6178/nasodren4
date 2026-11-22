@@ -22,7 +22,7 @@ const valid = () => ({
   level: 3,
   durationSeconds: 245,
   clientVersion: 'web-tetris-1',
-  ruleset: 'sinus-dalga-v1',
+  ruleset: 'sinus-dalga-v2',
 });
 
 describe('kurallar oyun sabitleriyle tutarlı', () => {

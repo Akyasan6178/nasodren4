@@ -87,6 +87,21 @@ export function placePiece(g: Game, type: TetrominoType, rot: RotationState, x: 
   g.pieceVer++;
 }
 
+/**
+ * NS4-47: bölümün son blokları: tahta boş, yalnızca en alt sırada 6 hücre (6–9. sütunlar boş). dropFlatI ile sıra
+ * tamamlanınca tahta tamamen temizlenir ve bölüm açılır (yatay I tahtada artık bırakmaz).
+ */
+export function lastRoomRow(g: Game, v: BlockId = PIECE.GARBAGE): void {
+  clearBoard(g);
+  fillRow(g, ROWS - 1, v, [6, 7, 8, 9]);
+}
+
+/** Yatay I'yı 6–9. sütunlara bırakır (hard drop). */
+export function dropFlatI(g: Game): void {
+  placePiece(g, PIECE.I, 0, 6, 0);
+  g.hardDrop();
+}
+
 /** Dikey I'yı 9. sütundaki kuyuya bırakır (hard drop). */
 export function dropVerticalI(g: Game): void {
   placePiece(g, PIECE.I, 1, 7, 0);

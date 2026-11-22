@@ -15,8 +15,7 @@ import {
 } from '../../src/ui/sinusWalls';
 import { installFakeDom, type FakeDom } from '../helpers/fakeDom';
 import { rule } from '../helpers/css';
-import { clearBoard, fillRow, dropVerticalI, finishClear } from '../helpers/gameHelpers';
-import { PIECE } from '../../src/game/pieces';
+import { clearBoard, finishClear, dropFlatI, lastRoomRow } from '../helpers/gameHelpers';
 import { loadUi } from '../helpers/uiHarness';
 
 const SHAPES = Object.entries<WallShape>(WALLS);
@@ -151,8 +150,8 @@ describe('NS4-33: HUD bağlantısı', () => {
     ui.frame();
     expect(dom.el('walls-front').getAttribute('d')).toBe(wallPath(wallShape(0), 0));
     clearBoard(ui.g);
-    fillRow(ui.g, 21, PIECE.GARBAGE, [9]);
-    dropVerticalI(ui.g);
+    lastRoomRow(ui.g);
+    dropFlatI(ui.g);
     finishClear(ui.g);
     vi.advanceTimersByTime(5000);
     ui.g.update(5000);

@@ -5,6 +5,7 @@ import secure from '../../supabase/migrations/20261101120000_tetris_secure_score
 import v3 from '../../supabase/migrations/20261102000000_tetris_ruleset_v3.sql?raw';
 import sinus from '../../supabase/migrations/20261103000000_tetris_ruleset_sinus_attack_spray.sql?raw';
 import dalga from '../../supabase/migrations/20261112000000_tetris_ruleset_sinus_dalga.sql?raw';
+import dalga2 from '../../supabase/migrations/20261122000000_tetris_ruleset_sinus_dalga_v2.sql?raw';
 import { RULESET } from '../../supabase/functions/_shared/scoreRules.ts';
 import envProduction from '../../.env.production?raw';
 import envExample from '../../.env.local.example?raw';
@@ -39,6 +40,7 @@ describe('migration zinciri', () => {
       '20261102000000_tetris_ruleset_v3.sql',
       '20261103000000_tetris_ruleset_sinus_attack_spray.sql',
       '20261112000000_tetris_ruleset_sinus_dalga.sql',
+      '20261122000000_tetris_ruleset_sinus_dalga_v2.sql',
     ]);
   });
   it('v3 (tarihsel): okuma RPC varsayılanı cyclamen-flow-v3 idi', () => {
@@ -49,9 +51,13 @@ describe('migration zinciri', () => {
     expect(sinus).toContain('Geri alma (rollback)');
     expect(sinus).toContain("default 'cyclamen-flow-v3' ile yeniden");
   });
-  it('sinus-dalga-v1: okuma RPC varsayılanı güncel kural seti; yetkiler aynı; veri silinmez', () => {
-    const c = sql(dalga);
-    expect(RULESET).toBe('sinus-dalga-v1');
+  it('sinus-dalga-v1 (tarihsel): okuma RPC varsayılanı sinus-dalga-v1 idi; geri alma notu', () => {
+    expect(sql(dalga)).toContain("ruleset_name text default 'sinus-dalga-v1'");
+    expect(dalga).toContain("default 'sinus-attack-spray-v1' ile yeniden");
+  });
+  it('sinus-dalga-v2 (NS4-47): okuma RPC varsayılanı güncel kural seti; yetkiler aynı; veri silinmez', () => {
+    const c = sql(dalga2);
+    expect(RULESET).toBe('sinus-dalga-v2');
     expect(c).toContain(
       `create or replace function public.tetris_get_leaderboard( limit_count integer default 10, ruleset_name text default '${RULESET}' )`,
     );
@@ -61,11 +67,11 @@ describe('migration zinciri', () => {
       'revoke all on function public.tetris_get_leaderboard(integer, text) from public, anon, authenticated;',
     );
     expect(c).not.toMatch(/drop table|truncate|delete from|grant [^;]*(insert|update|delete)/i);
-    expect(dalga).toContain('Geri alma (rollback)');
-    expect(dalga).toContain("default 'sinus-attack-spray-v1' ile yeniden");
+    expect(dalga2).toContain('Geri alma (rollback)');
+    expect(dalga2).toContain("default 'sinus-dalga-v1' ile yeniden");
   });
   it('veri kaybı yok: DROP TABLE / TRUNCATE / DELETE FROM tetris_scores kullanılmaz', () => {
-    for (const s of [sql(baseline), code, sql(v3), sql(sinus), sql(dalga)]) {
+    for (const s of [sql(baseline), code, sql(v3), sql(sinus), sql(dalga), sql(dalga2)]) {
       expect(s).not.toMatch(/drop table|truncate/i);
       expect(s).not.toMatch(/delete from public\.tetris_scores/i);
     }

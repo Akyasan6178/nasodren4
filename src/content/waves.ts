@@ -10,5 +10,9 @@ export const SPEED_SUB = 'Bloklar daha hızlı iniyor';
 /** Virüs içeren satır temizlenince (şablon: puan). */
 export const virusClearText = (n: number, pts: number): string =>
   `${n > 1 ? `${n} virüs` : 'Virüs'} temizlendi · +${pts}`;
-/** Bölüm saati barının ekran okuyucu adı (sıradaki adıma göre). */
-export const BAR_LABEL = { wave: 'Sıradaki: virüs dalgası', speed: 'Sıradaki: hızlanma' } as const;
+/** NS4-47: bölüm saatinin geri sayımı (sağ HUD; ekran okuyucu adı da bu metin). */
+export const TIMER_LABEL = 'Sonraki sinüzit atağı';
+/** Kalan süre (tam saniye). */
+export const secondsText = (n: number): string => `${n} sn`;
+/** Sıradaki adımın kısa adı (sayacın yanında, ikincil). */
+export const STEP_NAME = { wave: 'Virüs dalgası', speed: 'Hızlanma' } as const;

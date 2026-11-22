@@ -1,19 +1,27 @@
 /* =====================================================================
-   Bölüm saati barı ve Spray düğmesi (docs/NS4-45-ZORLASAN-DALGALAR.md).
-   Yalnızca değişen değerler DOM'a yazılır. Bar sıradaki adımı gösterir:
-   virüs dalgası (turuncu-kırmızı) ya da hızlanma (sıklamen, .speed); ekran
-   okuyucu adı buna göre değişir (content/waves.ts BAR_LABEL).
+   Sinüzit atağı geri sayımı ve Spray düğmesi (docs/NS4-45-ZORLASAN-DALGALAR.md,
+   NS4-47). Geri sayım bölüm saatinin sıradaki adımına kalan süreyi tam
+   saniye (yukarı yuvarlanmış) gösterir; süre Game.stepRemainingMs()'ten gelir
+   (tek kaynak). Yalnızca değişen değerler DOM'a yazılır: sayı saniyede bir
+   değişir. role="timer" canlı anons yapmaz (her saniye okunmaz).
    ===================================================================== */
 import { $, place } from './dom';
 import type { Game } from '../game/Game';
 import type { Layout } from '../types/layout';
 import { SINUS } from '../game/sinusAttack';
-import { BAR_LABEL } from '../content/waves';
+import { STEP_NAME } from '../content/waves';
 
-/** Bar bu orandan sonra uyarı nabzı atar. */
-export const ATTACK_WARN = 0.75;
+/** Son bu kadar saniyede sayı tehlike renginde görünür (hareketsiz). */
+export const ATTACK_SOON_S = 5;
 /** Atak anı parlamasının süresi (ms). */
 export const ATTACK_HIT_MS = 450;
+/** Portrede satır bu genişlikten darsa sıradaki adımın adı gizlenir (320 px ekranda taşma olmasın). */
+export const TIMER_NARROW_W = 300;
+
+/** Kalan süre (ms) → gösterilen tam saniye: yukarı yuvarlanır, en az 1 (0, negatif ya da NaN gösterilmez). */
+export function timerSeconds(ms: number): number {
+  return Number.isFinite(ms) ? Math.max(1, Math.ceil(ms / 1000)) : 1;
+}
 
 export interface SinusHud {
   layout(L: Layout): void;
@@ -24,56 +32,55 @@ export interface SinusHud {
 }
 
 export function createSinusHud(): SinusHud {
-  const bar = $('attack-bar'),
-    fill = $('attack-fill'),
+  const timer = $('attack-timer'),
+    sec = $('attack-sec'),
+    kind = $('attack-kind'),
     btn = $('btn-spray', HTMLButtonElement),
     sfill = $('spray-fill');
-  let vertical = false,
-    lastP = -1,
-    lastAria = -1,
+  let lastSec = -1,
     lastS = -1,
+    lastShown: boolean | null = null,
     lastReady: boolean | null = null,
     lastIdle: boolean | null = null,
-    lastWarn: boolean | null = null,
+    lastSoon: boolean | null = null,
     lastNext: 'wave' | 'speed' | null = null,
     hitTimer: ReturnType<typeof setTimeout> | undefined;
   const reset = () => {
-    lastP = lastS = lastAria = -1;
-    lastReady = lastIdle = lastWarn = lastNext = null;
+    lastSec = lastS = -1;
+    lastShown = lastReady = lastIdle = lastSoon = lastNext = null;
     clearTimeout(hitTimer);
-    bar.classList.remove('hit', 'warn');
+    timer.classList.remove('hit', 'soon');
   };
   return {
     layout(L) {
-      place(bar, L.attackBar);
-      vertical = L.attackBar.h > L.attackBar.w;
-      bar.classList.toggle('v', vertical);
+      place(timer, L.attackTimer);
+      const card = !L.portrait;
+      timer.classList.toggle('card', card);
+      timer.classList.toggle('panel', card);
+      timer.classList.toggle('narrow', !card && L.attackTimer.w < TIMER_NARROW_W);
       place(btn, L.btnSpray);
       btn.classList.toggle('compact-btn', L.compactBtns);
-      lastP = -1;
     },
     sync(g, playing) {
-      const p = Math.round(g.stepProgress() * 200) / 200;
-      if (p !== lastP) {
-        lastP = p;
-        fill.style.transform = vertical ? `scaleY(${p})` : `scaleX(${p})`;
+      // oyun sonunda gizlenir; molada sync çağrılmaz (sayı olduğu yerde kalır)
+      if (playing !== lastShown) {
+        lastShown = playing;
+        timer.hidden = !playing;
       }
-      // ekran okuyucu: ilerleme %10 adımlarla (her karede duyuru yok)
-      const aria = Math.floor(p * 10) * 10;
-      if (aria !== lastAria) {
-        lastAria = aria;
-        bar.setAttribute('aria-valuenow', String(aria));
+      const n = timerSeconds(g.stepRemainingMs());
+      if (n !== lastSec) {
+        lastSec = n;
+        sec.textContent = String(n);
+      }
+      const soon = playing && n <= ATTACK_SOON_S;
+      if (soon !== lastSoon) {
+        lastSoon = soon;
+        timer.classList.toggle('soon', soon);
       }
       const next = g.nextStep();
       if (next !== lastNext) {
         lastNext = next;
-        bar.classList.toggle('speed', next === 'speed');
-        bar.setAttribute('aria-label', BAR_LABEL[next]);
-      }
-      const warn = playing && p >= ATTACK_WARN;
-      if (warn !== lastWarn) {
-        lastWarn = warn;
-        bar.classList.toggle('warn', warn);
+        kind.textContent = STEP_NAME[next];
       }
       const s = Math.min(1, g.sprayCharge / SINUS.sprayThreshold);
       if (s !== lastS) {
@@ -94,9 +101,9 @@ export function createSinusHud(): SinusHud {
       }
     },
     onAttack() {
-      bar.classList.add('hit');
+      timer.classList.add('hit');
       clearTimeout(hitTimer);
-      hitTimer = setTimeout(() => bar.classList.remove('hit'), ATTACK_HIT_MS);
+      hitTimer = setTimeout(() => timer.classList.remove('hit'), ATTACK_HIT_MS);
     },
     reset,
   };

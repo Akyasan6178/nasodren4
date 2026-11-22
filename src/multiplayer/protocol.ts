@@ -16,9 +16,11 @@ import { SIG_RE } from '../../supabase/functions/_shared/sign.ts';
 /**
  * 2: Sinüzit Atağı ve Spray kalıcı (kural seti sinus-attack-spray-v1); 1. sürümün istemcileriyle aynı tohum farklı oyun
  * üretir. 3: NS4-45 zorlaşan dalgalar (kural seti sinus-dalga-v1; yukarıdan tek kare ve virüs, bölüm saatiyle hızlanma).
+ * 4: NS4-47 (kural seti sinus-dalga-v2): bölüm tahta tamamen temizlenince açılır, bölüm saati 45 / 60 sn; aynı tohum
+ * eski istemcide farklı oyun üretir.
  * Başka sürümden gelen zarf reddedilir (net: tek seferlik "kullanılamıyor" bildirimi). Virüs, tahta kodunda gri (8).
  */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 /** Zarfın en büyük JSON boyutu (karakter). Canlı durum ~450 karakterdir. */
 export const MAX_ENVELOPE_CHARS = 1024;
 export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;

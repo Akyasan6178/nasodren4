@@ -150,6 +150,9 @@ describe('NS4-34: tahtada bitki', () => {
           if (g.stackHeight() > 14) {
             clearBoard(g);
             g.plant.fill(0);
+            // NS4-47: oda tahta tamamen temizlenince açılır (bu rastgele oyunda nadir): gri sıralar (ve çekirdek
+            // drenajı) için aynı oda yeniden kurulur
+            if (g.rooms) g.enterRoom(g.room);
           }
         }
         flushes += g.flushes;

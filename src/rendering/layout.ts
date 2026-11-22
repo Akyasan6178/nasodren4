@@ -25,8 +25,9 @@ const PORTRAIT_MAX_CELL = 44;
 const SIDE_BTN_MIN = 52,
   SIDE_BTN_MAX = 72;
 
-/** Sinüzit Atağı barının kalınlığı (px). */
-export const ATTACK_BAR = 6;
+/** NS4-47: sinüzit atağı geri sayımı: portrede tahtanın altındaki satırın, yatayda sağ sütundaki kartın yüksekliği. */
+export const ATTACK_TIMER_LINE = 18;
+export const ATTACK_TIMER_CARD = 54;
 
 export function computeLayout(W: number, H: number): Layout {
   const pad = 12;
@@ -56,11 +57,12 @@ function portraitLayout(W: number, H: number, pad: number): PortraitLayout {
   const by2 = H - pad - 56;
   const gap = 8,
     pw = 48;
-  // alt sırada dört güç butonu (Beklet, Sıklamen, Hapşırık, Spray); Sinüzit Atağı barı tahtanın altında
+  // alt sırada dört güç butonu (Beklet, Sıklamen, Hapşırık, Spray); sinüzit atağı geri sayımı tahtanın altında tek
+  // satır (tahta ile butonlar arasında her boyda en az ~23 px boşluk kalır)
   const nb = 4;
   const bw3 = Math.floor((W - pad * 2 - pw - gap * nb) / nb);
   return {
-    attackBar: { x: bx, y: by + bh + 4, w: bw, h: ATTACK_BAR },
+    attackTimer: { x: bx, y: by + bh + 3, w: bw, h: ATTACK_TIMER_LINE },
     btnSpray: { x: pad + (bw3 + gap) * 3, y: by2, w: bw3, h: 56 },
     W,
     H,
@@ -100,10 +102,11 @@ function landscapeLayout(W: number, H: number, pad: number): LandscapeLayout {
   // NS4-38: skor ve tıkanıklık kartı; küçük hücrede (telefon yatay) en az 80 px, sol sütunda butonlara binmez
   const cardY = by + cell * 4.6,
     cardH = Math.min(Math.max(cell * 3.4, 80), by + bh - bh2 * 3 - 16 - 8 - cardY);
-  // Sinüzit Atağı barı tahta ile Sıradaki sütunu arasında dikey; Spray sağ sütunda Duraklat'ın üstünde
+  // sağ sütun: Sıradaki, tıkanıklık kartı, sinüzit atağı geri sayımı, Spray, Duraklat
+  const sprayY = by + bh - 46 - 8 - bh2;
   return {
-    attackBar: { x: bx + bw + 5, y: by, w: ATTACK_BAR, h: bh },
-    btnSpray: { x: rx, y: by + bh - 46 - 8 - bh2, w: sw, h: bh2 },
+    attackTimer: { x: rx, y: sprayY - 10 - ATTACK_TIMER_CARD, w: sw, h: ATTACK_TIMER_CARD },
+    btnSpray: { x: rx, y: sprayY, w: sw, h: bh2 },
     W,
     H,
     portrait: false,

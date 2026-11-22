@@ -283,8 +283,8 @@ describe('oda: kurma, katılma, üyelik sunucuda', () => {
 });
 
 describe('imzalı iletiler: kimlik, sıra, tur', () => {
-  it('protokol sürümü 2: eski sürümün (1) imzalı başlatma iletisi reddedilir ve bir kez bildirilir; tur başlamaz', async () => {
-    expect(PROTOCOL_VERSION).toBe(3);
+  it('protokol sürümü 4 (NS4-47): eski sürümün imzalı başlatma iletisi reddedilir ve bir kez bildirilir; tur başlamaz', async () => {
+    expect(PROTOCOL_VERSION).toBe(4);
     const w = world();
     const { cs, ids, roomId, topic } = await room(w, 2);
     const old = {

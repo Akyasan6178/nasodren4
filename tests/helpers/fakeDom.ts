@@ -201,8 +201,9 @@ const ELEMENT_IDS = [
   'sneeze-sub',
   'sneeze-fill',
   'spray-fill',
-  'attack-bar',
-  'attack-fill',
+  'attack-timer',
+  'attack-sec',
+  'attack-kind',
   'badge-mult',
   // NS4-38: skor kazancı, tıkanıklık kartı ve "Sıradaki" gizem kartı
   'score-delta',

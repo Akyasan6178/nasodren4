@@ -36,8 +36,8 @@ export const PRESSURE = {
     { singles: 3, viruses: 1, start: 1.5, speed: 0.5 }, // 8. Sağ alın (+ Serbest nefes)
   ],
   /** Bölümün ilk adımı (ms; bölüme girdikten sonra) ve sonraki adımlar arası (ms). */
-  firstStepMs: 15_000,
-  stepMs: 30_000,
+  firstStepMs: 45_000,
+  stepMs: 60_000,
   /** Her yeni dalgada tek kare +1; virüs her `virusEvery` dalgada +1. */
   singlesGrowth: 1,
   virusEvery: 2,
