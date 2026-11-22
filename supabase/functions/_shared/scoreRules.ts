@@ -65,9 +65,9 @@ export const CLIENT_VERSION_MAX = 32;
  *                     puan, satır ve seviye üretmez; Spray ve oda taşıması puan vermez: satır başına üst sınır aynı kalır.
  *   sinus-dalga-v1:   NS4-45 zorlaşan dalgalar (docs/NS4-45-ZORLASAN-DALGALAR.md): alttan satır yerine yukarıdan tek kare
  *                     ve virüs düşer, bölüm saati hızlandırır; dalga hücreli satır normal puanlanır; virüs başına bonus.
- *   sinus-dalga-v2:   NS4-47 (docs/NS4-47-TAM-TEMIZLIK.md): bölüm, tahtadaki bütün yerleşmiş bloklar temizlenince açılır
- *                     (her bölüm sonu satırla bitiyorsa Tam Ferahlık bonusu da gelir); bölüm saati 45 sn, sonra 60 sn.
- *                     Puan formülü ve üst sınır aynı (Tam Ferahlık ve bölüm bonusu sınırda zaten var).
+ *   sinus-dalga-v2:   NS4-47 (docs/NS4-47-TAM-TEMIZLIK.md): bölüm hedefi oda grileri + sinüzit atağı hücreleri (virüs,
+ *                     tek kare); bölüm açılınca kalan renkli bloklar puansız temizlenir; bölüm saati 45 sn, sonra 60 sn.
+ *                     Puan formülü ve üst sınır aynı.
  * Kural seti alanı olmayan (NS4-18'den kalan) kayıtlar LEGACY_RULESET sayılır.
  */
 export const RULESET = 'sinus-dalga-v2';

@@ -87,9 +87,8 @@ describe('oda etiketleri ve tahta tonu', () => {
     expect(dom.el('toast').textContent).toBe(CLOUD_HINT);
     finishClear(g);
     frame();
-    // NS4-47: kalan = bütün yerleşmiş hücreler (8 gri + I'nın 3 hücresi = 11): 6 / 17 (aşağı yuvarlanır)
-    expect(hudState().open).toBe('%35');
-    expect(dom.el('room-open-fill').style['transform']).toBe('scaleX(0.35)');
+    expect(hudState().open).toBe('%52'); // 9 / 17 (aşağı yuvarlanır; renkli bloklar hedefte sayılmaz)
+    expect(dom.el('room-open-fill').style['transform']).toBe('scaleX(0.52)');
     dom.el('toast').textContent = '';
     fillRow(g, 21, PIECE.GARBAGE, [9]); // bir satır daha temizlenir: ipucu tekrar çıkmaz
     dropVerticalI(g);

@@ -230,9 +230,9 @@ describe('drenaj → çökme evresi', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
     clearBoard(g);
-    // 21: 5-9 gri (0-4 boş); 20: 0-3 ve 8-9 renkli; çekirdekli I 4-7: çiçek (7, 20), hedef 21, sütun 7 ± 2.
-    // NS4-47: drenaj tahtadaki son blokları akıtır (tahta boşalır) → oda açılır
+    // 21: 1-4 renkli, 5-9 gri (0 boş); 20: 0-3 ve 8-9 renkli; çekirdekli I 4-7: çiçek (7, 20), hedef 21, sütun 7 ± 2
     fillRow(g, 21, PIECE.GARBAGE, [0, 1, 2, 3, 4]);
+    for (let x = 1; x < 5; x++) g.board[idx(x, 21)] = PIECE.S;
     for (const x of [0, 1, 2, 3, 8, 9]) g.board[idx(x, 20)] = PIECE.J;
     g.boardVer++;
     placePiece(g, PIECE.I, 0, 4, 19);

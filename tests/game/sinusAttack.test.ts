@@ -7,7 +7,7 @@ import { CFG, COLS, HIDDEN, ROOMS, ROWS } from '../../src/config/gameConfig';
 import { FLOW, findCore, grayCellsInSpan, nearGrayRow, powerRows } from '../../src/game/cyclamenFlow';
 import { Game } from '../../src/game/Game';
 import { PIECE } from '../../src/game/pieces';
-import { ORIGIN, SINUS, carryAttackCells, dropCells, pickAttackCells } from '../../src/game/sinusAttack';
+import { ORIGIN, SINUS, dropCells, pickAttackCells } from '../../src/game/sinusAttack';
 import { PRESSURE, waveSize } from '../../src/game/pressure';
 import type { RotationState, TetrominoType } from '../../src/types/game';
 import { expectedLevel, maxPlausibleScore } from '../../supabase/functions/_shared/scoreRules.ts';
@@ -70,8 +70,8 @@ function consistent(g: Game) {
 }
 
 describe('kural değerleri', () => {
-  it('taşıma bölgesi alt 8 sıra; Spray 30 renkli hücrede, en çok 8 dalga hücresi; adımlar 45 sn sonra her 60 sn', () => {
-    expect(SINUS).toEqual({ attackZoneRows: 8, sprayThreshold: 30, sprayCells: 8 });
+  it('Spray 30 renkli hücrede, en çok 8 dalga hücresi; adımlar 45 sn sonra her 60 sn', () => {
+    expect(SINUS).toEqual({ sprayThreshold: 30, sprayCells: 8 });
     expect([PRESSURE.firstStepMs, PRESSURE.stepMs]).toEqual([45_000, 60_000]);
     expect([HIDDEN, ROOMS.length]).toEqual([2, 8]);
   });
@@ -383,7 +383,7 @@ describe('dalga hücreli satır puanı ve virüs bonusu (NS4-45)', () => {
     setAttack(g, 3, ROWS - 1);
     for (const x of [4, 5]) g.board[idx(x, ROWS - 1)] = PIECE.S;
     g.roomGray = g.roomGoalGray();
-    expect(g.roomGray).toBe(6); // 3 oda grisi + 1 tek kare + 2 renkli
+    expect(g.roomGray).toBe(4); // 3 oda grisi + 1 tek kare (renkli bloklar hedefte sayılmaz)
     const log = recordEvents(g, ['roomclear', 'scored']);
     dropFlatI(g);
     finishClear(g);
@@ -400,63 +400,29 @@ describe('dalga hücreli satır puanı ve virüs bonusu (NS4-45)', () => {
   });
 });
 
-describe('oda geçişi ve taşıma (NS4-47: oda yalnızca boş tahtada açılır)', () => {
-  it('NS4-47: oda grileri bitse de dalga hücreleri (tek kare, virüs) kalırken oda açılmaz; taşınacak hücre kalmaz', () => {
+describe('bölüm hedefi ve geçiş (NS4-47)', () => {
+  it('oda grileri bitse de dalga hücreleri (tek kare, virüs) kalırken oda açılmaz; renkli bloklar sayılmaz', () => {
     const g = game(5, true);
     g.sinusAttack();
     g.sinusAttack();
     setVirus(g, 0, 3, 2);
     g.removeCells(cellsOf(g, ORIGIN.room));
+    g.board[idx(0, ROWS - 1)] = PIECE.L; // renkli blok: hedefte sayılmaz
     g.boardVer++;
     const wave = waveCells(g).length;
     expect(wave).toBeGreaterThan(0);
     expect(g.roomCleared()).toBe(false);
     expect(g.roomGray).toBe(wave);
     expect(consistent(g)).toBe('ok');
-    // dalga hücreleri de silinince (ör. Spray) oda açılır; tahta boş olduğundan yeni odaya taşınan hücre yok
+    // dalga hücreleri de silinince (ör. Spray) oda açılır; geçişte kalan renkli bloklar temizlenir (taşıma yok)
     g.removeCells(waveCells(g));
     g.boardVer++;
     expect(g.roomCleared()).toBe(true);
-    expect(g.attackCarry()).toEqual([]);
     g.beginRoomClear();
     finishClear(g);
-    expect([g.room, g.carriedAttackGray, waveCells(g).length]).toEqual([1, 0, 0]);
+    expect([g.room, waveCells(g).length]).toEqual([1, 0]);
+    expect(g.board.every((v) => v === 0 || v === PIECE.GARBAGE)).toBe(true);
     expect(consistent(g)).toBe('ok');
-  });
-  it('saf yerleşim: eski koordinat korunur; çakışan hücre en yakın güvenli hücreye; renkli/oda grisi ezilmez', () => {
-    const b = new Uint8Array(COLS * ROWS),
-      p = new Uint8Array(COLS * ROWS),
-      o = new Uint8Array(COLS * ROWS),
-      ch = new Int8Array(ROWS).fill(-1);
-    const y = ROWS - 1;
-    b[idx(3, y)] = PIECE.L;
-    b[idx(4, y)] = PIECE.GARBAGE;
-    o[idx(4, y)] = ORIGIN.room;
-    ch[y] = 5;
-    const r = carryAttackCells(b, p, o, ch, [idx(1, 10), idx(3, y), idx(4, y), idx(5, y)], SINUS.attackZoneRows);
-    expect(r).toEqual({
-      placed: [idx(1, 10), idx(2, y), idx(4, y - 1), idx(6, y)],
-      relocated: 3,
-      overflow: 0,
-      lost: 0,
-    });
-    expect([b[idx(3, y)], o[idx(4, y)], b[idx(5, y)]]).toEqual([PIECE.L, ORIGIN.room, 0]);
-  });
-  it('alt bölgede yer yoksa üst sıralara; hiç yer yoksa sessiz silme yok: top-out (blockout)', () => {
-    const b = new Uint8Array(COLS * ROWS),
-      p = new Uint8Array(COLS * ROWS),
-      o = new Uint8Array(COLS * ROWS);
-    for (let y = ROWS - 8; y < ROWS; y++) for (let x = 1; x < COLS; x++) b[idx(x, y)] = PIECE.GARBAGE;
-    expect(carryAttackCells(b, p, o, new Int8Array(ROWS).fill(-1), [idx(0, ROWS - 1)], 8)).toEqual({
-      placed: [idx(0, ROWS - 9)],
-      relocated: 1,
-      overflow: 1,
-      lost: 0,
-    });
-    const g = game(10, true);
-    const log = recordEvents(g, ['gameover']);
-    expect(g.enterRoom(1, [...g.board.keys()])).toBe(false);
-    expect([g.state, g.carryTopouts, log.payloads('gameover')]).toEqual(['over', 1, ['blockout']]);
   });
 });
 
@@ -552,9 +518,7 @@ describe('çok oyunculu determinizm', () => {
       if (g.canCyc()) g.useCyc();
       g.update(100);
     }
-    log.push(
-      `${g.score}|${g.lines}|${g.level}|${g.attackLines}|${g.carriedAttackGray}|${g.virusesCleared}|${g.state}|${consistent(g)}`,
-    );
+    log.push(`${g.score}|${g.lines}|${g.level}|${g.attackLines}|${g.virusesCleared}|${g.state}|${consistent(g)}`);
     return log;
   }
   it('iki ve üç oyuncu: aynı atak, Spray, kaynak katmanı, taşıma, çekirdek, skor ve sonuç', () => {

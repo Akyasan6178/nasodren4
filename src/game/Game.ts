@@ -39,7 +39,6 @@ import {
   SINUS,
   VIRUS_KINDS,
   attackRows,
-  carryAttackCells,
   coloredInRows,
   dropCells,
   hasAttackGray,
@@ -106,17 +105,9 @@ export class Game {
   attackLines!: number;
   /** Spray durumu (değişince 'spraystate' yayılır): dolmuyor/doluyor, hazır, dolu ama hedef yok. */
   sprayStatus!: 'charging' | 'ready' | 'notarget';
-  /**
-   * Oda geçişi: yeni odaya taşınan atak grisi, bunlardan eski yerinde kalamayıp yeniden konumlanan, alt bölgede yer
-   * bulamayıp üst sıralara yerleşen ve hiç yer bulamadığı için top-out'a yol açan geçiş sayısı.
-   */
-  carriedAttackGray!: number;
   /** Çekirdek drenajı ve Sıklamen gücüyle silinen oda kaynaklı gri (ölçüm). */
   coreDrainRoomCells!: number;
   powerDrainRoomCells!: number;
-  relocatedAttackGray!: number;
-  carryOverflow!: number;
-  carryTopouts!: number;
   /** Spray: şarj (kırılan renkli hücre, en çok eşik), kullanım ve silinen hücre sayısı. */
   sprayCharge!: number;
   sprays!: number;
@@ -272,7 +263,6 @@ export class Game {
     this.attacks = 0;
     this.attackGray = 0;
     this.viruses = this.virusesCleared = 0;
-    this.carriedAttackGray = this.relocatedAttackGray = this.carryOverflow = this.carryTopouts = 0;
     this.coreDrainRoomCells = this.powerDrainRoomCells = 0;
     this.sprayCharge = 0;
     this.sprays = 0;
@@ -349,12 +339,13 @@ export class Game {
   }
 
   /**
-   * NS4-47: bölüm hedefinde kalan hücre: tahtadaki bütün yerleşmiş hücreler (oda grisi, renkli blok, tek kare, virüs;
-   * gizli sıralar dahil). Düşen parça tahtada değildir, sayılmaz. Bölüm, tahta tamamen temizlenince açılır.
+   * NS4-47: bölüm hedefinde kalan tıkanıklık hücresi: oda grisi ve sinüzit atağıyla gelen dalga hücreleri (tek kare,
+   * virüs); hepsi tahtada gri (8) tutulur, gizli sıralar dahil. Oyuncunun yerleştirdiği renkli bloklar sayılmaz: bölüm
+   * açılınca geçişte söner ve yeni bölüm boş tahtayla başlar (enterRoom; puan, satır, kombo, B2B, şarj yok).
    */
   roomGoalGray() {
     let n = 0;
-    for (let i = 0; i < this.board.length; i++) if (this.board[i]) n++;
+    for (let i = 0; i < this.board.length; i++) if (this.board[i] === PIECE.GARBAGE) n++;
     return n;
   }
 
@@ -376,11 +367,10 @@ export class Game {
    * NS4-27: odaya girer: tahta temizlenir; oda ise alttan `rows` sıra gri bulutçuk dizilir (hiçbir sıra dolu değildir).
    * NS4-30: her sırada hava kanalının boşluğu (kanallar `channels` parçada, her parça ayrı sütunda, alttan yukarı)
    * ve 0..extraHoles ek boşluk. ROOMS.length: Serbest nefes (boş tahta).
-   * Sinüzit Atağı: `carry` (önceki odanın atak grileri, eski dizinler) oda kurulduktan sonra carryAttackCells ile
-   * yerleşir; puan, satır ya da Spray şarjı yok. Yer bulamayan hücre varsa oyun mevcut kuralla biter (blockout):
-   * false.
+   * NS4-47: önceki bölümün tahtada kalan renkli blokları burada puansız temizlenir (dalga hücresi kalmamıştır: bölüm
+   * hedefi onları da sayar), yeni bölüm boş tahtayla başlar.
    */
-  enterRoom(i: number, carry: readonly number[] = []): boolean {
+  enterRoom(i: number) {
     this.room = i;
     // NS4-45: bölüm saati her bölümde baştan (Serbest nefes son bölümün saatiyle sürer)
     if (resetsClock(i)) {
@@ -388,13 +378,12 @@ export class Game {
       this.pressSteps = this.speedSteps = 0;
       this.speedBoost = speedBoost(i, 0); // bölüm başı hız payı
     }
-    const kinds = carry.map((k) => this.origin[k] ?? ORIGIN.attack); // virüs türü yeni odaya taşınır
     this.board.fill(0);
     this.plant.fill(0);
     this.coreLife = 0; // oda değişince tahtadaki aktif çekirdek de gider (tetiklemez)
     this.coreTargetRow = -1;
     this.channelAt.fill(-1);
-    this.origin.fill(0); // atak grileri aşağıda yeni odaya yeniden yerleşir (carry)
+    this.origin.fill(0);
     const def = ROOMS[i];
     if (def) {
       const seg = Math.ceil(def.rows / def.channels);
@@ -422,30 +411,9 @@ export class Game {
         }
       }
     }
-    let lost = 0;
-    if (carry.length) {
-      const r = carryAttackCells(
-        this.board,
-        this.plant,
-        this.origin,
-        this.channelAt,
-        carry,
-        SINUS.attackZoneRows,
-        kinds,
-      );
-      this.carriedAttackGray += r.placed.length;
-      this.relocatedAttackGray += r.relocated;
-      this.carryOverflow += r.overflow;
-      lost = r.lost;
-    }
     this.roomGray = this.roomGray0 = this.roomGoalGray();
     this.boardVer++;
     this.emit('roomstart', { room: i, gray: this.roomGray });
-    if (lost) {
-      this.carryTopouts++;
-      this.gameOver('blockout');
-    }
-    return !lost;
   }
 
   private roomCellsIn(cells: readonly number[]) {
@@ -454,22 +422,19 @@ export class Game {
     return n;
   }
 
-  /** Oda geçişinde yeni odaya taşınacak atak grileri (dizinler, alttan yukarı). */
-  attackCarry(): number[] {
-    const out: number[] = [];
-    for (let k = this.board.length - 1; k >= 0; k--) if (isAttackGray(this.board, this.origin, k)) out.push(k);
-    return out;
-  }
-
-  /** NS4-30: odanın açıklık oranı (0..1; temizlenen gri bulutçuk / başlangıç). Serbest nefeste ve akış kapalıyken 1. */
+  /**
+   * NS4-30: odanın açıklık oranı (0..1; temizlenen hedef hücresi / başlangıç). NS4-47: dalga hücreleri hedefe eklenir;
+   * oran 0'ın altına inmez. Serbest nefeste ve akış kapalıyken 1.
+   */
   roomOpenness() {
     // oran 0'ın altına inmez
     return this.roomGray0 > 0 ? Math.max(0, 1 - this.roomGray / this.roomGray0) : 1;
   }
 
   /**
-   * NS4-47: bölüm temizlendi mi: tahtada yerleşmiş hücre kalmadı (düşen parça hariç). Serbest nefeste ve oda akışı
-   * kapalıyken hep false. Yalnızca bekleyen temizleme/drenaj/çökme bittikten sonra (finishPending) sorulur.
+   * NS4-47: bölüm temizlendi mi: tahtada oda grisi ve dalga hücresi (tek kare, virüs) kalmadı; renkli bloklar sayılmaz.
+   * Serbest nefeste ve oda akışı kapalıyken hep false. Yalnızca bekleyen temizleme/drenaj/çökme bittikten sonra
+   * (finishPending) sorulur; geçiş tek yoldan, bir kez başlar.
    */
   roomCleared() {
     if (!this.rooms || this.room >= ROOMS.length) return false;
@@ -723,8 +688,6 @@ export class Game {
     this.boardVer++;
     this.canHold = true;
     if (this.sneezePieces < CFG.sneezePieces) this.sneezePieces++;
-    // NS4-47: bölüm hedefi bütün yerleşmiş hücreler: kilitlenen parça da sayılır ("% açık" göstergesi güncel kalır)
-    if (this.rooms && this.room < ROOMS.length) this.roomGray = this.roomGoalGray();
     this.emit('lock', cells);
     if (allHidden) return this.gameOver('lockout');
     if (armed) this.emit('core', { kind: 'activated', row: this.coreTargetRow, col: this.coreTargetCol });
@@ -1077,9 +1040,8 @@ export class Game {
     this.pending = null; // NS4-02: yalnızca clearing/draining sırasında çağrılır, pending doludur
     this.state = 'play';
     if (p.kind === 'room') {
-      const alive = this.enterRoom(this.room + 1, this.attackCarry());
+      this.enterRoom(this.room + 1);
       this.emit('clearend', p);
-      if (!alive) return; // V4: taşınan atak grisine yer kalmadı (top-out)
       this.spawn();
       return;
     }

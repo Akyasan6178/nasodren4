@@ -16,8 +16,8 @@ import { SIG_RE } from '../../supabase/functions/_shared/sign.ts';
 /**
  * 2: Sinüzit Atağı ve Spray kalıcı (kural seti sinus-attack-spray-v1); 1. sürümün istemcileriyle aynı tohum farklı oyun
  * üretir. 3: NS4-45 zorlaşan dalgalar (kural seti sinus-dalga-v1; yukarıdan tek kare ve virüs, bölüm saatiyle hızlanma).
- * 4: NS4-47 (kural seti sinus-dalga-v2): bölüm tahta tamamen temizlenince açılır, bölüm saati 45 / 60 sn; aynı tohum
- * eski istemcide farklı oyun üretir.
+ * 4: NS4-47 (kural seti sinus-dalga-v2): bölüm hedefi gri + dalga hücreleri, kalan renkli bloklar geçişte temizlenir,
+ * bölüm saati 45 / 60 sn; aynı tohum eski istemcide farklı oyun üretir.
  * Başka sürümden gelen zarf reddedilir (net: tek seferlik "kullanılamıyor" bildirimi). Virüs, tahta kodunda gri (8).
  */
 export const PROTOCOL_VERSION = 4;

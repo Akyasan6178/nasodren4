@@ -1,6 +1,6 @@
 -- =====================================================================
--- tetris: kural seti sinus-dalga-v2 (NS4-47: bölüm, tahtadaki bütün yerleşmiş bloklar temizlenince açılır;
--- bölüm saati ilk adım 45 sn, sonra her 60 sn; docs/NS4-47-TAM-TEMIZLIK.md). Önceki:
+-- tetris: kural seti sinus-dalga-v2 (NS4-47: bölüm hedefi oda grileri + sinüzit atağı hücreleri; kalan renkli
+-- bloklar geçişte puansız temizlenir; bölüm saati ilk adım 45 sn, sonra her 60 sn; docs/NS4-47-TAM-TEMIZLIK.md). Önceki:
 -- 20261112000000_tetris_ruleset_sinus_dalga.sql.
 -- Veri silmez: sinus-dalga-v1 ve daha eski satırlar tabloda kalır, yalnızca okuma RPC'sinin varsayılan kural seti
 -- değişir. İstemci kural setini her istekte açıkça gönderir; Edge Function (tetris-submit-score) yalnızca güncel kural

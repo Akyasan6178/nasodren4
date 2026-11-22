@@ -27,9 +27,8 @@ export interface SinusState {
   readonly sprayReady: boolean;
   readonly sprayNoTarget: boolean;
   readonly sprays: number;
-  /** Dalga hücresi içeren silinen satır ve oda geçişinde taşınan dalga hücresi. */
+  /** Dalga hücresi içeren silinen satır. */
   readonly attackLines: number;
-  readonly carriedAttackGray: number;
 }
 
 export interface SinusDemo {
@@ -67,7 +66,6 @@ export function createSinusDemo(game: Game, lifecycle: Lifecycle): SinusDemo {
     sprayNoTarget: game.sprayNoTarget(),
     sprays: game.sprays,
     attackLines: game.attackLines,
-    carriedAttackGray: game.carriedAttackGray,
   });
   return {
     attack() {

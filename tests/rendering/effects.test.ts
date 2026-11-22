@@ -36,7 +36,6 @@ import {
   setCell,
   setupWell,
   stackRows,
-  dropFlatI,
 } from '../helpers/gameHelpers';
 import { createView, stubCanvasDom, type ViewHarness } from '../helpers/pixiView';
 
@@ -344,22 +343,22 @@ describe('odalar', () => {
     expectClean();
   });
 
-  it('"Sinüs açıldı": serin vuruş, alttan kabarcıklar; geçişte tahta boş (NS4-47), sonra yeni oda tahtası', () => {
+  it('"Sinüs açıldı": serin vuruş, alttan kabarcıklar; geçişte kalan renkli bloklar söner, sonra boş yeni oda tahtası', () => {
     g.reset({ rooms: true });
     v.syncAll();
-    // NS4-47: bölüm tahta tamamen temizlenince açılır: iki sıra (gri + renkli) iki yatay I ile tamamlanır
+    // NS4-47: son gri sıra silinir; renkli sıra (hedefte sayılmaz) ve I artığı kalır → oda açılır
     clearBoard(g);
-    fillRow(g, 21, PIECE.GARBAGE, [6, 7, 8, 9]);
-    fillRow(g, 20, PIECE.L, [6, 7, 8, 9]);
-    dropFlatI(g);
-    finishClear(g);
-    dropFlatI(g);
+    fillRow(g, 21, PIECE.GARBAGE, [9]);
+    for (let x = 0; x < 9; x++) setCell(g, x, 20, PIECE.L); // kalan renkli sıra
+    dropVerticalI(g);
     finishClear(g); // → roomclear
     expect(v.anim).toMatchObject({ kind: 'room', dur: CFG.roomClearMs });
     expect([v.glow.on, v.glow.s.tint]).toEqual([true, ROOM_FX.glow]);
     expect(live().length).toBeGreaterThanOrEqual(ROOM_FX.bubbles * 0.9);
     H.step(CFG.roomClearMs * 0.9);
-    expect(v.cells.filter((c) => c.visible)).toHaveLength(0); // geçişte tahtada hücre kalmaz
+    const left = v.cells.filter((c) => c.visible);
+    expect(left.length).toBeGreaterThan(0); // kalan renkli bloklar puansız temizlenmeden önce söner
+    for (const c of left) expect(c.alpha).toBeLessThan(0.3);
     finishClear(g); // → yeni oda
     H.step(2500);
     expectClean();

@@ -6,9 +6,10 @@
      dropCells), çift adımlar hızlanma. Alttan satır itme yok (NS4-45).
    - Spray: satır temizlemesinde kırılan renkli hücrelerle dolar; yalnızca
      dalga hücrelerini (tek kare ve virüs) hedefler (en çok SINUS.sprayCells).
-   - Hücre kaynağı (Game.origin): her gri oda ya da dalga kaynaklıdır. Oda
-     hedefi, Sıklamen çekirdeği ve Sıklamen gücü dalga hücresini görmez;
-     dalga hücreleri oda geçişinde yeni odaya taşınır (virüs türü korunur).
+   - Hücre kaynağı (Game.origin): her gri oda ya da dalga kaynaklıdır.
+     Sıklamen çekirdeği ve Sıklamen gücü dalga hücresini görmez. NS4-47:
+     bölüm hedefi oda grisi + dalga hücreleri; bölüm açılınca kalan renkli
+     bloklar puansız temizlenir (taşıma yok).
      NS4-45: dalga hücresi içeren satır normal puanlanır; virüs ek puan verir.
    Bütün rastgele seçimler oyunun tohumlu akışlarından gelir (Math.random yok).
    ===================================================================== */
@@ -16,8 +17,6 @@ import { COLS, ROWS } from '../config/gameConfig';
 import { PIECE } from './pieces';
 
 export const SINUS = {
-  /** Oda geçişinde taşınan dalga hücrelerinin yerleştiği alt bölge (sıra). */
-  attackZoneRows: 8,
   /** Spray: hazır olması için kırılan renkli hücre sayısı ve kullanım başına en çok silinen dalga hücresi. */
   sprayThreshold: 30,
   sprayCells: 8,
@@ -130,98 +129,6 @@ export function attackRows(board: Uint8Array, origin: Uint8Array, rows: readonly
     for (let x = 0; x < COLS; x++) if (isAttackGray(board, origin, y * COLS + x)) return true;
     return false;
   });
-}
-
-export interface CarryResult {
-  /** Yerleşen hücreler (yeni dizinler; giriş sırasıyla). */
-  readonly placed: number[];
-  /** Eski koordinatı korunamayıp başka hücreye taşınan. */
-  readonly relocated: number;
-  /** Alt bölgede yer bulunamayıp üst sıralara (gizli sıralar dahil) yerleşen: taşma baskısı. */
-  readonly overflow: number;
-  /** Hiç güvenli hücre bulunamayan (çağıran top-out uygular). */
-  readonly lost: number;
-}
-
-/**
- * Oda geçişi: önceki odanın atak grileri (`cells`, eski dizinler) yeni odanın tahtasına yerleşir. Rastgelelik yok
- * (tam deterministik). Uygun hücre: boş, hava kanalı değil (channelAt; oda sıralarının üstünde en üst kanalın sütunu
- * da boş kalır, kanala üstten erişim kapanmaz) ve sırayı tam doldurmuyor.
- *   1. Eski koordinat uygunsa aynı yerde kalır (önce bütün hücreler için denenir).
- *   2. Değilse görünür tahtanın alt `zone` sırasındaki en yakın uygun hücre (Manhattan; eşitlikte alttaki, sonra soldaki).
- *   3. O da yoksa tahtanın geri kalanındaki en yakın uygun hücre (üstten taşma baskısı; gizli sıralar dahil).
- *   4. Hiç yoksa hücre yerleşmez ve `lost` sayılır (çağıran mevcut top-out kuralını uygular; sessiz silme yok).
- * Yerleşen hücre: board gri, plant 0, origin `kinds[i]` (NS4-45: virüs türü korunur; verilmezse ORIGIN.attack).
- */
-export function carryAttackCells(
-  board: Uint8Array,
-  plant: Uint8Array,
-  origin: Uint8Array,
-  channelAt: Int8Array,
-  cells: readonly number[],
-  zone: number,
-  kinds: readonly number[] = [],
-): CarryResult {
-  const filled = new Int8Array(ROWS);
-  for (let k = 0; k < board.length; k++) if (board[k]) filled[(k / COLS) | 0]++;
-  // en üst kanallı sıra ve sütunu: üstündeki sıralarda bu sütun kanalın devamıdır (yerleşim yok)
-  let topY = 0;
-  while (topY < ROWS && (channelAt[topY] ?? -1) < 0) topY++;
-  const topCh = topY < ROWS ? (channelAt[topY] ?? -1) : -1;
-  const ok = (k: number) => {
-    const y = (k / COLS) | 0,
-      x = k % COLS;
-    const ch = y < topY ? topCh : (channelAt[y] ?? -1);
-    return !board[k] && ch !== x && (filled[y] ?? 0) + 1 < COLS;
-  };
-  const placed: number[] = [];
-  const put = (k: number, kind: number) => {
-    board[k] = PIECE.GARBAGE;
-    plant[k] = 0;
-    origin[k] = kind;
-    filled[(k / COLS) | 0]++;
-    placed.push(k);
-  };
-  const nearest = (k: number, y0: number, y1: number) => {
-    const ky = (k / COLS) | 0,
-      kx = k % COLS;
-    let best = -1,
-      bd = Infinity;
-    for (let y = y1 - 1; y >= y0; y--)
-      for (let x = 0; x < COLS; x++) {
-        const c = y * COLS + x;
-        if (!ok(c)) continue;
-        const d = Math.abs(y - ky) + Math.abs(x - kx);
-        if (d < bd) {
-          bd = d;
-          best = c;
-        }
-      }
-    return best;
-  };
-  const rest: [number, number][] = [];
-  cells.forEach((k, i) => {
-    const kind = kinds[i] ?? ORIGIN.attack;
-    if (ok(k)) put(k, kind);
-    else rest.push([k, kind]);
-  });
-  const bottom = Math.max(0, ROWS - zone);
-  let relocated = 0,
-    overflow = 0,
-    lost = 0;
-  for (const [k, kind] of rest) {
-    let c = nearest(k, bottom, ROWS);
-    if (c < 0) {
-      c = nearest(k, 0, bottom);
-      if (c >= 0) overflow++;
-    }
-    if (c < 0) lost++;
-    else {
-      put(c, kind);
-      relocated++;
-    }
-  }
-  return { placed, relocated, overflow, lost };
 }
 
 /** Satırlardaki renkli (1-7) hücre sayısı: Spray şarjına katkı. */

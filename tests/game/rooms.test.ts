@@ -1,8 +1,9 @@
-// NS4-27: Sinüs Odaları: oda başlangıcı (delikli gri bulutçuklar), geçme şartı (NS4-47: tahtadaki bütün yerleşmiş
-// bloklar temizlenir; düşen parça sayılmaz), "Sinüs açıldı" geçişi, bonus, sonraki oda ve Serbest nefes.
+// NS4-27: Sinüs Odaları: oda başlangıcı (delikli gri bulutçuklar), geçme şartı (NS4-47: oda grileri ve sinüzit
+// atağı hücreleri temizlenir; renkli bloklar sayılmaz, geçişte temizlenir), "Sinüs açıldı" geçişi, bonus, sonraki oda ve Serbest nefes.
 import { describe, expect, it } from 'vitest';
 import { CFG, COLS, ROOMS, ROWS, VIS } from '../../src/config/gameConfig';
 import { PIECE } from '../../src/game/pieces';
+import { ORIGIN } from '../../src/game/sinusAttack';
 import {
   clearBoard,
   createGame,
@@ -14,6 +15,7 @@ import {
   placePiece,
   recordEvents,
   rowCells,
+  idx,
 } from '../helpers/gameHelpers';
 
 const grayRows = (g: ReturnType<typeof createGame>) => {
@@ -88,7 +90,7 @@ describe('oda başlangıcı', () => {
     ]);
   });
 
-  it('NS4-47: 1. bölümde gri sıralar tek dikey I ile silinse de I parçasının üstte kalan hücreleri bölümü açtırmaz', () => {
+  it('NS4-30: 1. bölüm tek dikey I ile açılır (NS4-47: I parçasının üstte kalan renkli hücreleri hedefte sayılmaz)', () => {
     const g = createGame(5);
     g.reset({ rooms: true });
     const col = rowCells(g, ROWS - 1).indexOf(0);
@@ -96,9 +98,7 @@ describe('oda başlangıcı', () => {
     placePiece(g, PIECE.I, 1, col - 2, 0);
     g.hardDrop();
     finishClear(g);
-    expect(grayRows(g)).toEqual([]); // oda grileri bitti
-    expect(log.names()).toEqual([]);
-    expect([g.state, g.room, g.roomGray]).toEqual(['play', 0, 2]); // I'nın üstteki 2 hücresi
+    expect(log.names()).toEqual(['roomclear']);
   });
 
   it('NS4-30: açıklık oranı temizledikçe artar; Serbest nefeste 1', () => {
@@ -110,15 +110,14 @@ describe('oda başlangıcı', () => {
     g.roomGray = g.roomGray0 = g.grayCount(); // 17
     dropVerticalI(g);
     finishClear(g);
-    // NS4-47: kalan hücre = bütün yerleşmiş hücreler: 20. sıra (8 gri + I) ve I'nın üstteki 2 hücresi
-    expect(g.roomGray).toBe(11);
-    expect(g.roomOpenness()).toBeCloseTo(6 / 17, 9);
+    expect(g.roomGray).toBe(8); // yalnızca hedef hücreleri (gri); I'nın renkli hücreleri sayılmaz
+    expect(g.roomOpenness()).toBeCloseTo(9 / 17, 9);
     g.enterRoom(ROOMS.length);
     expect(g.roomOpenness()).toBe(1);
   });
 });
 
-describe('geçme şartı (NS4-47): tahtadaki bütün yerleşmiş bloklar temizlenir', () => {
+describe('geçme şartı (NS4-47): oda grileri ve sinüzit atağı hücrelerinin (tek kare, virüs) hepsi temizlenir', () => {
   it('kısmi temizleme odayı açmaz', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
@@ -129,40 +128,64 @@ describe('geçme şartı (NS4-47): tahtadaki bütün yerleşmiş bloklar temizle
     dropVerticalI(g);
     finishClear(g);
     expect(log.count('roomclear')).toBe(0);
-    expect([g.state, g.room, g.roomGray]).toEqual(['play', 0, 11]);
+    expect([g.state, g.room, g.roomGray]).toEqual(['play', 0, COLS - 2]);
   });
 
-  it('oda grileri bitti ama renkli blok kaldı: bölüm açılmaz; son renkli sıra da silinince bir kez açılır', () => {
+  it('oda grileri bitti, renkli bloklar kaldı: bölüm bir kez açılır; renkli bloklar geçişte puansız temizlenir', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
     clearBoard(g);
     fillRow(g, ROWS - 1, PIECE.GARBAGE, [6, 7, 8, 9]);
-    fillRow(g, ROWS - 2, PIECE.S, [6, 7, 8, 9]); // renkli blok
-    const log = recordEvents(g, ['roomclear']);
+    fillRow(g, ROWS - 2, PIECE.S, [6, 7, 8, 9]); // renkli blok (hedefte sayılmaz)
+    const log = recordEvents(g, ['roomclear', 'scored', 'allclear', 'levelup']);
     dropFlatI(g); // 21. sıra (griler) silinir
-    finishClear(g);
-    expect(grayRows(g)).toEqual([]);
-    expect(log.count('roomclear')).toBe(0);
-    expect([g.state, g.room, g.roomGray]).toEqual(['play', 0, 6]);
-    dropFlatI(g); // son renkli sıra
+    const s0 = { score: g.score, lines: g.lines, combo: g.combo, b2b: g.b2b, charge: g.sprayCharge };
+    expect(log.payloads('allclear')).toEqual([]); // tahta boşalmadı: Tam Ferahlık değil
     finishClear(g);
     expect(log.count('roomclear')).toBe(1);
     expect(g.pending?.kind).toBe('room');
+    const bonus = log.payloads('roomclear')[0]?.bonus ?? 0;
+    expect(g.board.some((v) => v === PIECE.S)).toBe(true); // geçiş boyunca görünür, söner
     finishClear(g);
-    expect([g.room, log.count('roomclear')]).toEqual([1, 1]);
+    // yeni bölüm boş tahtayla (yalnızca kendi gri sıraları) başlar; otomatik temizlik puan/satır/kombo/şarj vermez
+    expect(g.room).toBe(1);
+    expect(g.board.every((v) => v === 0 || v === PIECE.GARBAGE)).toBe(true);
+    expect(grayRows(g)).toHaveLength(ROOMS[1].rows);
+    expect({ score: g.score - bonus, lines: g.lines, combo: g.combo, b2b: g.b2b, charge: g.sprayCharge }).toEqual(s0);
+    expect(log.count('roomclear')).toBe(1);
   });
 
-  it('düşen parça tahtada değildir: yerleşmiş tahta boşsa (parça düşerken) bölüm açılır', () => {
+  it('oda grileri bitti ama virüs ya da tek kare kaldı: bölüm açılmaz; onlar da silinince açılır', () => {
+    for (const origin of [ORIGIN.virus, ORIGIN.attack]) {
+      const g = createGame(1);
+      g.reset({ rooms: true });
+      clearBoard(g);
+      fillRow(g, ROWS - 1, PIECE.GARBAGE, [6, 7, 8, 9]);
+      g.board[idx(2, 14)] = PIECE.GARBAGE; // dalga hücresi (tahtada gri)
+      g.origin[idx(2, 14)] = origin;
+      const log = recordEvents(g, ['roomclear']);
+      dropFlatI(g);
+      finishClear(g);
+      expect(log.count('roomclear'), `kaynak ${origin}`).toBe(0);
+      expect(g.roomGray).toBe(1);
+      g.removeCells([g.board.indexOf(PIECE.GARBAGE)]); // satır silinince bir sıra aşağı kaymıştır
+      expect(g.roomCleared()).toBe(true);
+    }
+  });
+
+  it('düşen parça tahtada değildir; yalnızca renkli blok varsa da açık sayılır', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
     clearBoard(g);
     expect(g.type).not.toBe(0);
     expect(g.roomCleared()).toBe(true);
-    fillRow(g, ROWS - 1, PIECE.GARBAGE, [0]);
+    fillRow(g, ROWS - 1, PIECE.L, [0]);
+    expect(g.roomCleared()).toBe(true);
+    g.board[idx(0, ROWS - 1)] = PIECE.GARBAGE;
     expect(g.roomCleared()).toBe(false);
   });
 
-  it('temizleme ve drenaj sürerken erken geçiş yok: oda kontrolü bekleyen işlem bittikten sonra', () => {
+  it('temizleme sürerken erken geçiş yok: oda kontrolü bekleyen işlem bittikten sonra', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
     lastRoomRow(g);
@@ -178,16 +201,14 @@ describe('geçme şartı (NS4-47): tahtadaki bütün yerleşmiş bloklar temizle
   it('son gri satır temizlenince: bonus, "Sinüs açıldı" geçişi, sonra 2. oda ve yeni parça', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
-    lastRoomRow(g);
-    const log = recordEvents(g, ['scored', 'allclear', 'roomclear', 'clearstart', 'clearend', 'roomstart', 'spawn']);
-    dropFlatI(g);
+    clearBoard(g);
+    fillRow(g, ROWS - 1, PIECE.GARBAGE, [9]);
+    const log = recordEvents(g, ['scored', 'roomclear', 'clearstart', 'clearend', 'roomstart', 'spawn']);
+    dropVerticalI(g);
     const linePts = log.payloads('scored')[0]?.pts ?? 0;
-    // tahta tamamen boşaldı: mevcut Tam Ferahlık bonusu da gelir (puan formülü değişmedi)
-    const allClear = log.payloads('allclear')[0]?.bonus ?? 0;
-    expect(allClear).toBeGreaterThan(0);
     finishClear(g);
     expect(log.payloads('roomclear')).toEqual([{ room: 0, bonus: CFG.roomBonus * 1 * 1 }]);
-    expect(g.score).toBe(20 * 2 + linePts + allClear + CFG.roomBonus);
+    expect(g.score).toBe(18 * 2 + linePts + CFG.roomBonus);
     expect([g.state, g.type, g.pending]).toEqual(['clearing', 0, { kind: 'room', rows: [] }]);
     expect(g.roomsCleared).toBe(1);
     g.update(CFG.roomClearMs - 1);
@@ -197,6 +218,7 @@ describe('geçme şartı (NS4-47): tahtadaki bütün yerleşmiş bloklar temizle
     expect(log.names()).toEqual(['roomstart', 'clearend', 'spawn']);
     expect([g.state, g.room]).toEqual(['play', 1]);
     expect(grayRows(g)).toHaveLength(ROOMS[1].rows);
+    expect(g.board.every((v) => v === 0 || v === PIECE.GARBAGE)).toBe(true); // I'nın kalan hücreleri temizlendi
     expect(g.type).not.toBe(0);
   });
 
@@ -212,26 +234,14 @@ describe('geçme şartı (NS4-47): tahtadaki bütün yerleşmiş bloklar temizle
     expect(log.payloads('roomclear')).toEqual([{ room: 2, bonus: CFG.roomBonus * 3 * 3 }]);
   });
 
-  it('hapşırık altta blok bırakırsa bölüm açılmaz', () => {
+  it('hapşırık son bulutçukları savurursa oda açılır; aktif parça kaybolmaz (sıradaki olur)', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
-    g.enterRoom(2);
+    g.enterRoom(2); // 8 sıra: %40, güçler açık
+    // gri yalnızca yığının en üstteki 3 sırasında (15..17), altında renkli sıralar: tıkanıklık %35
     clearBoard(g);
     for (let y = ROWS - 7; y < ROWS - 4; y++) fillRow(g, y, PIECE.GARBAGE, [9]);
     for (let y = ROWS - 4; y < ROWS; y++) fillRow(g, y, PIECE.S, [9]);
-    expect(g.useSneeze()).toBe(true);
-    finishClear(g);
-    expect(g.pending?.kind).not.toBe('room');
-    expect([g.room, g.roomGray]).toEqual([2, 36]);
-  });
-
-  it('hapşırık tahtadaki son blokları savurursa oda açılır; aktif parça kaybolmaz (sıradaki olur)', () => {
-    const g = createGame(1);
-    g.reset({ rooms: true });
-    g.enterRoom(2);
-    // bütün bloklar yığının en üstteki 3 sırasında (15..17; altı boş): tıkanıklık %35
-    clearBoard(g);
-    for (let y = ROWS - 7; y < ROWS - 4; y++) fillRow(g, y, PIECE.GARBAGE, [9]);
     const active = g.type;
     expect(g.useSneeze()).toBe(true);
     finishClear(g);
@@ -241,7 +251,7 @@ describe('geçme şartı (NS4-47): tahtadaki bütün yerleşmiş bloklar temizle
     expect([g.room, g.type]).toEqual([3, active]);
   });
 
-  it('sıklamen gücü odanın son grilerini akıtsa da renkli bloklar kaldığı için bölüm açılmaz', () => {
+  it('sıklamen gücü aktif çekirdekle odanın son bulutçuklarını akıtıp odayı açabilir', () => {
     const g = createGame(1);
     g.reset({ rooms: true });
     g.enterRoom(2);
@@ -251,13 +261,11 @@ describe('geçme şartı (NS4-47): tahtadaki bütün yerleşmiş bloklar temizle
     g.boardVer++;
     placePiece(g, PIECE.T, 0, 3, 0);
     g.core = true;
-    g.hardDrop(); // çiçek (4, 19), gri (4, 21): aktif, hedef 21, sütun 4 ± 4
+    g.hardDrop(); // çiçek (4, 19), gri (4, 21): aktif, hedef 21
     const log = recordEvents(g, ['roomclear']);
     expect(g.useCyc()).toBe(true);
     while (g.pending && g.pending.kind !== 'room') finishClear(g);
-    expect(g.grayCount()).toBe(0); // oda grileri bitti
-    expect(log.payloads('roomclear')).toEqual([]);
-    expect(g.roomGray).toBeGreaterThan(0); // kule ve T
+    expect(log.payloads('roomclear')).toEqual([{ room: 2, bonus: CFG.roomBonus * 3 }]);
   });
 });
 
